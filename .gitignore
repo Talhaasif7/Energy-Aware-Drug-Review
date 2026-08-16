@@ -1,0 +1,19 @@
+# Large Data Files & Datasets
+data/
+*.csv
+*.tsv
+*.xlsx
+
+# Python & Environment
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.DS_Store
+
+# IDE & OS
+.idea/
+.vscode/
+Thumbs.db

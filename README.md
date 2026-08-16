@@ -8,7 +8,7 @@
 
 ---
 
-## 📌 Executive Summary & Rationale
+## Executive Summary & Rationale
 
 Patient drug reviews carry critical clinical safety signals (such as Adverse Drug Reactions and drug effectiveness). For privacy, regulatory compliance, and cost efficiency, processing these reviews increasingly occurs on-premise or at the edge in resource-constrained healthcare settings.
 
@@ -16,7 +16,7 @@ While lighter NLP models reduce energy footprints, an efficient model whose prob
 
 ---
 
-## 🔬 Core Contribution: The ECC-MS Framework
+## Core Contribution: The ECC-MS Framework
 
 **ECC-MS** selects the optimal model, representation, and recalibration configuration on a development corpus by solving a constrained optimization problem:
 
@@ -29,7 +29,7 @@ $$\max_{\theta \in \Theta} \text{Accuracy}(\theta) \quad \text{subject to} \quad
 
 ---
 
-## ❓ Research Questions
+## Research Questions
 
 * **RQ1 (Accuracy–Calibration–Energy Frontier)**: Across an efficient model ladder, how do accuracy, calibration error (ECE), and measured energy trade off on patient-review safety detection?
 * **RQ2 (Recalibration per Joule)**: How much of the calibration gap does post-hoc recalibration (temperature scaling / isotonic regression) close, and at what marginal energy cost?
@@ -38,7 +38,7 @@ $$\max_{\theta \in \Theta} \text{Accuracy}(\theta) \quad \text{subject to} \quad
 
 ---
 
-## 🏗️ Task Architecture & Dataset Taxonomy
+## Task Architecture & Dataset Taxonomy
 
 ```text
 energy-aware-drug-review-nlp/
@@ -75,7 +75,7 @@ energy-aware-drug-review-nlp/
 
 ---
 
-## 🏷️ Label Harmonization Protocol (ST1)
+## Label Harmonization Protocol (ST1)
 
 To ensure valid cross-corpus transfer between PsyTAR and CADEC, target labels are pre-harmonized to a unified target at a fixed sentence unit: **Binary ADR-Present vs. ADR-Absent**.
 
@@ -84,7 +84,7 @@ To ensure valid cross-corpus transfer between PsyTAR and CADEC, target labels ar
 
 ---
 
-## 🪜 Efficient Model Ladder
+## Efficient Model Ladder
 
 | Tier | Models | Hardware Execution | Primary Characteristics |
 | :--- | :--- | :--- | :--- |
@@ -96,7 +96,7 @@ To ensure valid cross-corpus transfer between PsyTAR and CADEC, target labels ar
 
 ---
 
-## 📊 Evaluation Battery
+## Evaluation Battery
 
 * **Accuracy Metrics**: Macro-F1 & ADR-Class F1 (Safety Task), Macro-F1 & MAE (Effectiveness Task); 5 random seeds with 95% bootstrap confidence intervals.
 * **Calibration Metrics**: Adaptive Expected Calibration Error (Adaptive ECE), Brier Score & decomposition, reliability diagrams before and after Temperature Scaling and Isotonic Regression.
@@ -105,7 +105,7 @@ To ensure valid cross-corpus transfer between PsyTAR and CADEC, target labels ar
 
 ---
 
-## 🚦 Gating Smoke Tests (ST1 – ST7)
+## Gating Smoke Tests (ST1 – ST7)
 
 Before launching full-scale experimental matrix runs, all seven gating checks must pass:
 
@@ -119,7 +119,7 @@ Before launching full-scale experimental matrix runs, all seven gating checks mu
 
 ---
 
-## 📚 Key Literature & References
+## Key Literature & References
 
 1. **Energy vs. Accuracy in Text NLP**: *Comparing energy consumption and accuracy in text classification inference* (Nature Scientific Reports, 2026; arXiv:2508.14170).
 2. **Clinical Calibration**: *CURA: Clinical Uncertainty Risk Alignment for Language Model-Based Risk Prediction* (ACL 2026; arXiv:2604.14651).

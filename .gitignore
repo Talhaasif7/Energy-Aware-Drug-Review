@@ -1,8 +1,6 @@
-# Large Data Files & Datasets
-data/
-*.csv
-*.tsv
-*.xlsx
+# Exclude large dataset files exceeding GitHub 100MB limit
+data/02_secondary_sentiment_scaling/external_val_webmd/webmd.csv
+*.zip
 
 # Python & Environment
 __pycache__/

@@ -23,7 +23,6 @@ The project introduces the **ECC-MS (Energy–Calibration Constrained Model Sele
 ## 📁 Repository Architecture
 
 ```text
-e:\AI Green\
 ├── configs/                                # Experimental hyperparameter configs
 ├── data/                                   # Datasets (Harmonised & Raw)
 │   ├── 01_primary_adr_detection/
@@ -39,7 +38,9 @@ e:\AI Green\
 ├── reports/                                # Generated figures & visual artifacts
 │   └── st4_reliability_diagrams.png        # Calibration Reliability Diagram plot
 ├── results/                                # Output tables and metric CSVs
+│   └── colab_transformer_gpu_results.json  # Empirical Colab GPU results JSON
 ├── scripts/                                # Executable Python benchmark scripts
+│   ├── colab_gpu_transformer_primary_adr.py# Colab T4 GPU Transformer Fine-Tuning & Energy Tracking
 │   ├── harmonise_st1.py                    # ST1: Data Load & Label Harmonisation
 │   ├── energy_sanity_st2.py                # ST2: Energy Tracking Sanity
 │   ├── minimal_pipeline_st3.py             # ST3: Minimal End-to-End CPU Pipeline
@@ -127,6 +128,27 @@ All seven preliminary gating tests (Smoke Tests ST1 through ST7) have been execu
 * **Underpowered Subgroups ($N < 50$):** `Diclofenac-Sodium` (~42 sents), `Zipsor` (~30 sents), `Cambia` (~24 sents), `Pennsaid` (~24 sents), `Diclofenac-Potassium` (~18 sents), `Solaraze` (~18 sents), `Flector` (~6 sents).
 * **Rule:** Aggregate underpowered rare drug classes into macro-categories to maintain 10-bin ECE calculation integrity.
 
+### 8. Empirical Google Colab T4 GPU Transformer Benchmark (ST3b & ST6 Real Validation)
+* **Objective:** Real empirical fine-tuning, probability calibration, and CodeCarbon GPU energy tracking executed on a Google Colab T4 GPU instance.
+* **Corpora Used:**
+  - **Source Dev Corpus (PsyTAR):** Harmonised sentence dataset (6,003 rows; 2,000 unit stratified subset for ST3b gating).
+  - **Target External Val Corpus (CADEC):** Harmonised zero-shot evaluation target (7,681 rows).
+* **Hardware & Acceleration:** Google Colab NVIDIA Tesla T4 GPU with PyTorch Mixed Precision (`fp16`).
+* **Empirical Results Table (`colab_transformer_gpu_results.json`):**
+
+| Model Tier | Method | PsyTAR ADR F1 | PsyTAR ECE-U | PsyTAR NLL | CADEC ADR F1 | CADEC ECE-U | CADEC NLL | Train Time (s) | Train Energy (J) | Inf Throughput | Inf Energy/1k |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Efficient Transformer** (`distilbert-base-uncased`) | Uncalibrated | 0.7762 | 0.0532 | 0.3567 | 0.7976 | 0.0590 | 0.3514 | 13.13 s | 126.99 J | 1,034.0 s/s | 10.20 J |
+| **Efficient Transformer** (`distilbert-base-uncased`) | Temperature Scaled | 0.7762 | 0.0702 | 0.3613 | 0.7976 | 0.0729 | 0.3581 | 13.13 s | 126.99 J | 1,034.0 s/s | 10.20 J |
+| **Efficient Transformer** (`distilbert-base-uncased`) | Isotonic Regression | 0.7063 | 0.0584 | 0.5234 | 0.7831 | 0.0506 | 0.4205 | 13.13 s | 126.99 J | 1,034.0 s/s | 10.20 J |
+| **Biomedical Transformer** (`PubMedBERT-base-uncased`) | Uncalibrated | **0.8140** | **0.0366** | **0.3364** | **0.8008** | **0.0367** | **0.3384** | 13.60 s | 150.39 J | 585.2 s/s | 18.50 J |
+| **Biomedical Transformer** (`PubMedBERT-base-uncased`) | Temperature Scaled | **0.8140** | 0.0528 | 0.3461 | **0.8008** | 0.0745 | 0.3556 | 13.60 s | 150.39 J | 585.2 s/s | 18.50 J |
+| **Biomedical Transformer** (`PubMedBERT-base-uncased`) | Isotonic Regression | 0.7177 | **0.0369** | 0.5263 | 0.7711 | **0.0352** | 0.3495 | 13.60 s | 150.39 J | 585.2 s/s | 18.50 J |
+
+* **Empirical Takeaways:**
+  - **Predictive Superiority:** `PubMedBERT-base-uncased` achieved highest discrimination across both PsyTAR (ADR F1 = **0.8140**) and zero-shot CADEC target (ADR F1 = **0.8008**) while maintaining intrinsic low calibration error (ECE = **0.0366**).
+  - **Energy-Throughput Trade-off:** `DistilBERT` delivered **1,034.0 sentences/sec** inference throughput (1.77x faster than PubMedBERT) with only **10.20 J / 1,000 sentences** (44.9% energy reduction), demonstrating high utility for large-scale real-time screening.
+
 ---
 
 ## ⚙️ Reproduction & Execution Instructions
@@ -162,14 +184,17 @@ python scripts/cross_corpus_plumbing_st5.py
 python scripts/budget_and_subgroup_st6_st7.py
 ```
 
-### 3. Google Colab GPU Execution Guidelines (Transformers)
-For GPU fine-tuning of DistilBERT/PubMedBERT:
-1. Open a Google Colab instance and set Hardware Accelerator to **T4 GPU** (`Runtime > Change runtime type`).
-2. Install dependencies:
+### 3. Google Colab T4 GPU Execution Guidelines (Transformers)
+For GPU fine-tuning, energy tracking, calibration, and zero-shot transfer of DistilBERT/PubMedBERT:
+1. Open [Google Colab](https://colab.research.google.com/) and set Hardware Accelerator to **T4 GPU** (`Runtime > Change runtime type > T4 GPU`).
+2. Run the automated script execution commands:
    ```bash
-   !pip install codecarbon transformers datasets torch
+   !pip install codecarbon transformers datasets accelerate evaluate torch pandas numpy scikit-learn scipy
+   !git clone https://github.com/Talhaasif7/Energy-Aware-Drug-Review.git
+   %cd Energy-Aware-Drug-Review
+   !python scripts/colab_gpu_transformer_primary_adr.py
    ```
-3. Wrap model training in CodeCarbon `EmissionsTracker(save_to_file=False)` to record GPU Wh energy per epoch.
+3. The script automatically runs fine-tuning, CodeCarbon energy tracking, recalibration, evaluation on PsyTAR & CADEC, prints Markdown result tables, and exports `colab_transformer_gpu_results.json`.
 
 ---
 

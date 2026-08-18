@@ -613,10 +613,6 @@ def main():
     with open(json_export_path, "w", encoding="utf-8") as f:
         json.dump(export_payload, f, indent=2)
 
-    # Save copy at root as fallback
-    with open("colab_transformer_gpu_results.json", "w", encoding="utf-8") as f:
-        json.dump(export_payload, f, indent=2)
-
     print(f"\n[ARTIFACT] Structured empirical results exported to: {os.path.abspath(json_export_path)}")
 
     # Colab Auto-Download

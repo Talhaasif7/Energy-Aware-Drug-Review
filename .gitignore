@@ -41,6 +41,7 @@ venv.bak/
 
 # CodeCarbon logs & temporary files
 emissions.csv
+energy_logs/
 *.tmp
 *.log
 

@@ -1,0 +1,33 @@
+{
+  "project_name": "Energy-Aware-Drug-Review",
+  "framework": "ECC-MS (Energy-Calibration Constrained Model Selection)",
+  "primary_adr_detection": {
+    "psytar_path": "data/01_primary_adr_detection/dev_psytar/psytar_harmonised.csv",
+    "cadec_path": "data/01_primary_adr_detection/external_val_cadec/cadec_harmonised.csv",
+    "split_ratios": {
+      "train": 0.6,
+      "calibration": 0.2,
+      "test": 0.2
+    },
+    "seeds": [42, 123, 456, 789, 999],
+    "models": {
+      "efficient_transformer": "distilbert-base-uncased",
+      "biomedical_transformer": "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract"
+    },
+    "training_params": {
+      "batch_size": 32,
+      "learning_rate": 0.00002,
+      "max_seq_length": 128,
+      "epochs": 3,
+      "fp16": true
+    },
+    "calibration": {
+      "n_bins": 10,
+      "methods": [
+        "Uncalibrated",
+        "Temperature Scaling",
+        "Isotonic Regression"
+      ]
+    }
+  }
+}

@@ -24,6 +24,7 @@ The project introduces the **ECC-MS (Energy–Calibration Constrained Model Sele
 
 ```text
 ├── configs/                                # Experimental hyperparameter configs
+│   └── default_config.json                 # Benchmark configuration parameters
 ├── data/                                   # Datasets (Harmonised & Raw)
 │   ├── 01_primary_adr_detection/
 │   │   ├── dev_psytar/                     # PsyTAR Development Corpus
@@ -35,9 +36,9 @@ The project introduces the **ECC-MS (Energy–Calibration Constrained Model Sele
 │   └── 02_secondary_sentiment_scaling/     # Secondary Task Datasets
 │       ├── dev_uci_drug_review/            # UCI Drug Review dataset (3,076 rows)
 │       └── external_val_webmd/             # WebMD dataset (320,096 rows)
-│   ├── reports/                                # Generated figures & visual artifacts
-│   ├── st1_st5_review_closure.md       # ST1 & ST5 Review Closure & Verification Report
-│   ├── st2_energy_sanity_report.md     # ST2 Linux Intel RAPL Energy Sanity Report
+├── reports/                                # Generated figures & visual artifacts
+│   ├── st1_st5_review_closure.md           # ST1 & ST5 Review Closure & Verification Report
+│   ├── st2_energy_sanity_report.md         # ST2 Linux Intel RAPL Energy Sanity Report
 │   └── st4_reliability_diagrams.png        # Calibration Reliability Diagram plot
 ├── results/                                # Output tables and metric CSVs
 │   └── colab_transformer_gpu_results.json  # Empirical Colab GPU results JSON

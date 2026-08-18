@@ -35,12 +35,14 @@ The project introduces the **ECC-MS (Energy–Calibration Constrained Model Sele
 │   └── 02_secondary_sentiment_scaling/     # Secondary Task Datasets
 │       ├── dev_uci_drug_review/            # UCI Drug Review dataset (3,076 rows)
 │       └── external_val_webmd/             # WebMD dataset (320,096 rows)
-├── reports/                                # Generated figures & visual artifacts
+│   ├── reports/                                # Generated figures & visual artifacts
+│   ├── st1_st5_review_closure.md       # ST1 & ST5 Review Closure & Verification Report
 │   └── st4_reliability_diagrams.png        # Calibration Reliability Diagram plot
 ├── results/                                # Output tables and metric CSVs
 │   └── colab_transformer_gpu_results.json  # Empirical Colab GPU results JSON
 ├── scripts/                                # Executable Python benchmark scripts
 │   ├── colab_gpu_transformer_primary_adr.py# Colab T4 GPU Transformer Fine-Tuning & Energy Tracking
+│   ├── verify_st1_gaps.py                  # ST1 & ST5 Review Closure Verification Script
 │   ├── harmonise_st1.py                    # ST1: Data Load & Label Harmonisation
 │   ├── energy_sanity_st2.py                # ST2: Energy Tracking Sanity
 │   ├── minimal_pipeline_st3.py             # ST3: Minimal End-to-End CPU Pipeline
@@ -60,8 +62,8 @@ All seven preliminary gating tests (Smoke Tests ST1 through ST7) have been execu
 
 ### 1. ST1: Data Load & Label Harmonisation
 * **Objective:** Harmonise raw PsyTAR (Excel) and CADEC (Brat text/annotations) corpora into standardized binary sentence-level schema `['text', 'label']`.
-* **PsyTAR (Dev):** Extracted 6,003 valid sentences (`Sentence_Labeling` sheet).
-* **CADEC (External Val):** Parsed 7,409 ADR character spans across 1,250 text posts using NLTK `PunktSentenceTokenizer.span_tokenize` for exact character boundary mapping (7,681 total sentences).
+* **PsyTAR (Dev):** Extracted 6,003 valid sentences (2,168 positive ADR / 36.12%, 3,835 negative / 63.88%).
+* **CADEC (External Val):** Parsed 7,409 ADR character spans across 1,250 text posts using NLTK `PunktSentenceTokenizer.span_tokenize` for exact character boundary mapping (7,681 total sentences; 2,854 positive ADR / 37.16%, 4,827 negative / 62.84%).
 
 ### 2. ST2: Energy Measurement Sanity
 * **Objective:** Verify CodeCarbon energy tracking engine and measure baseline idle draw.
@@ -108,6 +110,7 @@ All seven preliminary gating tests (Smoke Tests ST1 through ST7) have been execu
 | **Logistic Regression** | Isotonic Regression (Transfer) | **0.6000** | **0.7143** | **0.0666** | **0.1689** | 0.6027 |
 | **LightGBM (GBDT)** | Uncalibrated | 0.5613 | 0.6821 | 0.0244 | 0.1852 | 0.5518 |
 | **LightGBM (GBDT)** | Temperature Scaled (Transfer) | 0.5613 | 0.6821 | 0.0260 | **0.1849** | **0.5504** |
+| **LightGBM (GBDT)** | Isotonic Regression (Transfer) | 0.5598 | 0.6839 | 0.0535 | 0.1903 | 0.6082 |
 
 ### 6. ST6: Compute & Energy Budget Extrapolation
 * **Objective:** Extrapolate compute time and energy across 5 random seeds for full experimental matrix.

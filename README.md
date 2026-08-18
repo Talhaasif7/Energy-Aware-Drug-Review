@@ -37,6 +37,7 @@ The project introduces the **ECC-MS (Energy–Calibration Constrained Model Sele
 │       └── external_val_webmd/             # WebMD dataset (320,096 rows)
 │   ├── reports/                                # Generated figures & visual artifacts
 │   ├── st1_st5_review_closure.md       # ST1 & ST5 Review Closure & Verification Report
+│   ├── st2_energy_sanity_report.md     # ST2 Linux Intel RAPL Energy Sanity Report
 │   └── st4_reliability_diagrams.png        # Calibration Reliability Diagram plot
 ├── results/                                # Output tables and metric CSVs
 │   └── colab_transformer_gpu_results.json  # Empirical Colab GPU results JSON
@@ -66,10 +67,12 @@ All seven preliminary gating tests (Smoke Tests ST1 through ST7) have been execu
 * **CADEC (External Val):** Parsed 7,409 ADR character spans across 1,250 text posts using NLTK `PunktSentenceTokenizer.span_tokenize` for exact character boundary mapping (7,681 total sentences; 2,854 positive ADR / 37.16%, 4,827 negative / 62.84%).
 
 ### 2. ST2: Energy Measurement Sanity
-* **Objective:** Verify CodeCarbon energy tracking engine and measure baseline idle draw.
-* **Environment:** Windows 11 AMD64 (Intel64 4 physical / 8 logical cores, 19.82 GB RAM).
-* **Baseline Idle Power:** **0.0930 Watts** (5.9439 Joules over 60s idle sleep).
-* **Workload Repeatability:** 3x GBDT training repeats recorded mean energy of 0.0885 J (CV = 14.02%).
+* **Objective:** Verify CodeCarbon energy tracking engine and measure baseline idle draw using direct Intel RAPL sysfs access.
+* **Environment:** Linux 7.0.0-29-generic (x86_64, 6 physical / 6 logical cores, 14.9 GB RAM).
+* **Energy Interface:** Linux Intel RAPL (`/sys/class/powercap/intel-rapl`) via CodeCarbon Engine.
+* **Baseline Idle Power:** **6.7340 Watts** (437.8717 Joules over 65.02s sleep).
+* **Workload Repeatability:** 3x LightGBM training repeats on 10,000 synthetic rows recorded mean energy of **6.5846 Joules** (Std Dev = 0.2881 J, CV = **4.38%** — **PASSED** $< 10\%$ threshold).
+* **Verification Outcome:** Direct Intel RAPL sysfs access resolved coarse Windows TDP estimates, achieving high repeatability (CV = 4.38%). Saved to [`reports/st2_energy_sanity_report.md`](file:///e:/AI%20Green/reports/st2_energy_sanity_report.md).
 
 ### 3. ST3: Minimal End-to-End CPU Pipeline
 * **Objective:** Benchmark TF-IDF (1,000 features) on a 2,000 unit stratified PsyTAR subset (1,600 train / 400 test).

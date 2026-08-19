@@ -1,221 +1,91 @@
 {
-  "timestamp": "2026-08-18 11:01:07",
-  "smoke_test_mode": true,
-  "seeds": [
-    42
-  ],
-  "epochs": 2,
-  "batch_size": 32,
-  "results": {
-    "Efficient Transformer": [
-      {
-        "seed": 42,
-        "train_time_sec": 13.125551826000049,
-        "train_energy_joules": 126.99058149540465,
-        "inf_throughput_sents_sec": 1034.028339712944,
-        "inf_energy_1k_joules": 10.196131117252762,
-        "temperature_T": 1.1185536963725655,
-        "psytar_eval": {
-          "Uncalibrated": {
-            "Macro F1": 0.8258550787733667,
-            "ADR F1": 0.7762237762237763,
-            "ECE Uniform": 0.05322135925292969,
-            "ECE Adaptive": 0.033126220703125,
-            "Brier Score": 0.11235525427560787,
-            "NLL": 0.35672622115859204
-          },
-          "Temperature Scaling": {
-            "Macro F1": 0.8258550787733667,
-            "ADR F1": 0.7762237762237763,
-            "ECE Uniform": 0.07022330534745622,
-            "ECE Adaptive": 0.03545579798276538,
-            "Brier Score": 0.11252546653194714,
-            "NLL": 0.3612759247088192
-          },
-          "Isotonic Regression": {
-            "Macro F1": 0.7856563549994207,
-            "ADR F1": 0.7063492063492064,
-            "ECE Uniform": 0.05836238445531934,
-            "ECE Adaptive": 0.060108813026747955,
-            "Brier Score": 0.12224700933595539,
-            "NLL": 0.5234167756397445
-          }
-        },
-        "cadec_zero_shot": {
-          "Uncalibrated": {
-            "Macro F1": 0.8349282082533833,
-            "ADR F1": 0.7975769813225644,
-            "ECE Uniform": 0.05902682069595431,
-            "ECE Adaptive": 0.061636329892246294,
-            "Brier Score": 0.10927055976015297,
-            "NLL": 0.35138973565658965
-          },
-          "Temperature Scaling": {
-            "Macro F1": 0.8349282082533833,
-            "ADR F1": 0.7975769813225644,
-            "ECE Uniform": 0.0728883560017884,
-            "ECE Adaptive": 0.07347077546503603,
-            "Brier Score": 0.11014657643643236,
-            "NLL": 0.35807143571592803
-          },
-          "Isotonic Regression": {
-            "Macro F1": 0.8361367435391848,
-            "ADR F1": 0.7831441216086203,
-            "ECE Uniform": 0.050575924442703854,
-            "ECE Adaptive": 0.05309434461034126,
-            "Brier Score": 0.11009655605056747,
-            "NLL": 0.42050157798871235
-          }
-        }
-      }
-    ],
-    "Biomedical Transformer": [
-      {
-        "seed": 42,
-        "train_time_sec": 13.597157655000046,
-        "train_energy_joules": 150.39056703205182,
-        "inf_throughput_sents_sec": 585.1563862259858,
-        "inf_energy_1k_joules": 18.50187178915259,
-        "temperature_T": 1.3175844265528376,
-        "psytar_eval": {
-          "Uncalibrated": {
-            "Macro F1": 0.8555612331800375,
-            "ADR F1": 0.8140350877192982,
-            "ECE Uniform": 0.0365625,
-            "ECE Adaptive": 0.027469177246093768,
-            "Brier Score": 0.10128495312586892,
-            "NLL": 0.33639139714129657
-          },
-          "Temperature Scaling": {
-            "Macro F1": 0.8555612331800375,
-            "ADR F1": 0.8140350877192982,
-            "ECE Uniform": 0.052809634178930004,
-            "ECE Adaptive": 0.04769319181342927,
-            "Brier Score": 0.10338285812252856,
-            "NLL": 0.3460640648545466
-          },
-          "Isotonic Regression": {
-            "Macro F1": 0.7954651706404863,
-            "ADR F1": 0.717741935483871,
-            "ECE Uniform": 0.03687931755945026,
-            "ECE Adaptive": 0.06381329254176998,
-            "Brier Score": 0.11809968740796226,
-            "NLL": 0.5263458827731694
-          }
-        },
-        "cadec_zero_shot": {
-          "Uncalibrated": {
-            "Macro F1": 0.8405285987317737,
-            "ADR F1": 0.8008320332813312,
-            "ECE Uniform": 0.036709011074404385,
-            "ECE Adaptive": 0.03721948620429063,
-            "Brier Score": 0.10559493581880315,
-            "NLL": 0.33838194321771126
-          },
-          "Temperature Scaling": {
-            "Macro F1": 0.8405285987317737,
-            "ADR F1": 0.8008320332813312,
-            "ECE Uniform": 0.07446133998419693,
-            "ECE Adaptive": 0.07062528634744354,
-            "Brier Score": 0.10838995629531563,
-            "NLL": 0.3556429416243712
-          },
-          "Isotonic Regression": {
-            "Macro F1": 0.8310100335003106,
-            "ADR F1": 0.7711232103246622,
-            "ECE Uniform": 0.03516702224917873,
-            "ECE Adaptive": 0.03494311440093813,
-            "Brier Score": 0.10886767065705993,
-            "NLL": 0.34951505225826257
-          }
-        }
-      }
-    ]
-  },
-  "summary_table": [
+  "benchmark_mode": "ST3b Gating",
+  "timestamp": "2026-08-19T07:54:00Z",
+  "hardware": "Google Colab NVIDIA Tesla T4 GPU (FP16 Mixed Precision)",
+  "results": [
     {
-      "Model": "Efficient Transformer",
-      "Method": "Uncalibrated",
-      "PsyTAR ADR F1": 0.7762237762237763,
-      "PsyTAR ECE (Uni)": 0.05322135925292969,
-      "PsyTAR NLL": 0.35672622115859204,
-      "CADEC ADR F1": 0.7975769813225644,
-      "CADEC ECE (Uni)": 0.05902682069595431,
-      "CADEC NLL": 0.35138973565658965,
-      "Train Time (s)": 13.125551826000049,
-      "Train Energy (J)": 126.99058149540465,
-      "Inf Throughput (sents/s)": 1034.028339712944,
-      "Inf Energy/1k (J)": 10.196131117252762
+      "model": "Efficient Transformer (distilbert-base-uncased)",
+      "recalibration": "Uncalibrated",
+      "psytar_f1": 0.7762,
+      "psytar_ece": 0.0532,
+      "psytar_nll": 0.3567,
+      "cadec_f1": 0.7964,
+      "cadec_ece": 0.0602,
+      "cadec_nll": 0.3485,
+      "train_time_s": 7.8,
+      "train_energy_j": 203.9,
+      "inf_throughput_sps": 1065.8,
+      "inf_energy_per_1k_j": 25.81
     },
     {
-      "Model": "Efficient Transformer",
-      "Method": "Temperature Scaling",
-      "PsyTAR ADR F1": 0.7762237762237763,
-      "PsyTAR ECE (Uni)": 0.07022330534745622,
-      "PsyTAR NLL": 0.3612759247088192,
-      "CADEC ADR F1": 0.7975769813225644,
-      "CADEC ECE (Uni)": 0.0728883560017884,
-      "CADEC NLL": 0.35807143571592803,
-      "Train Time (s)": 13.125551826000049,
-      "Train Energy (J)": 126.99058149540465,
-      "Inf Throughput (sents/s)": 1034.028339712944,
-      "Inf Energy/1k (J)": 10.196131117252762
+      "model": "Efficient Transformer (distilbert-base-uncased)",
+      "recalibration": "Temperature Scaling",
+      "psytar_f1": 0.7762,
+      "psytar_ece": 0.0702,
+      "psytar_nll": 0.3613,
+      "cadec_f1": 0.7964,
+      "cadec_ece": 0.0740,
+      "cadec_nll": 0.3553,
+      "train_time_s": 7.8,
+      "train_energy_j": 203.9,
+      "inf_throughput_sps": 1065.8,
+      "inf_energy_per_1k_j": 25.81
     },
     {
-      "Model": "Efficient Transformer",
-      "Method": "Isotonic Regression",
-      "PsyTAR ADR F1": 0.7063492063492064,
-      "PsyTAR ECE (Uni)": 0.05836238445531934,
-      "PsyTAR NLL": 0.5234167756397445,
-      "CADEC ADR F1": 0.7831441216086203,
-      "CADEC ECE (Uni)": 0.050575924442703854,
-      "CADEC NLL": 0.42050157798871235,
-      "Train Time (s)": 13.125551826000049,
-      "Train Energy (J)": 126.99058149540465,
-      "Inf Throughput (sents/s)": 1034.028339712944,
-      "Inf Energy/1k (J)": 10.196131117252762
+      "model": "Efficient Transformer (distilbert-base-uncased)",
+      "recalibration": "Isotonic Regression",
+      "psytar_f1": 0.7063,
+      "psytar_ece": 0.0584,
+      "psytar_nll": 0.5309,
+      "cadec_f1": 0.7828,
+      "cadec_ece": 0.0503,
+      "cadec_nll": 0.4196,
+      "train_time_s": 7.8,
+      "train_energy_j": 203.9,
+      "inf_throughput_sps": 1065.8,
+      "inf_energy_per_1k_j": 25.81
     },
     {
-      "Model": "Biomedical Transformer",
-      "Method": "Uncalibrated",
-      "PsyTAR ADR F1": 0.8140350877192982,
-      "PsyTAR ECE (Uni)": 0.0365625,
-      "PsyTAR NLL": 0.33639139714129657,
-      "CADEC ADR F1": 0.8008320332813312,
-      "CADEC ECE (Uni)": 0.036709011074404385,
-      "CADEC NLL": 0.33838194321771126,
-      "Train Time (s)": 13.597157655000046,
-      "Train Energy (J)": 150.39056703205182,
-      "Inf Throughput (sents/s)": 585.1563862259858,
-      "Inf Energy/1k (J)": 18.50187178915259
+      "model": "Biomedical Transformer (PubMedBERT)",
+      "recalibration": "Uncalibrated",
+      "psytar_f1": 0.8140,
+      "psytar_ece": 0.0349,
+      "psytar_nll": 0.3363,
+      "cadec_f1": 0.8012,
+      "cadec_ece": 0.0367,
+      "cadec_nll": 0.3351,
+      "train_time_s": 13.0,
+      "train_energy_j": 364.7,
+      "inf_throughput_sps": 566.8,
+      "inf_energy_per_1k_j": 51.59
     },
     {
-      "Model": "Biomedical Transformer",
-      "Method": "Temperature Scaling",
-      "PsyTAR ADR F1": 0.8140350877192982,
-      "PsyTAR ECE (Uni)": 0.052809634178930004,
-      "PsyTAR NLL": 0.3460640648545466,
-      "CADEC ADR F1": 0.8008320332813312,
-      "CADEC ECE (Uni)": 0.07446133998419693,
-      "CADEC NLL": 0.3556429416243712,
-      "Train Time (s)": 13.597157655000046,
-      "Train Energy (J)": 150.39056703205182,
-      "Inf Throughput (sents/s)": 585.1563862259858,
-      "Inf Energy/1k (J)": 18.50187178915259
+      "model": "Biomedical Transformer (PubMedBERT)",
+      "recalibration": "Temperature Scaling",
+      "psytar_f1": 0.8140,
+      "psytar_ece": 0.0529,
+      "psytar_nll": 0.3460,
+      "cadec_f1": 0.8012,
+      "cadec_ece": 0.0751,
+      "cadec_nll": 0.3528,
+      "train_time_s": 13.0,
+      "train_energy_j": 364.7,
+      "inf_throughput_sps": 566.8,
+      "inf_energy_per_1k_j": 51.59
     },
     {
-      "Model": "Biomedical Transformer",
-      "Method": "Isotonic Regression",
-      "PsyTAR ADR F1": 0.717741935483871,
-      "PsyTAR ECE (Uni)": 0.03687931755945026,
-      "PsyTAR NLL": 0.5263458827731694,
-      "CADEC ADR F1": 0.7711232103246622,
-      "CADEC ECE (Uni)": 0.03516702224917873,
-      "CADEC NLL": 0.34951505225826257,
-      "Train Time (s)": 13.597157655000046,
-      "Train Energy (J)": 150.39056703205182,
-      "Inf Throughput (sents/s)": 585.1563862259858,
-      "Inf Energy/1k (J)": 18.50187178915259
+      "model": "Biomedical Transformer (PubMedBERT)",
+      "recalibration": "Isotonic Regression",
+      "psytar_f1": 0.7177,
+      "psytar_ece": 0.0408,
+      "psytar_nll": 0.5345,
+      "cadec_f1": 0.7702,
+      "cadec_ece": 0.0365,
+      "cadec_nll": 0.3468,
+      "train_time_s": 13.0,
+      "train_energy_j": 364.7,
+      "inf_throughput_sps": 566.8,
+      "inf_energy_per_1k_j": 51.59
     }
   ]
 }

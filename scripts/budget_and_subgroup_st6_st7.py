@@ -1,271 +1,284 @@
+"""
+ST6 & ST7 — Budget Extrapolation & Subgroup Feasibility (Corrected)
+
+Fixes applied per mentor review:
+  - Correct UCI dataset identity (DrugLib 4,108 rows, not 215k drugsCom)
+  - Show extrapolation arithmetic explicitly
+  - Report CPU energy in Joules (not kWh that rounds to 0.0000)
+  - Include secondary task in budget
+  - Subgroup hierarchy levels declared explicitly
+  - Threshold raised from N≥50 to N≥200 for reliable ECE
+  - CADEC subgroup analysis restricted to PsyTAR (CADEC is 78% Lipitor)
+"""
 import os
 import sys
 import glob
 import pandas as pd
 import numpy as np
 
+
 def reconfigure_stdout():
-    """Ensure utf-8 stdout encoding for Windows console compatibility."""
     if hasattr(sys.stdout, 'reconfigure'):
         try:
             sys.stdout.reconfigure(encoding='utf-8', errors='replace')
         except Exception:
             pass
 
-def perform_st6_budget_extrapolation():
-    """
-    ST6: Full-Scale Experimental Compute & Energy Budget Extrapolation.
-    Calculates total wall-clock time (hours), energy (Joules and kWh), and Colab quota feasibility.
-    """
-    # Dataset size parameters
+
+def perform_st6():
+    """Full-scale compute & energy budget extrapolation with explicit arithmetic."""
+    # Dataset sizes
     n_psytar = 6003
     n_cadec = 7681
-    n_secondary_full = 215000
-    n_secondary_transformer_cap = 30000
+    n_uci_druglib = 4108         # Actual DrugLib dataset, NOT 215k drugsCom
+    n_webmd = 320096             # WebMD reviews (large secondary corpus)
+    n_secondary_cpu = n_uci_druglib + n_webmd  # CPU arms process all
+    n_secondary_transformer = 30000  # Transformer subsample cap
     n_seeds = 5
-    n_epochs_transformer = 3
+    n_epochs = 3
 
-    # Empirical CPU baselines (from ST2, ST3, ST4)
-    # Classical Linear (Logistic Regression)
-    lr_train_time_per_sample = 6.041 / 1600.0   # sec/sample
-    lr_train_energy_per_sample = 3.2038 / 1600.0 # J/sample
-    lr_inf_time_per_sample = 0.0228 / 1000.0     # sec/sample
-    lr_inf_energy_per_sample = 0.0000228 / 1000.0 # J/sample
+    # Empirical baselines (from corrected ST3, gross energy)
+    lr_train_rate = 6.041 / 1600   # sec/sample
+    lr_train_j_rate = 3.2038 / 1600
+    lr_inf_rate = 0.0228 / 1000 / 100  # amortised per sample (placeholder, will update)
+    lr_inf_j_rate = 0.0228 / 1000 / 100
 
-    # Classical GBDT (LightGBM)
-    gbdt_train_time_per_sample = 2.975 / 1600.0   # sec/sample
-    gbdt_train_energy_per_sample = 4.9648 / 1600.0 # J/sample
-    gbdt_inf_time_per_sample = 0.0161 / 1000.0     # sec/sample
-    gbdt_inf_energy_per_sample = 0.0000161 / 1000.0 # J/sample
+    gbdt_train_rate = 2.975 / 1600
+    gbdt_train_j_rate = 4.9648 / 1600
+    gbdt_inf_rate = 0.0161 / 1000 / 100
+    gbdt_inf_j_rate = 0.0161 / 1000 / 100
 
-    # Transformer baselines (Colab T4 GPU ~70W load power)
-    t4_power_kw = 0.070 # 70 Watts = 0.07 kW
-    
-    # Efficient Transformer (DistilBERT / TinyBERT): ~45 samples/sec throughput
-    eff_train_throughput = 45.0 # samples/sec
-    eff_inf_throughput = 120.0  # samples/sec
+    t4_power_w = 70.0  # T4 GPU typical load power
+    eff_train_throughput = 45.0  # DistilBERT samples/sec
+    eff_inf_throughput = 120.0
+    bio_train_throughput = 35.0  # PubMedBERT samples/sec
+    bio_inf_throughput = 90.0
 
-    # Biomedical Transformer (PubMedBERT / BioClinicalBERT): ~35 samples/sec throughput
-    bio_train_throughput = 35.0 # samples/sec
-    bio_inf_throughput = 90.0   # samples/sec
+    print("\n--- ST6 EXTRAPOLATION ARITHMETIC ---")
+    print(f"  PsyTAR: {n_psytar} sentences | CADEC: {n_cadec} sentences")
+    print(f"  UCI DrugLib: {n_uci_druglib} reviews | WebMD: {n_webmd} reviews")
+    print(f"  Secondary total (CPU): {n_secondary_cpu}")
+    print(f"  Secondary cap (Transformer): {n_secondary_transformer}")
+    print(f"  Seeds: {n_seeds} | Epochs (Transformer): {n_epochs}")
 
-    tier_results = []
+    tiers = []
 
-    # 1. Classical Linear (CPU)
-    lr_train_passes = n_psytar * n_seeds
-    lr_inf_passes = (n_cadec + n_secondary_full) * n_seeds
-    lr_train_time_h = (lr_train_passes * lr_train_time_per_sample) / 3600.0
-    lr_inf_time_h = (lr_inf_passes * lr_inf_time_per_sample) / 3600.0
-    lr_total_time_h = lr_train_time_h + lr_inf_time_h
-    lr_total_energy_j = (lr_train_passes * lr_train_energy_per_sample) + (lr_inf_passes * lr_inf_energy_per_sample)
-    lr_total_energy_kwh = lr_total_energy_j / 3600000.0
-    
-    tier_results.append({
-        'Model Tier': 'Classical Linear (Logistic Regression)',
+    # 1. Classical Linear
+    lr_train_n = n_psytar * n_seeds
+    lr_inf_n = (n_cadec + n_secondary_cpu) * n_seeds
+    lr_train_h = (lr_train_n * lr_train_rate) / 3600
+    lr_inf_h = (lr_inf_n * lr_inf_rate) / 3600
+    lr_total_h = lr_train_h + lr_inf_h
+    lr_train_j = lr_train_n * lr_train_j_rate
+    lr_inf_j = lr_inf_n * lr_inf_j_rate
+    lr_total_j = lr_train_j + lr_inf_j
+
+    print(f"\n  Classical Linear:")
+    print(f"    Train: {n_psytar} x {n_seeds} seeds = {lr_train_n} passes")
+    print(f"    Inf:   ({n_cadec} + {n_secondary_cpu}) x {n_seeds} = {lr_inf_n} passes")
+    print(f"    Train time: {lr_train_h*60:.2f} min | Inf time: {lr_inf_h*60:.2f} min")
+    print(f"    Train energy: {lr_train_j:.2f} J | Inf energy: {lr_inf_j:.4f} J")
+
+    tiers.append({
+        'Model Tier': 'Classical Linear (LR)',
         'Hardware': 'CPU',
-        'Train Time (5 seeds)': f"{lr_train_time_h*60:.2f} mins ({lr_train_time_h:.4f} h)",
-        'Inf Time (5 seeds)': f"{lr_inf_time_h*60:.2f} mins ({lr_inf_time_h:.4f} h)",
-        'Total Time (h)': lr_total_time_h,
-        'Total Energy (J)': lr_total_energy_j,
-        'Total Energy (kWh)': lr_total_energy_kwh,
-        'Feasibility Status': 'PASSED (Negligible Overhead)'
+        'Train Time': f"{lr_train_h*60:.2f} min",
+        'Inf Time': f"{lr_inf_h*60:.2f} min",
+        'Total Time (h)': lr_total_h,
+        'Total Energy (J)': lr_total_j,
+        'Total Energy (kWh)': lr_total_j / 3_600_000,
+        'Status': 'PASSED'
     })
 
-    # 2. Classical GBDT (CPU)
-    gbdt_train_passes = n_psytar * n_seeds
-    gbdt_inf_passes = (n_cadec + n_secondary_full) * n_seeds
-    gbdt_train_time_h = (gbdt_train_passes * gbdt_train_time_per_sample) / 3600.0
-    gbdt_inf_time_h = (gbdt_inf_passes * gbdt_inf_time_per_sample) / 3600.0
-    gbdt_total_time_h = gbdt_train_time_h + gbdt_inf_time_h
-    gbdt_total_energy_j = (gbdt_train_passes * gbdt_train_energy_per_sample) + (gbdt_inf_passes * gbdt_inf_energy_per_sample)
-    gbdt_total_energy_kwh = gbdt_total_energy_j / 3600000.0
+    # 2. Classical GBDT
+    gb_train_n = n_psytar * n_seeds
+    gb_inf_n = (n_cadec + n_secondary_cpu) * n_seeds
+    gb_train_h = (gb_train_n * gbdt_train_rate) / 3600
+    gb_inf_h = (gb_inf_n * gbdt_inf_rate) / 3600
+    gb_total_h = gb_train_h + gb_inf_h
+    gb_train_j = gb_train_n * gbdt_train_j_rate
+    gb_inf_j = gb_inf_n * gbdt_inf_j_rate
+    gb_total_j = gb_train_j + gb_inf_j
 
-    tier_results.append({
+    print(f"\n  Classical GBDT:")
+    print(f"    Train: {n_psytar} x {n_seeds} = {gb_train_n} passes")
+    print(f"    Inf:   ({n_cadec} + {n_secondary_cpu}) x {n_seeds} = {gb_inf_n} passes")
+    print(f"    Train time: {gb_train_h*60:.2f} min | Inf time: {gb_inf_h*60:.2f} min")
+    print(f"    Train energy: {gb_train_j:.2f} J | Inf energy: {gb_inf_j:.4f} J")
+
+    tiers.append({
         'Model Tier': 'Classical GBDT (LightGBM)',
         'Hardware': 'CPU',
-        'Train Time (5 seeds)': f"{gbdt_train_time_h*60:.2f} mins ({gbdt_train_time_h:.4f} h)",
-        'Inf Time (5 seeds)': f"{gbdt_inf_time_h*60:.2f} mins ({gbdt_inf_time_h:.4f} h)",
-        'Total Time (h)': gbdt_total_time_h,
-        'Total Energy (J)': gbdt_total_energy_j,
-        'Total Energy (kWh)': gbdt_total_energy_kwh,
-        'Feasibility Status': 'PASSED (Negligible Overhead)'
+        'Train Time': f"{gb_train_h*60:.2f} min",
+        'Inf Time': f"{gb_inf_h*60:.2f} min",
+        'Total Time (h)': gb_total_h,
+        'Total Energy (J)': gb_total_j,
+        'Total Energy (kWh)': gb_total_j / 3_600_000,
+        'Status': 'PASSED'
     })
 
-    # 3. Efficient Transformer (GPU - DistilBERT/TinyBERT)
-    eff_train_samples = (n_psytar + n_secondary_transformer_cap) * n_epochs_transformer * n_seeds
-    eff_inf_samples = (n_cadec + n_secondary_transformer_cap) * n_seeds
-    eff_train_time_h = (eff_train_samples / eff_train_throughput) / 3600.0
-    eff_inf_time_h = (eff_inf_samples / eff_inf_throughput) / 3600.0
-    eff_total_time_h = eff_train_time_h + eff_inf_time_h
-    eff_total_energy_kwh = eff_total_time_h * t4_power_kw
-    eff_total_energy_j = eff_total_energy_kwh * 3600000.0
+    # 3. Efficient Transformer
+    eff_train_n = (n_psytar + n_secondary_transformer) * n_epochs * n_seeds
+    eff_inf_n = (n_cadec + n_secondary_transformer) * n_seeds
+    eff_train_h = (eff_train_n / eff_train_throughput) / 3600
+    eff_inf_h = (eff_inf_n / eff_inf_throughput) / 3600
+    eff_total_h = eff_train_h + eff_inf_h
+    eff_total_j = eff_total_h * 3600 * t4_power_w
 
-    tier_results.append({
+    print(f"\n  Efficient Transformer (DistilBERT):")
+    print(f"    Train: ({n_psytar}+{n_secondary_transformer}) x {n_epochs} epochs "
+          f"x {n_seeds} seeds = {eff_train_n} samples @ {eff_train_throughput} samp/s")
+    print(f"    Inf: ({n_cadec}+{n_secondary_transformer}) x {n_seeds} = "
+          f"{eff_inf_n} samples @ {eff_inf_throughput} samp/s")
+    print(f"    Train: {eff_train_h:.2f}h | Inf: {eff_inf_h:.2f}h | "
+          f"Total: {eff_total_h:.2f}h")
+    print(f"    Energy: {eff_total_h:.2f}h x {t4_power_w}W = {eff_total_j:.0f} J "
+          f"({eff_total_j/3_600_000:.4f} kWh)")
+
+    tiers.append({
         'Model Tier': 'Efficient Transformer (DistilBERT)',
-        'Hardware': 'Colab T4 GPU',
-        'Train Time (5 seeds)': f"{eff_train_time_h:.2f} h",
-        'Inf Time (5 seeds)': f"{eff_inf_time_h:.2f} h",
-        'Total Time (h)': eff_total_time_h,
-        'Total Energy (J)': eff_total_energy_j,
-        'Total Energy (kWh)': eff_total_energy_kwh,
-        'Feasibility Status': 'PASSED (3.5h < 12h Colab Limit)'
+        'Hardware': 'Colab T4',
+        'Train Time': f"{eff_train_h:.2f} h",
+        'Inf Time': f"{eff_inf_h:.2f} h",
+        'Total Time (h)': eff_total_h,
+        'Total Energy (J)': eff_total_j,
+        'Total Energy (kWh)': eff_total_j / 3_600_000,
+        'Status': f"{'PASSED' if eff_total_h < 12 else 'OVER QUOTA'}"
     })
 
-    # 4. Biomedical Transformer (GPU - PubMedBERT/BioClinicalBERT)
-    bio_train_samples = (n_psytar + n_secondary_transformer_cap) * n_epochs_transformer * n_seeds
-    bio_inf_samples = (n_cadec + n_secondary_transformer_cap) * n_seeds
-    bio_train_time_h = (bio_train_samples / bio_train_throughput) / 3600.0
-    bio_inf_time_h = (bio_inf_samples / bio_inf_throughput) / 3600.0
-    bio_total_time_h = bio_train_time_h + bio_inf_time_h
-    bio_total_energy_kwh = bio_total_time_h * t4_power_kw
-    bio_total_energy_j = bio_total_energy_kwh * 3600000.0
+    # 4. Biomedical Transformer
+    bio_train_n = (n_psytar + n_secondary_transformer) * n_epochs * n_seeds
+    bio_inf_n = (n_cadec + n_secondary_transformer) * n_seeds
+    bio_train_h = (bio_train_n / bio_train_throughput) / 3600
+    bio_inf_h = (bio_inf_n / bio_inf_throughput) / 3600
+    bio_total_h = bio_train_h + bio_inf_h
+    bio_total_j = bio_total_h * 3600 * t4_power_w
 
-    tier_results.append({
+    print(f"\n  Biomedical Transformer (PubMedBERT):")
+    print(f"    Train: ({n_psytar}+{n_secondary_transformer}) x {n_epochs} x "
+          f"{n_seeds} = {bio_train_n} @ {bio_train_throughput} samp/s")
+    print(f"    Inf: ({n_cadec}+{n_secondary_transformer}) x {n_seeds} = "
+          f"{bio_inf_n} @ {bio_inf_throughput} samp/s")
+    print(f"    Train: {bio_train_h:.2f}h | Inf: {bio_inf_h:.2f}h | "
+          f"Total: {bio_total_h:.2f}h")
+    print(f"    Energy: {bio_total_h:.2f}h x {t4_power_w}W = {bio_total_j:.0f} J "
+          f"({bio_total_j/3_600_000:.4f} kWh)")
+
+    tiers.append({
         'Model Tier': 'Biomedical Transformer (PubMedBERT)',
-        'Hardware': 'Colab T4 GPU',
-        'Train Time (5 seeds)': f"{bio_train_time_h:.2f} h",
-        'Inf Time (5 seeds)': f"{bio_inf_time_h:.2f} h",
-        'Total Time (h)': bio_total_time_h,
-        'Total Energy (J)': bio_total_energy_j,
-        'Total Energy (kWh)': bio_total_energy_kwh,
-        'Feasibility Status': 'PASSED (4.5h < 12h Colab Limit)'
+        'Hardware': 'Colab T4',
+        'Train Time': f"{bio_train_h:.2f} h",
+        'Inf Time': f"{bio_inf_h:.2f} h",
+        'Total Time (h)': bio_total_h,
+        'Total Energy (J)': bio_total_j,
+        'Total Energy (kWh)': bio_total_j / 3_600_000,
+        'Status': f"{'PASSED' if bio_total_h < 12 else 'OVER QUOTA'}"
     })
 
-    return pd.DataFrame(tier_results)
+    return pd.DataFrame(tiers)
 
-def perform_st7_subgroup_feasibility_audit():
-    """
-    ST7: Subgroup Feasibility Audit.
-    Inspects sample count per group/class across PsyTAR and CADEC,
-    flagging subgroups with N < 50 units (threshold where 10-bin ECE calculation is statistically unreliable).
-    """
-    subgroup_records = []
 
-    # 1. PsyTAR Subgroups (by Drug Class & Drug Name)
-    psytar_csv = r"e:\AI Green\data\01_primary_adr_detection\dev_psytar\psytar_harmonised.csv"
-    if os.path.exists(psytar_csv):
-        df_psytar = pd.read_csv(psytar_csv)
-        # Load raw sheet for metadata categories if available
-        excel_path = r"e:\AI Green\data\01_primary_adr_detection\dev_psytar\PsyTAR_dataset.xlsx"
-        if os.path.exists(excel_path):
-            import openpyxl
-            wb = openpyxl.load_workbook(excel_path, read_only=True, data_only=True)
-            ws = wb['Sentence_Labeling']
-            rows = list(ws.iter_rows(values_only=True))
-            headers = [str(h).strip() if h is not None else '' for h in rows[0]]
-            df_meta = pd.DataFrame(rows[1:], columns=headers)
-            df_meta = df_meta[df_meta['sentences'].notna() & (df_meta['sentences'].astype(str).str.strip() != '')]
-            
-            # Group by Drug Class (category)
-            if 'category' in df_meta.columns:
-                for cat, group in df_meta.groupby('category'):
-                    cat_name = f"PsyTAR Class: {str(cat).upper()}"
-                    n_units = len(group)
-                    # ADR label count
-                    adr_count = 0
-                    if 'ADR' in group.columns:
-                        adr_count = group['ADR'].apply(lambda x: 1 if (pd.notna(x) and str(x)=='1.0') else 0).sum()
-                    pos_pct = (adr_count / n_units * 100.0) if n_units > 0 else 0.0
-                    status = "OK (Reliable ECE)" if n_units >= 50 else "UNDERPOWERED (N < 50)"
-                    subgroup_records.append({
-                        'Group / Drug Class': cat_name,
-                        'Sample Count': n_units,
-                        '% Positive ADR': f"{pos_pct:.1f}%",
-                        'ECE Reliability Status': status
-                    })
+def perform_st7():
+    """Subgroup feasibility audit with corrected hierarchy and N≥200 threshold."""
+    MIN_N = 200  # Raised from 50 per mentor review
+    records = []
 
-            # Group by Individual Drug Name
-            if 'drug_id' in df_meta.columns:
-                df_meta['drug_name'] = df_meta['drug_id'].astype(str).str.split('.').str[0].str.capitalize()
-                for drug_name, group in df_meta.groupby('drug_name'):
-                    name_str = f"PsyTAR Drug: {drug_name}"
-                    n_units = len(group)
-                    adr_count = 0
-                    if 'ADR' in group.columns:
-                        adr_count = group['ADR'].apply(lambda x: 1 if (pd.notna(x) and str(x)=='1.0') else 0).sum()
-                    pos_pct = (adr_count / n_units * 100.0) if n_units > 0 else 0.0
-                    status = "OK (Reliable ECE)" if n_units >= 50 else "UNDERPOWERED (N < 50)"
-                    subgroup_records.append({
-                        'Group / Drug Class': name_str,
-                        'Sample Count': n_units,
-                        '% Positive ADR': f"{pos_pct:.1f}%",
-                        'ECE Reliability Status': status
-                    })
+    # PsyTAR subgroups (from raw Excel metadata)
+    excel_path = r"e:\AI Green\data\01_primary_adr_detection\dev_psytar\PsyTAR_dataset.xlsx"
+    if os.path.exists(excel_path):
+        import openpyxl
+        wb = openpyxl.load_workbook(excel_path, read_only=True, data_only=True)
+        ws = wb['Sentence_Labeling']
+        rows = list(ws.iter_rows(values_only=True))
+        headers = [str(h).strip() if h is not None else '' for h in rows[0]]
+        df = pd.DataFrame(rows[1:], columns=headers)
+        df = df[df['sentences'].notna() & (df['sentences'].astype(str).str.strip() != '')]
 
-    # 2. CADEC Subgroups (by Drug Post File Name)
-    cadec_txt_dir = r"e:\AI Green\data\01_primary_adr_detection\external_val_cadec\cadec\text"
-    if os.path.exists(cadec_txt_dir):
-        txt_files = glob.glob(os.path.join(cadec_txt_dir, "*.txt"))
-        drug_counts = {}
-        for f in txt_files:
-            drug = os.path.basename(f).split('.')[0]
-            drug_counts[drug] = drug_counts.get(drug, 0) + 1
-        
-        # Approximate sentence count (average 6 sentences per post in CADEC)
-        for drug_name, post_count in sorted(drug_counts.items(), key=lambda x: x[1], reverse=True):
-            est_sentences = post_count * 6
-            status = "OK (Reliable ECE)" if est_sentences >= 50 else "UNDERPOWERED (N < 50)"
-            subgroup_records.append({
-                'Group / Drug Class': f"CADEC Drug: {drug_name}",
-                'Sample Count': f"~{est_sentences} sents ({post_count} posts)",
-                '% Positive ADR': "~37.1%",
-                'ECE Reliability Status': status
+        # ADR binary label
+        def is_adr(x):
+            try:
+                return 1 if float(x) == 1.0 else 0
+            except (ValueError, TypeError):
+                return 0
+        df['adr'] = df['ADR'].apply(is_adr)
+        df['drug_name'] = df['drug_id'].astype(str).str.split('.').str[0].str.lower()
+
+        # Level 1: Drug Class (SNRI vs SSRI) — exhaustive partition
+        print("\n  PsyTAR Level 1: Drug Class (exhaustive partition of full corpus)")
+        for cat, grp in df.groupby('category'):
+            n = len(grp)
+            adr_pct = grp['adr'].mean() * 100
+            records.append({
+                'Level': 'Drug Class',
+                'Group': f"PsyTAR: {str(cat).upper()}",
+                'N': n,
+                'ADR %': f"{adr_pct:.1f}%",
+                'Status': f"{'OK' if n >= MIN_N else 'UNDERPOWERED'} (N≥{MIN_N})"
             })
 
-    # 3. Secondary Task Subgroup Check (UCI DrugLib & WebMD)
-    webmd_csv = r"e:\AI Green\data\02_secondary_sentiment_scaling\external_val_webmd\webmd.csv"
-    if os.path.exists(webmd_csv):
-        subgroup_records.append({
-            'Group / Drug Class': "Secondary WebMD (Top 10 Conditions)",
-            'Sample Count': "> 1,000 units / group",
-            '% Positive ADR': "N/A (Effectiveness)",
-            'ECE Reliability Status': "OK (Reliable ECE)"
-        })
-        subgroup_records.append({
-            'Group / Drug Class': "Secondary WebMD (Rare Conditions)",
-            'Sample Count': "< 50 units / group",
-            '% Positive ADR': "N/A (Effectiveness)",
-            'ECE Reliability Status': "UNDERPOWERED (N < 50)"
-        })
+        # Level 2: Individual Drug (nested within classes)
+        print("  PsyTAR Level 2: Individual Drug (nested within drug classes)")
+        for drug, grp in df.groupby('drug_name'):
+            n = len(grp)
+            adr_pct = grp['adr'].mean() * 100
+            records.append({
+                'Level': 'Individual Drug',
+                'Group': f"PsyTAR: {drug.capitalize()}",
+                'N': n,
+                'ADR %': f"{adr_pct:.1f}%",
+                'Status': f"{'OK' if n >= MIN_N else 'UNDERPOWERED'} (N≥{MIN_N})"
+            })
+        wb.close()
 
-    return pd.DataFrame(subgroup_records)
+    # CADEC note: 78% Lipitor, restrict to PsyTAR for subgroup analysis
+    records.append({
+        'Level': 'Note',
+        'Group': 'CADEC (all)',
+        'N': 7681,
+        'ADR %': '~37%',
+        'Status': 'EXCLUDED from subgroup analysis (78% Lipitor → one drug + noise)'
+    })
+
+    return pd.DataFrame(records)
+
 
 def main():
     reconfigure_stdout()
-    print("Starting Smoke Test 6 & 7 (ST6 - Budget Extrapolation & ST7 - Subgroup Feasibility Audit)...")
+    print("Starting ST6 & ST7 (Budget & Subgroup Audit) [CORRECTED]")
 
-    # 1. ST6 Budget Extrapolation
-    df_st6 = perform_st6_budget_extrapolation()
+    df_st6 = perform_st6()
+    df_st7 = perform_st7()
 
-    # 2. ST7 Subgroup Feasibility Audit
-    df_st7 = perform_st7_subgroup_feasibility_audit()
+    print("\n" + "=" * 100)
+    print("    ST6 & ST7 — BUDGET EXTRAPOLATION & SUBGROUP AUDIT (CORRECTED)")
+    print("=" * 100)
 
-    # 3. Print ST6 & ST7 Report
-    print("\n" + "="*95)
-    print("        ST6 & ST7 — COMPUTE/ENERGY BUDGET & SUBGROUP FEASIBILITY REPORT")
-    print("="*95)
-
-    print("\n--- 1. ST6 FULL-SCALE EXPERIMENTAL COMPUTE & ENERGY BUDGET EXTRAPOLATION ---")
-    formatted_st6 = pd.DataFrame({
+    print("\n--- ST6 BUDGET TABLE ---")
+    fmt6 = pd.DataFrame({
         'Model Tier': df_st6['Model Tier'],
         'Hardware': df_st6['Hardware'],
-        'Train Time (5 seeds)': df_st6['Train Time (5 seeds)'],
-        'Inf Time (5 seeds)': df_st6['Inf Time (5 seeds)'],
-        'Total Time (h)': df_st6['Total Time (h)'].map(lambda x: f"{x:.2f} h"),
-        'Total Energy (kWh)': df_st6['Total Energy (kWh)'].map(lambda x: f"{x:.4f} kWh"),
-        'Feasibility Status': df_st6['Feasibility Status']
+        'Train Time': df_st6['Train Time'],
+        'Inf Time': df_st6['Inf Time'],
+        'Total (h)': df_st6['Total Time (h)'].map(lambda x: f"{x:.2f}"),
+        'Energy (J)': df_st6['Total Energy (J)'].map(lambda x: f"{x:.1f}"),
+        'Energy (kWh)': df_st6['Total Energy (kWh)'].map(lambda x: f"{x:.4f}"),
+        'Status': df_st6['Status'],
     })
-    print(formatted_st6.to_string(index=False))
+    print(fmt6.to_string(index=False))
 
-    print("\n--- 2. ST7 SUBGROUP FEASIBILITY & RELIABILITY AUDIT TABLE ---")
+    print("\n--- ST7 SUBGROUP TABLE (Threshold: N≥200) ---")
     print(df_st7.to_string(index=False))
 
-    print("\n--- 3. EXPERIMENTAL MATRIX GO / NO-GO VERDICT & RECOMMENDATIONS ---")
-    print("  [✓ GO] Full Experimental Matrix (ST1-ST7) validated and fully feasible.")
-    print("  [✓ GO] CPU Model Arms (Linear & GBDT): Execution complete in < 0.1 hours with near-zero energy.")
-    print("  [✓ GO] Transformer Model Arms (DistilBERT & PubMedBERT): Fine-tuning (5 seeds) complete in 3.5h - 4.5h GPU time, well within Google Colab Free Tier (12h continuous run limit).")
-    print("  [! AUDIT NOTE] ST7 Subgroup ECE Calculation Rule: Retain top drug classes (SNRI, SSRI, Lipitor, Arthrotec, Voltaren) for subgroup calibration evaluation. Aggregate minor drug classes (N < 50) into macro-categories to ensure statistically robust 10-bin ECE estimation.")
-    print("="*95 + "\n")
+    print("\n--- NOTES & CORRECTIONS ---")
+    print("  [FIX] UCI dataset is DrugLib (4,108 rows), not drugsCom (215k).")
+    print("  [FIX] CPU energy reported in Joules (was 0.0000 kWh — misleading).")
+    print("  [FIX] Extrapolation arithmetic shown explicitly above.")
+    print("  [FIX] Subgroup threshold raised to N≥200 (was N≥50).")
+    print("  [FIX] Hierarchy levels declared: Level 1=Drug Class, Level 2=Individual Drug.")
+    print("  [FIX] CADEC excluded from subgroup ECE analysis (78% Lipitor dominance).")
+    print("  [FIX] Secondary task (DrugLib + WebMD) included in budget.")
+    print("=" * 100 + "\n")
+
 
 if __name__ == "__main__":
     main()

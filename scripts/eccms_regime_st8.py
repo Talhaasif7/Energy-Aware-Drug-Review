@@ -81,33 +81,29 @@ CONFIGURATIONS = [
      'inf_j_net': 0.2394, 'inf_j_gross': 0.7412, 'train_j': 8.36,
      'auroc_measured': True},
 
-    # GPU Transformer (from Colab T4 gating run — F1/ECE/NLL measured,
-    # AUROC/AUPRC NOT yet computed — pending re-run with .npz download)
-    # Using F1@0.5 as interim AUROC proxy — WILL BE REPLACED after re-run
+    # GPU Transformer (Colab T4 live execution & CPU recomputation from .npz)
+    # Measured load power: DistilBERT 57.16W (Util 76.5%), PubMedBERT 68.14W (Util 94.0%)
+    # Measured idle baseline: 10.22 W
     {'name': 'DistilBERT + Uncalibrated',
      'model': 'DistilBERT', 'recal': 'None',
-     'auroc': None, 'ece': 0.0532,
-     'inf_j_net': None, 'inf_j_gross': 25.81, 'train_j': 203.9,
-     'auroc_measured': False,
-     'f1_proxy': 0.7762},
+     'auroc': 0.9059, 'ece': 0.0666,
+     'inf_j_net': 21.20, 'inf_j_gross': 25.81, 'train_j': 203.9,
+     'auroc_measured': True},
     {'name': 'DistilBERT + TempScale',
      'model': 'DistilBERT', 'recal': 'TempScale',
-     'auroc': None, 'ece': 0.0702,
-     'inf_j_net': None, 'inf_j_gross': 25.81, 'train_j': 203.9,
-     'auroc_measured': False,
-     'f1_proxy': 0.7762},
+     'auroc': 0.9059, 'ece': 0.0675,
+     'inf_j_net': 21.20, 'inf_j_gross': 25.81, 'train_j': 203.9,
+     'auroc_measured': True},
     {'name': 'PubMedBERT + Uncalibrated',
      'model': 'PubMedBERT', 'recal': 'None',
-     'auroc': None, 'ece': 0.0349,
-     'inf_j_net': None, 'inf_j_gross': 51.59, 'train_j': 364.7,
-     'auroc_measured': False,
-     'f1_proxy': 0.8140},
+     'auroc': 0.9138, 'ece': 0.0442,
+     'inf_j_net': 43.85, 'inf_j_gross': 51.59, 'train_j': 364.7,
+     'auroc_measured': True},
     {'name': 'PubMedBERT + TempScale',
      'model': 'PubMedBERT', 'recal': 'TempScale',
-     'auroc': None, 'ece': 0.0529,
-     'inf_j_net': None, 'inf_j_gross': 51.59, 'train_j': 364.7,
-     'auroc_measured': False,
-     'f1_proxy': 0.8140},
+     'auroc': 0.9138, 'ece': 0.0677,
+     'inf_j_net': 43.85, 'inf_j_gross': 51.59, 'train_j': 364.7,
+     'auroc_measured': True},
 ]
 
 

@@ -200,46 +200,80 @@ def measure_gpu_load_power_during(func, label="workload"):
 # 3. DATA LOADING & PRE-TOKENIZATION
 # ==============================================================================
 def resolve_data_paths():
-    """Check if dataset files exist locally or clone repo."""
-    possible_roots = [
-        os.getcwd(),
-        r"e:\AI Green",
-        "/content/Energy-Aware-Drug-Review",
-        os.path.join(os.getcwd(), "Energy-Aware-Drug-Review")
+    """
+    Automatically resolve paths for PsyTAR and CADEC harmonised datasets.
+    Supports manually uploaded files in Colab (/content/ or current directory)
+    as well as standard repository paths.
+    """
+    import glob
+
+    # Candidate file names
+    psytar_candidates = [
+        "psytar_harmonised.csv",
+        "/content/psytar_harmonised.csv",
+        os.path.join(os.getcwd(), "psytar_harmonised.csv"),
+        os.path.join("data", "01_primary_adr_detection", "dev_psytar", "psytar_harmonised.csv"),
+        "/content/Energy-Aware-Drug-Review/data/01_primary_adr_detection/dev_psytar/psytar_harmonised.csv",
+        r"e:\AI Green\data\01_primary_adr_detection\dev_psytar\psytar_harmonised.csv"
     ]
 
-    psytar_rel = os.path.join("data", "01_primary_adr_detection", "dev_psytar", "psytar_harmonised.csv")
-    cadec_rel  = os.path.join("data", "01_primary_adr_detection", "external_val_cadec", "cadec_harmonised.csv")
+    cadec_candidates = [
+        "cadec_harmonised.csv",
+        "/content/cadec_harmonised.csv",
+        os.path.join(os.getcwd(), "cadec_harmonised.csv"),
+        os.path.join("data", "01_primary_adr_detection", "external_val_cadec", "cadec_harmonised.csv"),
+        "/content/Energy-Aware-Drug-Review/data/01_primary_adr_detection/external_val_cadec/cadec_harmonised.csv",
+        r"e:\AI Green\data\01_primary_adr_detection\external_val_cadec\cadec_harmonised.csv"
+    ]
 
     psytar_path = None
-    cadec_path  = None
+    cadec_path = None
 
-    for root in possible_roots:
-        p_cand = os.path.join(root, psytar_rel)
-        c_cand = os.path.join(root, cadec_rel)
-        if os.path.exists(p_cand) and os.path.exists(c_cand):
-            psytar_path = p_cand
-            cadec_path  = c_cand
+    # Check direct candidates
+    for p in psytar_candidates:
+        if os.path.exists(p):
+            psytar_path = p
             break
 
+    for c in cadec_candidates:
+        if os.path.exists(c):
+            cadec_path = c
+            break
+
+    # Recursive glob search if direct paths not found
+    if not psytar_path:
+        matches = glob.glob("/**/psytar_harmonised.csv", recursive=True) + glob.glob("./**/psytar_harmonised.csv", recursive=True)
+        if matches:
+            psytar_path = matches[0]
+
+    if not cadec_path:
+        matches = glob.glob("/**/cadec_harmonised.csv", recursive=True) + glob.glob("./**/cadec_harmonised.csv", recursive=True)
+        if matches:
+            cadec_path = matches[0]
+
     if not psytar_path or not cadec_path:
-        print("[DATA] Local CSVs not found. Attempting git clone...")
+        print("[DATA] Local CSVs not found in standard paths. Attempting git clone fallback...")
         try:
             subprocess.run(["git", "clone", "https://github.com/Talhaasif7/Energy-Aware-Drug-Review.git"], check=True)
             clone_root = os.path.join(os.getcwd(), "Energy-Aware-Drug-Review")
-            p_cand = os.path.join(clone_root, psytar_rel)
-            c_cand = os.path.join(clone_root, cadec_rel)
-            if os.path.exists(p_cand) and os.path.exists(c_cand):
+            p_cand = os.path.join(clone_root, "data", "01_primary_adr_detection", "dev_psytar", "psytar_harmonised.csv")
+            c_cand = os.path.join(clone_root, "data", "01_primary_adr_detection", "external_val_cadec", "cadec_harmonised.csv")
+            if os.path.exists(p_cand):
                 psytar_path = p_cand
-                cadec_path  = c_cand
+            if os.path.exists(c_cand):
+                cadec_path = c_cand
         except Exception as e:
-            print(f"[DATA] Git clone failed: {e}")
+            print(f"[DATA] Git clone fallback notice: {e}")
 
     if not psytar_path or not cadec_path:
-        raise FileNotFoundError("Dataset files not found. Upload CSVs or fix git clone.")
+        raise FileNotFoundError(
+            f"Dataset files not found! Please ensure 'psytar_harmonised.csv' and 'cadec_harmonised.csv' "
+            f"are uploaded to /content/ or the current working directory.\n"
+            f"Found PsyTAR: {psytar_path}\nFound CADEC: {cadec_path}"
+        )
 
-    print(f"[DATA] PsyTAR: {psytar_path}")
-    print(f"[DATA] CADEC:  {cadec_path}")
+    print(f"[DATA] Resolved PsyTAR dataset: {psytar_path}")
+    print(f"[DATA] Resolved CADEC dataset : {cadec_path}")
     return psytar_path, cadec_path
 
 

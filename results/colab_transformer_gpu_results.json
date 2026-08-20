@@ -1,118 +1,200 @@
 {
-  "benchmark_mode": "ST3b Gating (Smoke Test)",
-  "timestamp": "2026-08-19T07:54:00Z",
-  "hardware": "Google Colab Free Tier NVIDIA Tesla T4 GPU (FP16 Mixed Precision)",
+  "timestamp": "2026-08-20 10:16:01",
   "smoke_test_mode": true,
-  "seeds": [42],
+  "seeds": [
+    42
+  ],
   "epochs": 2,
-  "subset_size": 2000,
-  "notes": {
-    "measured": "F1@0.5, ECE (uniform + adaptive), NLL, Brier, training time, training energy (CodeCarbon), inference throughput, inference gross energy per 1k",
-    "NOT_measured": "AUROC, AUPRC, F1@t* (threshold-tuned), per-arm nvidia-smi power draw, idle power baseline, Net energy",
-    "prediction_artifacts": "Saved as .npz on Colab VM but NOT downloaded locally. Must re-run and download.",
-    "gpu_idle_power": "NOT MEASURED. Requires 60-second nvidia-smi trace before inference.",
-    "gpu_load_power": "NOT MEASURED per-arm. CodeCarbon used for gross energy only."
-  },
-  "results": [
-    {
-      "model": "Efficient Transformer (distilbert-base-uncased)",
-      "recalibration": "Uncalibrated",
-      "psytar_f1_at_05": 0.7762,
-      "psytar_ece_uniform": 0.0532,
-      "psytar_nll": 0.3567,
-      "cadec_f1_at_05": 0.7964,
-      "cadec_ece_uniform": 0.0602,
-      "cadec_nll": 0.3485,
-      "psytar_auroc": "TBD — pending re-run with .npz download",
-      "psytar_auprc": "TBD — pending re-run with .npz download",
-      "cadec_auroc": "TBD — pending re-run with .npz download",
-      "cadec_auprc": "TBD — pending re-run with .npz download",
-      "train_time_s": 7.8,
-      "train_energy_j": 203.9,
-      "inf_throughput_sps": 1065.8,
-      "inf_gross_energy_per_1k_j": 25.81,
-      "inf_net_energy_per_1k_j": "TBD — requires nvidia-smi idle baseline"
-    },
-    {
-      "model": "Efficient Transformer (distilbert-base-uncased)",
-      "recalibration": "Temperature Scaling",
-      "psytar_f1_at_05": 0.7762,
-      "psytar_ece_uniform": 0.0702,
-      "psytar_nll": 0.3613,
-      "cadec_f1_at_05": 0.7964,
-      "cadec_ece_uniform": 0.0740,
-      "cadec_nll": 0.3553,
-      "temperature_T": "TBD — not logged in gating run",
-      "calib_nll_pre": "TBD",
-      "calib_nll_post": "TBD",
-      "train_time_s": 7.8,
-      "train_energy_j": 203.9,
-      "inf_throughput_sps": 1065.8,
-      "inf_gross_energy_per_1k_j": 25.81
-    },
-    {
-      "model": "Efficient Transformer (distilbert-base-uncased)",
-      "recalibration": "Isotonic Regression",
-      "psytar_f1_at_05": 0.7063,
-      "psytar_ece_uniform": 0.0584,
-      "psytar_nll": 0.5309,
-      "cadec_f1_at_05": 0.7828,
-      "cadec_ece_uniform": 0.0503,
-      "cadec_nll": 0.4196,
-      "train_time_s": 7.8,
-      "train_energy_j": 203.9,
-      "inf_throughput_sps": 1065.8,
-      "inf_gross_energy_per_1k_j": 25.81
-    },
-    {
-      "model": "Biomedical Transformer (PubMedBERT)",
-      "recalibration": "Uncalibrated",
-      "psytar_f1_at_05": 0.8140,
-      "psytar_ece_uniform": 0.0349,
-      "psytar_nll": 0.3363,
-      "cadec_f1_at_05": 0.8012,
-      "cadec_ece_uniform": 0.0367,
-      "cadec_nll": 0.3351,
-      "psytar_auroc": "TBD — pending re-run with .npz download",
-      "psytar_auprc": "TBD — pending re-run with .npz download",
-      "cadec_auroc": "TBD — pending re-run with .npz download",
-      "cadec_auprc": "TBD — pending re-run with .npz download",
-      "train_time_s": 13.0,
-      "train_energy_j": 364.7,
-      "inf_throughput_sps": 566.8,
-      "inf_gross_energy_per_1k_j": 51.59,
-      "inf_net_energy_per_1k_j": "TBD — requires nvidia-smi idle baseline"
-    },
-    {
-      "model": "Biomedical Transformer (PubMedBERT)",
-      "recalibration": "Temperature Scaling",
-      "psytar_f1_at_05": 0.8140,
-      "psytar_ece_uniform": 0.0529,
-      "psytar_nll": 0.3460,
-      "cadec_f1_at_05": 0.8012,
-      "cadec_ece_uniform": 0.0751,
-      "cadec_nll": 0.3528,
-      "temperature_T": "TBD — not logged in gating run",
-      "calib_nll_pre": "TBD",
-      "calib_nll_post": "TBD",
-      "train_time_s": 13.0,
-      "train_energy_j": 364.7,
-      "inf_throughput_sps": 566.8,
-      "inf_gross_energy_per_1k_j": 51.59
-    },
-    {
-      "model": "Biomedical Transformer (PubMedBERT)",
-      "recalibration": "Isotonic Regression",
-      "psytar_f1_at_05": 0.7177,
-      "psytar_ece_uniform": 0.0408,
-      "psytar_nll": 0.5345,
-      "cadec_f1_at_05": 0.7702,
-      "cadec_ece_uniform": 0.0365,
-      "cadec_nll": 0.3468,
-      "train_time_s": 13.0,
-      "train_energy_j": 364.7,
-      "inf_throughput_sps": 566.8,
-      "inf_gross_energy_per_1k_j": 51.59
-    }
-  ]
+  "batch_size": 64,
+  "gpu_idle_watts": 10.224166666666669,
+  "results": {
+    "Efficient Transformer": [
+      {
+        "seed": 42,
+        "train_time_sec": 7.359255700999938,
+        "train_energy_joules": 138.61629795736084,
+        "train_load_watts": 57.16307692307693,
+        "train_util_pct": 76.53846153846153,
+        "inf_throughput_sps": 697.0722264190248,
+        "inf_gross_energy_1k_j": 23.766640477346314,
+        "inf_net_energy_1k_j": 16.78605750270871,
+        "gpu_idle_watts": 10.224166666666669,
+        "temperature_T": 1.0106044738100066,
+        "eval_results": {
+          "Uncalibrated": {
+            "psytar": {
+              "AUROC": 0.9058688302907371,
+              "AUPRC": 0.8422219615822824,
+              "F1@0.5": 0.7733333333333333,
+              "F1@t*": 0.7578947368421053,
+              "t*": 0.6000000000000002,
+              "ECE_adaptive": 0.06661865234375,
+              "ECE_CI_lo": 0.04856423950195312,
+              "ECE_CI_hi": 0.10091912841796875,
+              "Brier": 0.12236753966193646,
+              "NLL": 0.38913264947285614
+            },
+            "cadec": {
+              "AUROC": 0.9258465349775813,
+              "AUPRC": 0.8982251864283651,
+              "F1@0.5": 0.7944444444444444,
+              "F1@t*": 0.7986694677871149,
+              "t*": 0.6000000000000002,
+              "ECE_adaptive": 0.09240836565655758,
+              "ECE_CI_lo": 0.08488316585321827,
+              "ECE_CI_hi": 0.0993957531234271,
+              "Brier": 0.11222146812597344,
+              "NLL": 0.3654663174707585
+            }
+          },
+          "Temperature Scaling": {
+            "psytar": {
+              "AUROC": 0.905895875591616,
+              "AUPRC": 0.8432697034049726,
+              "F1@0.5": 0.7733333333333333,
+              "F1@t*": 0.7552447552447552,
+              "t*": 0.5900000000000002,
+              "ECE_adaptive": 0.06748951913549939,
+              "ECE_CI_lo": 0.049479924244923736,
+              "ECE_CI_hi": 0.10188221071133931,
+              "Brier": 0.12245031078764171,
+              "NLL": 0.3897430704603394
+            },
+            "cadec": {
+              "AUROC": 0.9258440005998028,
+              "AUPRC": 0.8983167840379948,
+              "F1@0.5": 0.7944444444444444,
+              "F1@t*": 0.7978427279053584,
+              "t*": 0.5900000000000002,
+              "ECE_adaptive": 0.09411444820444784,
+              "ECE_CI_lo": 0.08611833526484235,
+              "ECE_CI_hi": 0.10057090781958404,
+              "Brier": 0.11239848002183211,
+              "NLL": 0.36642384458388455
+            }
+          },
+          "Isotonic Regression": {
+            "psytar": {
+              "AUROC": 0.8951859364435429,
+              "AUPRC": 0.8044318002853473,
+              "F1@0.5": 0.6938775510204082,
+              "F1@t*": 0.6938775510204082,
+              "t*": 0.35000000000000003,
+              "ECE_adaptive": 0.047678217468293725,
+              "ECE_CI_lo": 0.03564025696107794,
+              "ECE_CI_hi": 0.09425792519500367,
+              "Brier": 0.12870430382524942,
+              "NLL": 0.5531376763787228
+            },
+            "cadec": {
+              "AUROC": 0.9199653001442483,
+              "AUPRC": 0.8596809436289885,
+              "F1@0.5": 0.7660004037956794,
+              "F1@t*": 0.7660004037956794,
+              "t*": 0.35000000000000003,
+              "ECE_adaptive": 0.06294735233616973,
+              "ECE_CI_lo": 0.05520991450600405,
+              "ECE_CI_hi": 0.06985222937135341,
+              "Brier": 0.10905272768716961,
+              "NLL": 0.41753501250820774
+            }
+          }
+        }
+      }
+    ],
+    "Biomedical Transformer": [
+      {
+        "seed": 42,
+        "train_time_sec": 12.082739503999846,
+        "train_energy_joules": 254.28347208424356,
+        "train_load_watts": 68.13571428571429,
+        "train_util_pct": 94.0,
+        "inf_throughput_sps": 352.14592315728123,
+        "inf_gross_energy_1k_j": 48.30138669401207,
+        "inf_net_energy_1k_j": 38.56092460741059,
+        "gpu_idle_watts": 10.224166666666669,
+        "temperature_T": 1.3375626027992953,
+        "eval_results": {
+          "Uncalibrated": {
+            "psytar": {
+              "AUROC": 0.9138336713995943,
+              "AUPRC": 0.8530233347320275,
+              "F1@0.5": 0.7906976744186046,
+              "F1@t*": 0.7675276752767528,
+              "t*": 0.6500000000000001,
+              "ECE_adaptive": 0.04423767089843752,
+              "ECE_CI_lo": 0.03681491088867187,
+              "ECE_CI_hi": 0.08922232055664062,
+              "Brier": 0.1121262219856726,
+              "NLL": 0.36143197650642106
+            },
+            "cadec": {
+              "AUROC": 0.9335693824636544,
+              "AUPRC": 0.9111797575120637,
+              "F1@0.5": 0.8107931316434996,
+              "F1@t*": 0.8220925993437842,
+              "t*": 0.6500000000000001,
+              "ECE_adaptive": 0.07928640781789274,
+              "ECE_CI_lo": 0.07269106278193357,
+              "ECE_CI_hi": 0.08630565422416021,
+              "Brier": 0.10403898975978687,
+              "NLL": 0.3368833082043028
+            }
+          },
+          "Temperature Scaling": {
+            "psytar": {
+              "AUROC": 0.9138066260987153,
+              "AUPRC": 0.8526580557593089,
+              "F1@0.5": 0.7906976744186046,
+              "F1@t*": 0.7703703703703704,
+              "t*": 0.6200000000000001,
+              "ECE_adaptive": 0.06774626997428351,
+              "ECE_CI_lo": 0.055744764259199275,
+              "ECE_CI_hi": 0.11074310113335478,
+              "Brier": 0.11503833549242205,
+              "NLL": 0.3770244707260958
+            },
+            "cadec": {
+              "AUROC": 0.9335691008661235,
+              "AUPRC": 0.9112622920508453,
+              "F1@0.5": 0.8107931316434996,
+              "F1@t*": 0.8208516886930984,
+              "t*": 0.6200000000000001,
+              "ECE_adaptive": 0.11537602541152991,
+              "ECE_CI_lo": 0.10920002782999803,
+              "ECE_CI_hi": 0.1223487647297084,
+              "Brier": 0.10987419149638826,
+              "NLL": 0.36478750637323276
+            }
+          },
+          "Isotonic Regression": {
+            "psytar": {
+              "AUROC": 0.9036240703177822,
+              "AUPRC": 0.8161800651881885,
+              "F1@0.5": 0.7703703703703704,
+              "F1@t*": 0.7703703703703704,
+              "t*": 0.25000000000000006,
+              "ECE_adaptive": 0.07672805684345532,
+              "ECE_CI_lo": 0.04729593734562453,
+              "ECE_CI_hi": 0.10750567218189011,
+              "Brier": 0.12191095606980624,
+              "NLL": 0.4670385050876321
+            },
+            "cadec": {
+              "AUROC": 0.9248621756084444,
+              "AUPRC": 0.8723901410958713,
+              "F1@0.5": 0.8214809384164223,
+              "F1@t*": 0.8213108751373124,
+              "t*": 0.25000000000000006,
+              "ECE_adaptive": 0.06258263067207723,
+              "ECE_CI_lo": 0.05754554585281585,
+              "ECE_CI_hi": 0.07016867186027334,
+              "Brier": 0.10225643621397283,
+              "NLL": 0.3442735904127689
+            }
+          }
+        }
+      }
+    ]
+  }
 }

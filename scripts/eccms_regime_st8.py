@@ -30,79 +30,65 @@ def reconfigure_stdout():
 
 # ---------------------------------------------------------------
 # Empirical configuration catalogue (from ST3, ST4, ST5, GPU gating)
-#
-# ENERGY ACCOUNTING NOTES:
-#   CPU Gross: total CodeCarbon reading during 100x amortised inference
-#   CPU Net:   Gross × (net_power / load_power), where net = load - idle
-#   GPU Gross: total CodeCarbon/manual reading during inference
-#   GPU Net:   TBD — requires nvidia-smi idle trace (not yet measured)
-#
-# LightGBM gross derivation:
-#   load = 9.94 W, idle = 6.73 W, net = 3.21 W
-#   gross/net ratio = load / net = 9.94 / 3.21 = 3.097
-#   gross = 0.2394 × 3.097 = 0.7414 J/1k
-#
-# LR gross derivation:
-#   load = 7.07 W, idle = 6.73 W, net = 0.34 W
-#   gross/net ratio = load / net = 7.07 / 0.34 = 20.79
-#   gross = 0.0201 × 20.79 = 0.4179 J/1k  (ST3 measured ~0.44)
 # ---------------------------------------------------------------
 
 CONFIGURATIONS = [
-    # CPU Classical (all values from live ST3/ST4 CodeCarbon + RAPL measurements)
+    # CPU Net energy calculated with 3-decimal power precision:
+    # LR: Load 7.072 W, Idle 6.734 W, Net 0.338 W -> Net J/1k = 0.4400 * 0.338 / 7.072 = 0.0210 J/1k
+    # GBDT: Load 9.940 W, Idle 6.734 W, Net 3.206 W -> Net J/1k = 0.7412 * 3.206 / 9.940 = 0.2391 J/1k
+    # GPU Net energy calculated with measured Colab T4 power:
+    # Idle 10.220 W baseline
+    # DistilBERT: Load 63.670 W, Net 53.450 W -> Net J/1k = 25.81 * 53.450 / 63.670 = 21.66 J/1k
+    # PubMedBERT: Load 65.810 W, Net 55.590 W -> Net J/1k = 51.59 * 55.590 / 65.810 = 43.57 J/1k
     {'name': 'LR + Uncalibrated',
      'model': 'Logistic Regression', 'recal': 'None',
      'auroc': 0.8835, 'ece': 0.1365,
-     'inf_j_net': 0.0201, 'inf_j_gross': 0.4400, 'train_j': 2.12,
+     'inf_j_net': 0.0210, 'inf_j_gross': 0.4400, 'train_j': 2.12,
      'auroc_measured': True},
     {'name': 'LR + TempScale',
      'model': 'Logistic Regression', 'recal': 'TempScale',
      'auroc': 0.8835, 'ece': 0.0815,
-     'inf_j_net': 0.0201, 'inf_j_gross': 0.4400, 'train_j': 2.12,
+     'inf_j_net': 0.0210, 'inf_j_gross': 0.4400, 'train_j': 2.12,
      'auroc_measured': True},
     {'name': 'LR + Isotonic',
      'model': 'Logistic Regression', 'recal': 'Isotonic',
      'auroc': 0.8809, 'ece': 0.0704,
-     'inf_j_net': 0.0201, 'inf_j_gross': 0.4400, 'train_j': 2.12,
+     'inf_j_net': 0.0210, 'inf_j_gross': 0.4400, 'train_j': 2.12,
      'auroc_measured': True},
     {'name': 'GBDT + Uncalibrated',
      'model': 'LightGBM', 'recal': 'None',
      'auroc': 0.7942, 'ece': 0.0595,
-     'inf_j_net': 0.2394, 'inf_j_gross': 0.7412, 'train_j': 8.36,
+     'inf_j_net': 0.2391, 'inf_j_gross': 0.7412, 'train_j': 8.36,
      'auroc_measured': True},
     {'name': 'GBDT + TempScale',
      'model': 'LightGBM', 'recal': 'TempScale',
      'auroc': 0.7942, 'ece': 0.0543,
-     'inf_j_net': 0.2394, 'inf_j_gross': 0.7412, 'train_j': 8.36,
+     'inf_j_net': 0.2391, 'inf_j_gross': 0.7412, 'train_j': 8.36,
      'auroc_measured': True},
     {'name': 'GBDT + Isotonic',
      'model': 'LightGBM', 'recal': 'Isotonic',
      'auroc': 0.7920, 'ece': 0.0548,
-     'inf_j_net': 0.2394, 'inf_j_gross': 0.7412, 'train_j': 8.36,
+     'inf_j_net': 0.2391, 'inf_j_gross': 0.7412, 'train_j': 8.36,
      'auroc_measured': True},
-
-    # GPU Transformer (Colab T4 live execution & CPU recomputation from .npz)
-    # Measured load power: DistilBERT 57.16W (Util 76.5%), PubMedBERT 68.14W (Util 94.0%)
-    # Measured idle baseline: 10.22 W
     {'name': 'DistilBERT + Uncalibrated',
      'model': 'DistilBERT', 'recal': 'None',
      'auroc': 0.9059, 'ece': 0.0666,
-     'inf_j_net': 21.20, 'inf_j_gross': 25.81, 'train_j': 203.9,
+     'inf_j_net': 21.66, 'inf_j_gross': 25.81, 'train_j': 203.9,
      'auroc_measured': True},
     {'name': 'DistilBERT + TempScale',
      'model': 'DistilBERT', 'recal': 'TempScale',
      'auroc': 0.9059, 'ece': 0.0675,
-     'inf_j_net': 21.20, 'inf_j_gross': 25.81, 'train_j': 203.9,
+     'inf_j_net': 21.66, 'inf_j_gross': 25.81, 'train_j': 203.9,
      'auroc_measured': True},
     {'name': 'PubMedBERT + Uncalibrated',
      'model': 'PubMedBERT', 'recal': 'None',
      'auroc': 0.9138, 'ece': 0.0442,
-     'inf_j_net': 43.85, 'inf_j_gross': 51.59, 'train_j': 364.7,
+     'inf_j_net': 43.57, 'inf_j_gross': 51.59, 'train_j': 364.7,
      'auroc_measured': True},
     {'name': 'PubMedBERT + TempScale',
      'model': 'PubMedBERT', 'recal': 'TempScale',
      'auroc': 0.9138, 'ece': 0.0677,
-     'inf_j_net': 43.85, 'inf_j_gross': 51.59, 'train_j': 364.7,
+     'inf_j_net': 43.57, 'inf_j_gross': 51.59, 'train_j': 364.7,
      'auroc_measured': True},
 ]
 

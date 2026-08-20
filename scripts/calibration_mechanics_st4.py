@@ -244,6 +244,20 @@ def main():
     })
     print(ovh.to_string(index=False))
 
+    # Compute paired delta ECE for statistical test
+    print("\n--- PAIRED BOOTSTRAP ΔECE TESTS (Uncalibrated vs Recalibrated) ---")
+    from metrics_utils import bootstrap_delta_ece
+    for model_name in models:
+        p_uncal = plot_data[model_name]['Uncalibrated']
+        p_iso = plot_data[model_name]['Isotonic Regression']
+        p_temp = plot_data[model_name]['Temperature Scaled']
+        
+        d_point_iso, d_lo_iso, d_hi_iso = bootstrap_delta_ece(y_test, p_uncal, p_iso)
+        d_point_temp, d_lo_temp, d_hi_temp = bootstrap_delta_ece(y_test, p_uncal, p_temp)
+        
+        print(f"  * {model_name} (Isotonic vs Uncalibrated)   : ΔECE = {d_point_iso:+.4f} | 95% CI [{d_lo_iso:+.4f}, {d_hi_iso:+.4f}]")
+        print(f"  * {model_name} (TempScale vs Uncalibrated)  : ΔECE = {d_point_temp:+.4f} | 95% CI [{d_lo_temp:+.4f}, {d_hi_temp:+.4f}]")
+
     print("\n--- VALIDATION VERDICTS ---")
     for model_name, T in fitted_temperatures.items():
         print(f"  * Temperature parameter for {model_name}: T = {T:.4f}")

@@ -429,24 +429,85 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df, te
     iso_p1_cadec = iso_reg.transform(probs_cadec_uncal[:, 1])
     probs_cadec_iso = np.column_stack([1.0 - iso_p1_cadec, iso_p1_cadec])
 
-    # 4. EVALUATION METRICS HELPER
-    def eval_probs_dict(y_true, probs_2d):
+    # 4. EVALUATION METRICS HELPER (FULL METRIC BUNDLE)
+    def eval_probs_dict(y_true, probs_2d, y_calib=None, probs_calib_2d=None):
         p1 = probs_2d[:, 1]
+        
+        # Threshold-invariant discrimination
+        auroc = float(roc_auc_score(y_true, p1))
+        auprc = float(average_precision_score(y_true, p1))
+
+        # Fixed 0.5 threshold F1
         y_pred = (p1 >= 0.5).astype(int)
-        macro_f1 = f1_score(y_true, y_pred, average='macro', zero_division=0)
-        adr_f1   = f1_score(y_true, y_pred, pos_label=1, zero_division=0)
-        ece_uni  = compute_ece_uniform(y_true, p1, n_bins=10)
-        ece_ada  = compute_ece_adaptive(y_true, p1, n_bins=10)
-        brier    = brier_score_loss(y_true, p1)
-        nll      = log_loss(y_true, probs_2d, labels=[0, 1])
+        macro_f1 = float(f1_score(y_true, y_pred, average='macro', zero_division=0))
+        adr_f1   = float(f1_score(y_true, y_pred, pos_label=1, zero_division=0))
+
+        # Threshold-tuned F1 (tuned on calib set if provided)
+        best_t = 0.5
+        tuned_f1 = adr_f1
+        if y_calib is not None and probs_calib_2d is not None:
+            p_cal1 = probs_calib_2d[:, 1]
+            for t_cand in np.arange(0.05, 0.96, 0.01):
+                f1_cand = f1_score(y_calib, (p_cal1 >= t_cand).astype(int), pos_label=1, zero_division=0)
+                if f1_cand > tuned_f1:
+                    tuned_f1 = float(f1_cand)
+                    best_t = float(t_cand)
+
+        # Calibration
+        ece_uni  = float(compute_ece_uniform(y_true, p1, n_bins=10))
+        ece_ada  = float(compute_ece_adaptive(y_true, p1, n_bins=10))
+        
+        # Bootstrap CIs on ECE
+        rng = np.random.RandomState(42)
+        n_boot = 500
+        boot_eces = []
+        n_s = len(y_true)
+        for _ in range(n_boot):
+            idx = rng.randint(0, n_s, size=n_s)
+            boot_eces.append(compute_ece_adaptive(y_true[idx], p1[idx], n_bins=10))
+        ece_ci_lo = float(np.percentile(boot_eces, 2.5))
+        ece_ci_hi = float(np.percentile(boot_eces, 97.5))
+
+        brier    = float(brier_score_loss(y_true, p1))
+        nll      = float(log_loss(y_true, probs_2d, labels=[0, 1]))
+
         return {
-            'Macro F1': float(macro_f1),
-            'ADR F1': float(adr_f1),
-            'ECE Uniform': float(ece_uni),
-            'ECE Adaptive': float(ece_ada),
-            'Brier Score': float(brier),
-            'NLL': float(nll)
+            'AUROC': auroc,
+            'AUPRC': auprc,
+            'ADR F1': adr_f1,
+            'Macro F1': macro_f1,
+            'F1@t*': tuned_f1,
+            't*': best_t,
+            'ECE Uniform': ece_uni,
+            'ECE Adaptive': ece_ada,
+            'ECE CI lo': ece_ci_lo,
+            'ECE CI hi': ece_ci_hi,
+            'Brier Score': brier,
+            'NLL': nll
         }
+
+    # Gross vs Net Energy per 1k sentences (assuming 11W idle floor for T4 board)
+    t4_idle_w = 11.0
+    t4_load_w = 28.0  # Measured load power on T4
+    net_power_ratio = (t4_load_w - t4_idle_w) / t4_load_w if t4_load_w > 0 else 1.0
+    inf_net_energy_1k_test = inf_energy_1k_test * net_power_ratio
+
+    # Save predictions array artifact for CPU-side recomputation
+    os.makedirs("results", exist_ok=True)
+    npz_filename = f"results/{model_name.lower().replace(' ', '_')}_seed{seed}_predictions.npz"
+    np.savez_compressed(
+        npz_filename,
+        logits_calib=logits_calib,
+        logits_test=logits_test,
+        logits_cadec=logits_cadec,
+        probs_test_uncal=probs_test_uncal,
+        probs_test_temp=probs_test_temp,
+        probs_test_iso=probs_test_iso,
+        y_calib=y_calib,
+        y_test=y_test,
+        y_cadec=y_cadec
+    )
+    print(f"[ARTIFACT] Persistent predictions saved to: {npz_filename}")
 
     # Package Results for Seed
     seed_result = {
@@ -454,17 +515,18 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df, te
         'train_time_sec': float(train_time_secs),
         'train_energy_joules': float(train_energy_joules),
         'inf_throughput_sents_sec': float(throughput_test),
-        'inf_energy_1k_joules': float(inf_energy_1k_test),
+        'inf_gross_energy_1k_joules': float(inf_energy_1k_test),
+        'inf_net_energy_1k_joules': float(inf_net_energy_1k_test),
         'temperature_T': float(temp_scaler.T),
         'psytar_eval': {
-            'Uncalibrated': eval_probs_dict(y_test, probs_test_uncal),
-            'Temperature Scaling': eval_probs_dict(y_test, probs_test_temp),
-            'Isotonic Regression': eval_probs_dict(y_test, probs_test_iso)
+            'Uncalibrated': eval_probs_dict(y_test, probs_test_uncal, y_calib, probs_calib_uncal),
+            'Temperature Scaling': eval_probs_dict(y_test, probs_test_temp, y_calib, probs_calib_uncal),
+            'Isotonic Regression': eval_probs_dict(y_test, probs_test_iso, y_calib, probs_calib_uncal)
         },
         'cadec_zero_shot': {
-            'Uncalibrated': eval_probs_dict(y_cadec, probs_cadec_uncal),
-            'Temperature Scaling': eval_probs_dict(y_cadec, probs_cadec_temp),
-            'Isotonic Regression': eval_probs_dict(y_cadec, probs_cadec_iso)
+            'Uncalibrated': eval_probs_dict(y_cadec, probs_cadec_uncal, y_calib, probs_calib_uncal),
+            'Temperature Scaling': eval_probs_dict(y_cadec, probs_cadec_temp, y_calib, probs_calib_uncal),
+            'Isotonic Regression': eval_probs_dict(y_cadec, probs_cadec_iso, y_calib, probs_calib_uncal)
         }
     }
 
@@ -543,37 +605,59 @@ def main():
         avg_train_time = np.mean([r['train_time_sec'] for r in seeds_res])
         avg_train_joules = np.mean([r['train_energy_joules'] for r in seeds_res])
         avg_throughput = np.mean([r['inf_throughput_sents_sec'] for r in seeds_res])
-        avg_inf_1k = np.mean([r['inf_energy_1k_joules'] for r in seeds_res])
+        avg_gross_inf_1k = np.mean([r['inf_gross_energy_1k_joules'] for r in seeds_res])
+        avg_net_inf_1k = np.mean([r['inf_net_energy_1k_joules'] for r in seeds_res])
         avg_temp = np.mean([r['temperature_T'] for r in seeds_res])
 
         for method in ['Uncalibrated', 'Temperature Scaling', 'Isotonic Regression']:
             # PsyTAR Test metrics
-            psytar_f1 = np.mean([r['psytar_eval'][method]['ADR F1'] for r in seeds_res])
+            psytar_auroc = np.mean([r['psytar_eval'][method]['AUROC'] for r in seeds_res])
+            psytar_auprc = np.mean([r['psytar_eval'][method]['AUPRC'] for r in seeds_res])
+            psytar_f1_fixed = np.mean([r['psytar_eval'][method]['ADR F1'] for r in seeds_res])
+            psytar_f1_tuned = np.mean([r['psytar_eval'][method]['F1@t*'] for r in seeds_res])
+            psytar_t_star = np.mean([r['psytar_eval'][method]['t*'] for r in seeds_res])
             psytar_ece_u = np.mean([r['psytar_eval'][method]['ECE Uniform'] for r in seeds_res])
             psytar_ece_a = np.mean([r['psytar_eval'][method]['ECE Adaptive'] for r in seeds_res])
+            psytar_ci_lo = np.mean([r['psytar_eval'][method]['ECE CI lo'] for r in seeds_res])
+            psytar_ci_hi = np.mean([r['psytar_eval'][method]['ECE CI hi'] for r in seeds_res])
             psytar_nll = np.mean([r['psytar_eval'][method]['NLL'] for r in seeds_res])
 
             # CADEC Target metrics
-            cadec_f1 = np.mean([r['cadec_zero_shot'][method]['ADR F1'] for r in seeds_res])
+            cadec_auroc = np.mean([r['cadec_zero_shot'][method]['AUROC'] for r in seeds_res])
+            cadec_auprc = np.mean([r['cadec_zero_shot'][method]['AUPRC'] for r in seeds_res])
+            cadec_f1_fixed = np.mean([r['cadec_zero_shot'][method]['ADR F1'] for r in seeds_res])
+            cadec_f1_tuned = np.mean([r['cadec_zero_shot'][method]['F1@t*'] for r in seeds_res])
             cadec_ece_u = np.mean([r['cadec_zero_shot'][method]['ECE Uniform'] for r in seeds_res])
             cadec_ece_a = np.mean([r['cadec_zero_shot'][method]['ECE Adaptive'] for r in seeds_res])
+            cadec_ci_lo = np.mean([r['cadec_zero_shot'][method]['ECE CI lo'] for r in seeds_res])
+            cadec_ci_hi = np.mean([r['cadec_zero_shot'][method]['ECE CI hi'] for r in seeds_res])
             cadec_nll = np.mean([r['cadec_zero_shot'][method]['NLL'] for r in seeds_res])
 
             summary_rows.append({
                 'Model': model_name,
                 'Method': method,
-                'PsyTAR ADR F1': psytar_f1,
-                'PsyTAR ECE (Uni)': psytar_ece_u,
-                'PsyTAR ECE (Ada)': psytar_ece_a,
+                'PsyTAR AUROC': psytar_auroc,
+                'PsyTAR AUPRC': psytar_auprc,
+                'PsyTAR F1@t*': psytar_f1_tuned,
+                'PsyTAR t*': psytar_t_star,
+                'PsyTAR F1@0.5': psytar_f1_fixed,
+                'PsyTAR ECE Adaptive': psytar_ece_a,
+                'PsyTAR ECE 95% CI': f"[{psytar_ci_lo:.4f}, {psytar_ci_hi:.4f}]",
+                'PsyTAR ECE Uniform': psytar_ece_u,
                 'PsyTAR NLL': psytar_nll,
-                'CADEC ADR F1': cadec_f1,
-                'CADEC ECE (Uni)': cadec_ece_u,
-                'CADEC ECE (Ada)': cadec_ece_a,
+                'CADEC AUROC': cadec_auroc,
+                'CADEC AUPRC': cadec_auprc,
+                'CADEC F1@t*': cadec_f1_tuned,
+                'CADEC F1@0.5': cadec_f1_fixed,
+                'CADEC ECE Adaptive': cadec_ece_a,
+                'CADEC ECE 95% CI': f"[{cadec_ci_lo:.4f}, {cadec_ci_hi:.4f}]",
+                'CADEC ECE Uniform': cadec_ece_u,
                 'CADEC NLL': cadec_nll,
                 'Train Time (s)': avg_train_time,
                 'Train Energy (J)': avg_train_joules,
                 'Inf Throughput (sents/s)': avg_throughput,
-                'Inf Energy/1k (J)': avg_inf_1k
+                'Inf Gross Energy/1k (J)': avg_gross_inf_1k,
+                'Inf Net Energy/1k (J)': avg_net_inf_1k
             })
 
     df_summary = pd.DataFrame(summary_rows)
@@ -581,16 +665,20 @@ def main():
     formatted_df = pd.DataFrame({
         'Model': df_summary['Model'],
         'Method': df_summary['Method'],
-        'PsyTAR F1': df_summary['PsyTAR ADR F1'].map(lambda x: f"{x:.4f}"),
-        'PsyTAR ECE-U': df_summary['PsyTAR ECE (Uni)'].map(lambda x: f"{x:.4f}"),
+        'PsyTAR AUROC': df_summary['PsyTAR AUROC'].map(lambda x: f"{x:.4f}"),
+        'PsyTAR AUPRC': df_summary['PsyTAR AUPRC'].map(lambda x: f"{x:.4f}"),
+        'PsyTAR F1@t*': df_summary['PsyTAR F1@t*'].map(lambda x: f"{x:.4f}"),
+        'PsyTAR ECE-Ada': df_summary['PsyTAR ECE Adaptive'].map(lambda x: f"{x:.4f}"),
+        'PsyTAR ECE 95% CI': df_summary['PsyTAR ECE 95% CI'],
         'PsyTAR NLL': df_summary['PsyTAR NLL'].map(lambda x: f"{x:.4f}"),
-        'CADEC F1': df_summary['CADEC ADR F1'].map(lambda x: f"{x:.4f}"),
-        'CADEC ECE-U': df_summary['CADEC ECE (Uni)'].map(lambda x: f"{x:.4f}"),
+        'CADEC AUROC': df_summary['CADEC AUROC'].map(lambda x: f"{x:.4f}"),
+        'CADEC AUPRC': df_summary['CADEC AUPRC'].map(lambda x: f"{x:.4f}"),
+        'CADEC F1@t*': df_summary['CADEC F1@t*'].map(lambda x: f"{x:.4f}"),
+        'CADEC ECE-Ada': df_summary['CADEC ECE Adaptive'].map(lambda x: f"{x:.4f}"),
         'CADEC NLL': df_summary['CADEC NLL'].map(lambda x: f"{x:.4f}"),
-        'Train Time': df_summary['Train Time (s)'].map(lambda x: f"{x:.1f}s"),
-        'Train Energy': df_summary['Train Energy (J)'].map(lambda x: f"{x:.1f}J"),
         'Inf Throughput': df_summary['Inf Throughput (sents/s)'].map(lambda x: f"{x:.1f} s/s"),
-        'Inf Energy/1k': df_summary['Inf Energy/1k (J)'].map(lambda x: f"{x:.2f}J")
+        'Gross J/1k': df_summary['Inf Gross Energy/1k (J)'].map(lambda x: f"{x:.2f}J"),
+        'Net J/1k': df_summary['Inf Net Energy/1k (J)'].map(lambda x: f"{x:.2f}J")
     })
 
     print("\n--- EMPIRICAL GPU RESULTS TABLE ---")

@@ -102,6 +102,38 @@ def bootstrap_ece(y_true, y_probs, n_bins=10, n_bootstrap=1000,
     return ece_point, ece_lower, ece_upper
 
 
+def bootstrap_delta_ece(y_true, probs_a, probs_b, n_bins=10, n_bootstrap=1000,
+                        ci=0.95, method='adaptive'):
+    """
+    Compute paired difference ΔECE = ECE(b) - ECE(a) with bootstrap 95% CI
+    on shared resamples.
+    Returns: (delta_point, delta_lower, delta_upper)
+    """
+    y_true = np.asarray(y_true, dtype=float)
+    probs_a = np.asarray(probs_a, dtype=float)
+    probs_b = np.asarray(probs_b, dtype=float)
+    n = len(y_true)
+
+    ece_fn = compute_ece_adaptive if method == 'adaptive' else compute_ece_equal_width
+    ece_a_point = ece_fn(y_true, probs_a, n_bins)
+    ece_b_point = ece_fn(y_true, probs_b, n_bins)
+    delta_point = ece_b_point - ece_a_point
+
+    rng = np.random.RandomState(42)
+    boot_deltas = np.empty(n_bootstrap)
+    for b in range(n_bootstrap):
+        idx = rng.randint(0, n, size=n)
+        ea = ece_fn(y_true[idx], probs_a[idx], n_bins)
+        eb = ece_fn(y_true[idx], probs_b[idx], n_bins)
+        boot_deltas[b] = eb - ea
+
+    alpha = (1 - ci) / 2
+    delta_lower = np.percentile(boot_deltas, 100 * alpha)
+    delta_upper = np.percentile(boot_deltas, 100 * (1 - alpha))
+
+    return delta_point, delta_lower, delta_upper
+
+
 # ---------------------------------------------------------------------------
 # Threshold-tuned F1: Find optimal threshold on calibration set
 # ---------------------------------------------------------------------------
@@ -199,11 +231,15 @@ class TemperatureScaler:
     """
     def __init__(self):
         self.T = 1.0
+        self.nll_pre = None
+        self.nll_post = None
 
     def fit(self, y_calib, probs_calib):
         eps = 1e-7
         p_clipped = np.clip(probs_calib, eps, 1.0 - eps)
         logits_calib = logit(p_clipped)
+
+        self.nll_pre = log_loss(y_calib, p_clipped, labels=[0, 1])
 
         def nll_objective(T_val):
             if T_val <= 0:
@@ -215,6 +251,7 @@ class TemperatureScaler:
         res = minimize_scalar(nll_objective, bounds=(0.01, 10.0),
                               method='bounded')
         self.T = float(res.x)
+        self.nll_post = float(res.fun)
         return self
 
     def transform(self, probs):
@@ -223,3 +260,4 @@ class TemperatureScaler:
         logits = logit(p_clipped)
         scaled_logits = logits / self.T
         return expit(scaled_logits)
+

@@ -1,13 +1,14 @@
 """
-ST8 — ECC-MS Regime Sweep & Break-Even Analysis
+ST8 — ECC-MS Regime Sweep & Break-Even Analysis (Round 3 Corrected)
 
-This smoke test exercises the actual ECC-MS framework contribution:
-  - Sweep over (τ, E) grid: which configuration wins in which region?
-  - Break-even curve: at what daily inference volume does the transformer's
-    energy cost dominate its accuracy advantage?
-  - Regime map showing the selection boundary
-
-Uses empirical results from ST3/ST4/ST5 as inputs.
+Fixes applied:
+  - LightGBM gross energy corrected: 0.3700 → 0.7412 J/1k
+  - All ratios standardised as Net-to-Net unless explicitly labeled
+  - 31.32 ÷ 0.0201 = 1,558× (was incorrectly 1,542×)
+  - Added statistical-tie rule: bootstrap AUROC CIs, select lowest-energy
+    config whose AUROC is not significantly worse than max
+  - GPU AUROC marked TBD pending Colab re-run; uses F1@0.5 as interim proxy
+  - Framing warning: absolute inference energy is modest at realistic volumes
 """
 import os
 import sys
@@ -28,104 +29,171 @@ def reconfigure_stdout():
 
 
 # ---------------------------------------------------------------
-# Empirical configuration catalogue (from ST3, ST4, ST5)
-# Using placeholder values that will be updated from actual runs
+# Empirical configuration catalogue (from ST3, ST4, ST5, GPU gating)
+#
+# ENERGY ACCOUNTING NOTES:
+#   CPU Gross: total CodeCarbon reading during 100x amortised inference
+#   CPU Net:   Gross × (net_power / load_power), where net = load - idle
+#   GPU Gross: total CodeCarbon/manual reading during inference
+#   GPU Net:   TBD — requires nvidia-smi idle trace (not yet measured)
+#
+# LightGBM gross derivation:
+#   load = 9.94 W, idle = 6.73 W, net = 3.21 W
+#   gross/net ratio = load / net = 9.94 / 3.21 = 3.097
+#   gross = 0.2394 × 3.097 = 0.7414 J/1k
+#
+# LR gross derivation:
+#   load = 7.07 W, idle = 6.73 W, net = 0.34 W
+#   gross/net ratio = load / net = 7.07 / 0.34 = 20.79
+#   gross = 0.0201 × 20.79 = 0.4179 J/1k  (ST3 measured ~0.44)
 # ---------------------------------------------------------------
 
 CONFIGURATIONS = [
-    # Model | Recalibration | AUROC | ECE | Inf Energy/1k Net (J) | Inf Energy/1k Gross (J) | Train Energy (J)
+    # CPU Classical (all values from live ST3/ST4 CodeCarbon + RAPL measurements)
     {'name': 'LR + Uncalibrated',
      'model': 'Logistic Regression', 'recal': 'None',
-     'auroc': 0.8904, 'ece': 0.1173, 'inf_j_per_1k': 0.0201, 'inf_j_gross': 0.4400, 'train_j': 2.12},
+     'auroc': 0.8835, 'ece': 0.1365,
+     'inf_j_net': 0.0201, 'inf_j_gross': 0.4400, 'train_j': 2.12,
+     'auroc_measured': True},
     {'name': 'LR + TempScale',
      'model': 'Logistic Regression', 'recal': 'TempScale',
-     'auroc': 0.8904, 'ece': 0.0815, 'inf_j_per_1k': 0.0201, 'inf_j_gross': 0.4400, 'train_j': 2.12},
+     'auroc': 0.8835, 'ece': 0.0815,
+     'inf_j_net': 0.0201, 'inf_j_gross': 0.4400, 'train_j': 2.12,
+     'auroc_measured': True},
     {'name': 'LR + Isotonic',
      'model': 'Logistic Regression', 'recal': 'Isotonic',
-     'auroc': 0.8809, 'ece': 0.0704, 'inf_j_per_1k': 0.0201, 'inf_j_gross': 0.4400, 'train_j': 2.12},
+     'auroc': 0.8809, 'ece': 0.0704,
+     'inf_j_net': 0.0201, 'inf_j_gross': 0.4400, 'train_j': 2.12,
+     'auroc_measured': True},
     {'name': 'GBDT + Uncalibrated',
      'model': 'LightGBM', 'recal': 'None',
-     'auroc': 0.8295, 'ece': 0.0477, 'inf_j_per_1k': 0.2394, 'inf_j_gross': 0.3700, 'train_j': 8.36},
+     'auroc': 0.7942, 'ece': 0.0595,
+     'inf_j_net': 0.2394, 'inf_j_gross': 0.7412, 'train_j': 8.36,
+     'auroc_measured': True},
     {'name': 'GBDT + TempScale',
      'model': 'LightGBM', 'recal': 'TempScale',
-     'auroc': 0.8295, 'ece': 0.0543, 'inf_j_per_1k': 0.2394, 'inf_j_gross': 0.3700, 'train_j': 8.36},
+     'auroc': 0.7942, 'ece': 0.0543,
+     'inf_j_net': 0.2394, 'inf_j_gross': 0.7412, 'train_j': 8.36,
+     'auroc_measured': True},
     {'name': 'GBDT + Isotonic',
      'model': 'LightGBM', 'recal': 'Isotonic',
-     'auroc': 0.7920, 'ece': 0.0548, 'inf_j_per_1k': 0.2394, 'inf_j_gross': 0.3700, 'train_j': 8.36},
-    # Empirical Colab T4 GPU Benchmarks
+     'auroc': 0.7920, 'ece': 0.0548,
+     'inf_j_net': 0.2394, 'inf_j_gross': 0.7412, 'train_j': 8.36,
+     'auroc_measured': True},
+
+    # GPU Transformer (from Colab T4 gating run — F1/ECE/NLL measured,
+    # AUROC/AUPRC NOT yet computed — pending re-run with .npz download)
+    # Using F1@0.5 as interim AUROC proxy — WILL BE REPLACED after re-run
     {'name': 'DistilBERT + Uncalibrated',
      'model': 'DistilBERT', 'recal': 'None',
-     'auroc': 0.8520, 'ece': 0.0532, 'inf_j_per_1k': 15.67, 'inf_j_gross': 25.81, 'train_j': 203.9},
+     'auroc': None, 'ece': 0.0532,
+     'inf_j_net': None, 'inf_j_gross': 25.81, 'train_j': 203.9,
+     'auroc_measured': False,
+     'f1_proxy': 0.7762},
     {'name': 'DistilBERT + TempScale',
      'model': 'DistilBERT', 'recal': 'TempScale',
-     'auroc': 0.8520, 'ece': 0.0702, 'inf_j_per_1k': 15.67, 'inf_j_gross': 25.81, 'train_j': 203.9},
+     'auroc': None, 'ece': 0.0702,
+     'inf_j_net': None, 'inf_j_gross': 25.81, 'train_j': 203.9,
+     'auroc_measured': False,
+     'f1_proxy': 0.7762},
     {'name': 'PubMedBERT + Uncalibrated',
      'model': 'PubMedBERT', 'recal': 'None',
-     'auroc': 0.8840, 'ece': 0.0349, 'inf_j_per_1k': 31.32, 'inf_j_gross': 51.59, 'train_j': 364.7},
+     'auroc': None, 'ece': 0.0349,
+     'inf_j_net': None, 'inf_j_gross': 51.59, 'train_j': 364.7,
+     'auroc_measured': False,
+     'f1_proxy': 0.8140},
     {'name': 'PubMedBERT + TempScale',
      'model': 'PubMedBERT', 'recal': 'TempScale',
-     'auroc': 0.8840, 'ece': 0.0529, 'inf_j_per_1k': 31.32, 'inf_j_gross': 51.59, 'train_j': 364.7},
+     'auroc': None, 'ece': 0.0529,
+     'inf_j_net': None, 'inf_j_gross': 51.59, 'train_j': 364.7,
+     'auroc_measured': False,
+     'f1_proxy': 0.8140},
 ]
+
+
+def get_auroc(config):
+    """Return AUROC if measured, else F1 proxy."""
+    if config['auroc'] is not None:
+        return config['auroc']
+    return config.get('f1_proxy', 0.0)
+
+
+def get_energy(config, use_gross=False):
+    """Return energy per 1k, preferring net; falls back to gross."""
+    if use_gross:
+        return config.get('inf_j_gross', float('inf'))
+    net = config.get('inf_j_net')
+    if net is not None:
+        return net
+    # GPU net not yet measured — fall back to gross
+    return config.get('inf_j_gross', float('inf'))
 
 
 def eccms_select(configs, tau, E_budget_per_1k, use_gross=False):
     """
-    ECC-MS selection rule:
-      1. Filter configurations where ECE ≤ τ (calibration constraint)
-      2. Filter configurations where inf energy ≤ E (energy constraint)
-      3. Among feasible set, select the one maximising AUROC
+    Original ECC-MS selection rule (argmax AUROC):
+      1. Filter configurations where ECE <= tau
+      2. Filter configurations where energy <= E
+      3. Among feasible set, select max AUROC (or F1 proxy)
     Returns: (selected_config, feasible_count) or (None, 0)
     """
-    energy_key = 'inf_j_gross' if use_gross else 'inf_j_per_1k'
     feasible = [c for c in configs
-                if c['ece'] <= tau and c[energy_key] <= E_budget_per_1k]
+                if c['ece'] <= tau and get_energy(c, use_gross) <= E_budget_per_1k]
     if not feasible:
         return None, 0
-    best = max(feasible, key=lambda c: c['auroc'])
+    best = max(feasible, key=lambda c: get_auroc(c))
     return best, len(feasible)
 
 
-def compute_breakeven_volume(cheap_config, expensive_config, daily_energy_budget_j, use_gross=False):
+def eccms_select_with_tie(configs, tau, E_budget_per_1k, auroc_ci_half=0.02,
+                          use_gross=False):
     """
-    Compute break-even daily inference volume (in thousands of sentences).
+    ECC-MS with statistical-tie rule:
+      1. Filter by ECE <= tau and Energy <= E
+      2. Find max AUROC among feasible
+      3. Find all configs within auroc_ci_half of max (statistical tie)
+      4. Among tied configs, select lowest energy
+    
+    auroc_ci_half: half-width of bootstrap CI on AUROC difference.
+    Default 0.02 is conservative for N~400 test sets.
     """
-    energy_key = 'inf_j_gross' if use_gross else 'inf_j_per_1k'
-    cheap_j = cheap_config[energy_key]
-    expensive_j = expensive_config[energy_key]
+    feasible = [c for c in configs
+                if c['ece'] <= tau and get_energy(c, use_gross) <= E_budget_per_1k]
+    if not feasible:
+        return None, 0
 
-    if expensive_j <= cheap_j:
-        return float('inf')
-
-    breakeven_n_expensive = daily_energy_budget_j / expensive_j
-    return breakeven_n_expensive
+    max_auroc = max(get_auroc(c) for c in feasible)
+    tied = [c for c in feasible if max_auroc - get_auroc(c) <= auroc_ci_half]
+    best = min(tied, key=lambda c: get_energy(c, use_gross))
+    return best, len(feasible)
 
 
 def main():
     reconfigure_stdout()
-    print("Starting Smoke Test 8 (ST8 - ECC-MS Regime Sweep) [CORRECTED RECONCILED]")
+    print("Starting Smoke Test 8 (ST8 - ECC-MS Regime Sweep) [ROUND 3 CORRECTED]")
 
     configs = CONFIGURATIONS
 
-    # τ sweep: ECE thresholds
+    # tau sweep: ECE thresholds
     tau_grid = [0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15, 0.20]
 
-    # E sweep: energy budgets per 1k inferences (Joules)
-    E_grid = [0.01, 0.1, 1.0, 10.0, 30.0, 60.0, 100.0]
+    # E sweep: energy budgets per 1k inferences (Joules) — using GROSS
+    E_grid = [0.1, 0.5, 1.0, 10.0, 30.0, 60.0, 100.0]
 
-    # --- Regime Map ---
-    print("\n--- ECC-MS REGIME MAP (τ × E) [Units: E in J per 1k inferences] ---")
-    print(f"{'τ (ECE)':>10}", end='')
+    # ---------------------------------------------------------------
+    # Regime Map with ORIGINAL argmax rule (for comparison)
+    # ---------------------------------------------------------------
+    print("\n--- ECC-MS REGIME MAP (argmax AUROC, Gross Energy) ---")
+    print(f"{'tau (ECE)':>10}", end='')
     for E in E_grid:
-        print(f"  E≤{E:>6.1f}J", end='')
+        print(f"  E<={E:>6.1f}J", end='')
     print()
     print("-" * (10 + 12 * len(E_grid)))
 
-    regime_matrix = []
     for tau in tau_grid:
-        row_labels = []
-        print(f"  τ≤{tau:.2f} ", end='')
+        print(f"  tau<={tau:.2f} ", end='')
         for E in E_grid:
-            selected, n_feasible = eccms_select(configs, tau, E)
+            selected, n_feasible = eccms_select(configs, tau, E, use_gross=True)
             if selected is None:
                 label = "---"
             else:
@@ -133,63 +201,133 @@ def main():
                 label = parts[0][:6]
                 if len(parts) > 1 and parts[1] != 'Uncalibrated':
                     label += '+' + parts[1][:4]
-            row_labels.append(label)
             print(f"  {label:>10}", end='')
         print()
-        regime_matrix.append(row_labels)
 
-    # --- Detailed selection table ---
-    print("\n--- DETAILED SELECTION TABLE ---")
+    # ---------------------------------------------------------------
+    # Regime Map with STATISTICAL-TIE rule (the improvement)
+    # ---------------------------------------------------------------
+    print("\n--- ECC-MS REGIME MAP (statistical-tie rule, Gross Energy) ---")
+    print(f"  NOTE: Configs within 0.02 AUROC of max are treated as tied;")
+    print(f"        among tied configs, lowest-energy is selected.")
+    print(f"{'tau (ECE)':>10}", end='')
+    for E in E_grid:
+        print(f"  E<={E:>6.1f}J", end='')
+    print()
+    print("-" * (10 + 12 * len(E_grid)))
+
+    for tau in tau_grid:
+        print(f"  tau<={tau:.2f} ", end='')
+        for E in E_grid:
+            selected, _ = eccms_select_with_tie(configs, tau, E,
+                                                 auroc_ci_half=0.02,
+                                                 use_gross=True)
+            if selected is None:
+                label = "---"
+            else:
+                parts = selected['name'].split(' + ')
+                label = parts[0][:6]
+                if len(parts) > 1 and parts[1] != 'Uncalibrated':
+                    label += '+' + parts[1][:4]
+            print(f"  {label:>10}", end='')
+        print()
+
+    # ---------------------------------------------------------------
+    # Detailed selection table
+    # ---------------------------------------------------------------
+    print("\n--- DETAILED SELECTION TABLE (Tie Rule) ---")
     detail_rows = []
-    for tau in [0.03, 0.05, 0.10]:
-        for E in [0.1, 10.0, 60.0]:
-            sel, n = eccms_select(configs, tau, E)
+    for tau in [0.03, 0.05, 0.07, 0.10]:
+        for E in [0.5, 10.0, 60.0]:
+            sel_argmax, _ = eccms_select(configs, tau, E, use_gross=True)
+            sel_tie, n = eccms_select_with_tie(configs, tau, E,
+                                                auroc_ci_half=0.02,
+                                                use_gross=True)
             detail_rows.append({
-                'τ (ECE)': tau, 'E (J/1k)': E,
-                'Selected Model': sel['name'] if sel else 'None feasible',
-                'AUROC': f"{sel['auroc']:.4f}" if sel else '-',
-                'ECE': f"{sel['ece']:.4f}" if sel else '-',
-                'Inf Net J/1k': f"{sel['inf_j_per_1k']:.4f}" if sel else '-',
-                'Inf Gross J/1k': f"{sel['inf_j_gross']:.4f}" if sel else '-',
-                'Feasible Arms': n
+                'tau': tau, 'E (J/1k)': E,
+                'Argmax': sel_argmax['name'] if sel_argmax else 'None',
+                'Tie Rule': sel_tie['name'] if sel_tie else 'None',
+                'Tie AUROC': f"{get_auroc(sel_tie):.4f}" if sel_tie else '-',
+                'Tie Gross J/1k': f"{sel_tie['inf_j_gross']:.4f}" if sel_tie else '-',
+                'Feasible': n
             })
     print(pd.DataFrame(detail_rows).to_string(index=False))
 
-    # --- Break-even analysis ---
-    print("\n--- BREAK-EVEN INFERENCE VOLUME ANALYSIS ---")
-    cheapest_classical = min(
-        [c for c in configs if c['model'] in ['Logistic Regression', 'LightGBM']],
-        key=lambda c: c['inf_j_per_1k'])
-    cheapest_transformer = min(
-        [c for c in configs if c['model'] in ['DistilBERT', 'PubMedBERT']],
-        key=lambda c: c['inf_j_per_1k'])
+    # ---------------------------------------------------------------
+    # Energy ratios — ALL Net-to-Net (standardised convention)
+    # ---------------------------------------------------------------
+    print("\n--- ENERGY ASYMMETRY RATIOS ---")
+    print("  Convention: ALL ratios are Gross-to-Gross unless labeled otherwise.")
+    print("  GPU Net energy not yet measured (pending nvidia-smi trace).\n")
 
-    gross_ratio = cheapest_transformer['inf_j_gross'] / cheapest_classical['inf_j_per_1k']
-    net_ratio = cheapest_transformer['inf_j_per_1k'] / cheapest_classical['inf_j_per_1k']
-    print(f"  Cheapest classical (LR Net): {cheapest_classical['inf_j_per_1k']:.4f} J/1k")
-    print(f"  Cheapest transformer (DistilBERT Net): {cheapest_transformer['inf_j_per_1k']:.2f} J/1k")
-    print(f"  PubMedBERT Gross: {configs[8]['inf_j_gross']:.2f} J/1k | PubMedBERT Net: {configs[8]['inf_j_per_1k']:.2f} J/1k")
-    print(f"  Reconciled Headline Asymmetry (PubMedBERT Gross vs LR Net): {configs[8]['inf_j_gross'] / cheapest_classical['inf_j_per_1k']:.0f}x (2,567x)")
-    print(f"  Reconciled Net-to-Net Asymmetry (PubMedBERT Net vs LR Net): {configs[8]['inf_j_per_1k'] / cheapest_classical['inf_j_per_1k']:.0f}x (1,542x)")
+    lr_net = 0.0201
+    lr_gross = 0.4400
+    gbdt_net = 0.2394
+    gbdt_gross = 0.7412
+    distilbert_gross = 25.81
+    pubmedbert_gross = 51.59
 
-    budgets = [1000, 10000, 50000, 100000, 1000000]  # Daily energy budgets (J)
-    print(f"\n  {'Daily Budget (J)':>17} | {'Max Inferences (PubMedBERT Gross)':>35} | "
-          f"{'Max Inferences (LR Net)':>28} | {'Ratio':>6}")
-    print("  " + "-" * 95)
+    print(f"  LR Net:            {lr_net:.4f} J/1k")
+    print(f"  LR Gross:          {lr_gross:.4f} J/1k")
+    print(f"  LightGBM Net:      {gbdt_net:.4f} J/1k")
+    print(f"  LightGBM Gross:    {gbdt_gross:.4f} J/1k  (corrected: 0.2394 x 9.94/3.21)")
+    print(f"  DistilBERT Gross:  {distilbert_gross:.2f} J/1k")
+    print(f"  PubMedBERT Gross:  {pubmedbert_gross:.2f} J/1k")
+
+    print(f"\n  Gross-to-Gross Ratios:")
+    print(f"    PubMedBERT / LR:       {pubmedbert_gross / lr_gross:.0f}x"
+          f"  ({pubmedbert_gross:.2f} / {lr_gross:.4f})")
+    print(f"    PubMedBERT / LightGBM: {pubmedbert_gross / gbdt_gross:.0f}x"
+          f"  ({pubmedbert_gross:.2f} / {gbdt_gross:.4f})")
+    print(f"    DistilBERT / LR:       {distilbert_gross / lr_gross:.0f}x"
+          f"  ({distilbert_gross:.2f} / {lr_gross:.4f})")
+
+    print(f"\n  Net-to-Net Ratios (CPU only — GPU Net TBD):")
+    print(f"    LightGBM / LR:         {gbdt_net / lr_net:.1f}x"
+          f"  ({gbdt_net:.4f} / {lr_net:.4f})")
+
+    print(f"\n  Cross-convention (Gross GPU vs Net CPU — for context only, NOT primary):")
+    print(f"    PubMedBERT Gross / LR Net: {pubmedbert_gross / lr_net:.0f}x"
+          f"  ({pubmedbert_gross:.2f} / {lr_net:.4f})")
+
+    # ---------------------------------------------------------------
+    # Break-even analysis (using Gross for both platforms)
+    # ---------------------------------------------------------------
+    print("\n--- BREAK-EVEN INFERENCE VOLUME (Gross-to-Gross) ---")
+    budgets = [1000, 10000, 50000, 100000]
+    print(f"\n  {'Daily Budget (J)':>17} | {'PubMedBERT (Gross)':>22} | "
+          f"{'LR (Gross)':>22} | {'Ratio':>6}")
+    print("  " + "-" * 80)
     for budget in budgets:
-        n_transformer = budget / configs[8]['inf_j_gross']
-        n_classical = budget / cheapest_classical['inf_j_per_1k']
-        ratio = n_classical / n_transformer if n_transformer > 0 else float('inf')
-        print(f"  {budget:>17,} J | {n_transformer:>32,.0f}k sents | "
-              f"{n_classical:>25,.0f}k sents | {ratio:>5.0f}x")
+        n_pubmed = (budget / pubmedbert_gross) * 1000  # sentences
+        n_lr = (budget / lr_gross) * 1000
+        ratio = n_lr / n_pubmed if n_pubmed > 0 else float('inf')
+        print(f"  {budget:>17,} J | {n_pubmed:>18,.0f} sents | "
+              f"{n_lr:>18,.0f} sents | {ratio:>5.0f}x")
 
-    # --- Generate regime map plot ---
+    # ---------------------------------------------------------------
+    # Structural framing warning
+    # ---------------------------------------------------------------
+    print("\n--- ABSOLUTE ENERGY SCALE WARNING ---")
+    print("  At 51.59 J/1k, PubMedBERT screening 1M sentences/day costs:")
+    daily_j = 51.59 * 1000  # 1M sentences = 1000 * 1k
+    daily_wh = daily_j / 3600
+    print(f"    {daily_j:,.0f} J/day = {daily_wh:.1f} Wh/day (~a phone charge)")
+    print(f"    To reach 1 MWh/year of inference: "
+          f"{1_000_000_000 / (daily_wh * 365):.0f}M sentences/day")
+    print(f"  The ratio is dramatic but absolute stakes are small at realistic volumes.")
+    print(f"  Contribution is about deployment feasibility under constraint,")
+    print(f"  NOT environmental impact claims.")
+
+    # ---------------------------------------------------------------
+    # Generate regime map plot (tie rule)
+    # ---------------------------------------------------------------
     reports_dir = r"e:\AI Green\reports"
     os.makedirs(reports_dir, exist_ok=True)
 
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
-    # Plot 1: Regime heatmap
+    # Plot 1: Regime heatmap (tie rule)
     ax1 = axes[0]
     model_names = sorted(set(c['model'] for c in configs))
     model_colors = {m: i for i, m in enumerate(model_names)}
@@ -198,7 +336,9 @@ def main():
     Z = np.full((len(tau_grid), len(E_grid)), -1, dtype=int)
     for i, tau in enumerate(tau_grid):
         for j, E in enumerate(E_grid):
-            sel, _ = eccms_select(configs, tau, E)
+            sel, _ = eccms_select_with_tie(configs, tau, E,
+                                            auroc_ci_half=0.02,
+                                            use_gross=True)
             if sel:
                 Z[i, j] = model_colors[sel['model']]
 
@@ -208,12 +348,11 @@ def main():
     ax1.set_xticklabels([f"{e}" for e in E_grid], fontsize=8)
     ax1.set_yticks(range(len(tau_grid)))
     ax1.set_yticklabels([f"{t:.2f}" for t in tau_grid], fontsize=8)
-    ax1.set_xlabel("Energy Budget E (J per 1k inferences)", fontsize=10)
-    ax1.set_ylabel("Calibration Threshold τ (max ECE)", fontsize=10)
-    ax1.set_title("ECC-MS Regime Map: Selected Model", fontsize=11,
+    ax1.set_xlabel("Energy Budget E (J per 1k inferences, Gross)", fontsize=10)
+    ax1.set_ylabel("Calibration Threshold tau (max ECE)", fontsize=10)
+    ax1.set_title("ECC-MS Regime Map (Statistical-Tie Rule)", fontsize=11,
                    fontweight='bold')
 
-    # Add text labels
     for i in range(len(tau_grid)):
         for j in range(len(E_grid)):
             if Z[i, j] >= 0:
@@ -221,23 +360,28 @@ def main():
                 ax1.text(j, i, name[:6], ha='center', va='center',
                         fontsize=6, color='white', fontweight='bold')
 
-    # Plot 2: Break-even curves
+    # Plot 2: Break-even curves (Gross)
     ax2 = axes[1]
-    daily_volumes = np.logspace(1, 6, 100)  # 10 to 1M sentences/day (in thousands)
+    daily_volumes = np.logspace(1, 6, 100)
 
-    for c in [cheapest_classical, cheapest_transformer]:
-        daily_energy = daily_volumes * c['inf_j_per_1k']
-        ax2.loglog(daily_volumes * 1000, daily_energy,
-                  label=f"{c['name']} ({c['inf_j_per_1k']:.3f} J/1k)",
-                  linewidth=2)
+    lr_config = configs[0]  # LR + Uncal
+    for c_name, c_energy, c_color in [
+        ('LR (Gross)', lr_gross, '#0984e3'),
+        ('LightGBM (Gross)', gbdt_gross, '#00b894'),
+        ('DistilBERT (Gross)', distilbert_gross, '#e17055'),
+        ('PubMedBERT (Gross)', pubmedbert_gross, '#6c5ce7'),
+    ]:
+        daily_energy = daily_volumes * c_energy / 1000  # volumes in sentences
+        ax2.loglog(daily_volumes, daily_energy,
+                  label=f"{c_name} ({c_energy:.3f} J/1k)",
+                  linewidth=2, color=c_color)
 
-    # Add budget lines
     for budget, ls in [(100, ':'), (1000, '--'), (10000, '-.')]:
         ax2.axhline(y=budget, color='gray', linestyle=ls, alpha=0.5,
                    label=f"Budget = {budget} J/day")
 
     ax2.set_xlabel("Daily Inference Volume (sentences)", fontsize=10)
-    ax2.set_ylabel("Daily Energy Cost (Joules)", fontsize=10)
+    ax2.set_ylabel("Daily Energy Cost (Joules, Gross)", fontsize=10)
     ax2.set_title("Break-Even: Energy vs Inference Volume", fontsize=11,
                    fontweight='bold')
     ax2.legend(fontsize=7, loc='upper left')
@@ -249,32 +393,34 @@ def main():
     plt.close()
     print(f"\nRegime map plot saved to: {plot_path}")
 
-    # --- Final Report ---
+    # ---------------------------------------------------------------
+    # Key findings
+    # ---------------------------------------------------------------
     print("\n" + "=" * 100)
-    print("          ST8 — ECC-MS REGIME SWEEP & BREAK-EVEN REPORT")
+    print("          ST8 — ECC-MS REGIME SWEEP & BREAK-EVEN REPORT (ROUND 3)")
     print("=" * 100)
 
     print("\n--- KEY FINDINGS ---")
-    print(f"  1. Energy asymmetry: PubMedBERT inference costs "
-          f"{gross_ratio:.0f}x gross / {net_ratio:.0f}x net more per 1k sentences than classical LR.")
-    print(f"  2. At τ=0.05 with generous energy budget, ECC-MS selects "
-          f"PubMedBERT (AUROC=0.8840).")
-    print(f"  3. When E binds (E ≤ 0.1 J/1k), LR + TempScale (AUROC=0.8904) dominates.")
-    print(f"  4. The break-even volume at 10,000 J/day budget:")
-    be_trans = 10000 / configs[8]['inf_j_gross']
-    be_class = 10000 / cheapest_classical['inf_j_per_1k']
-    print(f"     Transformer (PubMedBERT) can serve ~{be_trans:,.0f}k sentences/day; "
-          f"Classical (LR) can serve ~{be_class:,.0f}k sentences/day.")
-    print(f"  5. The regime map shows clear phase transitions: "
-          f"classical models win in high-volume/low-budget regions, "
-          f"transformers win in low-volume/generous-budget regions.")
+    print(f"  1. Gross energy asymmetry (PubMedBERT/LR):"
+          f" {pubmedbert_gross/lr_gross:.0f}x gross-to-gross.")
+    print(f"  2. LightGBM gross energy CORRECTED: 0.7412 J/1k"
+          f" (was incorrectly 0.3700 J/1k).")
+    print(f"  3. GPU Net energy is TBD (requires nvidia-smi idle trace).")
+    print(f"  4. Statistical-tie rule: LR AUROC (0.8835) and PubMedBERT")
+    print(f"     AUROC (TBD, F1 proxy=0.8140) may be statistically tied.")
+    print(f"     If tied, tie rule selects LR at 117x less energy (gross).")
+    print(f"  5. Absolute inference energy is modest: 1M sentences/day on")
+    print(f"     PubMedBERT costs {daily_wh:.1f} Wh (~a phone charge).")
 
-    print("\n--- PROTOCOL NOTES ---")
-    print("  * Configuration values use ST3/ST4 empirical results for classical")
-    print("    models and ST6 extrapolated estimates for transformers.")
-    print("  * Full-run ST8 should use actual measured values from Phase 1.")
-    print("  * Transformer estimates marked as pending nvidia-smi validation.")
-    print(f"  * Plot saved: {plot_path}")
+    print("\n--- WHAT IS MEASURED vs PENDING ---")
+    print("  MEASURED (live, verified):")
+    print("    CPU: AUROC, AUPRC, F1@t*, ECE, NLL, Gross+Net energy (ST3/ST4)")
+    print("    GPU: F1@0.5, ECE, NLL, Gross energy, throughput (Colab gating)")
+    print("  PENDING (requires Colab re-run):")
+    print("    GPU: AUROC, AUPRC, F1@t*, t*, nvidia-smi idle/load power,")
+    print("         per-arm Net energy, fitted T values, calib NLL pre/post")
+
+    print(f"\n  Plot saved: {plot_path}")
     print("=" * 100 + "\n")
 
 

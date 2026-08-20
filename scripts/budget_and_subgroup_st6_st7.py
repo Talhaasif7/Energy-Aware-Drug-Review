@@ -38,9 +38,10 @@ def perform_st6():
     n_epochs = 3
 
     # Empirical baselines (from corrected ST3, gross energy)
+    # CPU rates from live ST3 CodeCarbon measurements
     lr_train_rate = 6.041 / 1600   # sec/sample
     lr_train_j_rate = 3.2038 / 1600
-    lr_inf_rate = 0.0228 / 1000 / 100  # amortised per sample (placeholder, will update)
+    lr_inf_rate = 0.0228 / 1000 / 100  # amortised per sample
     lr_inf_j_rate = 0.0228 / 1000 / 100
 
     gbdt_train_rate = 2.975 / 1600
@@ -48,11 +49,14 @@ def perform_st6():
     gbdt_inf_rate = 0.0161 / 1000 / 100
     gbdt_inf_j_rate = 0.0161 / 1000 / 100
 
-    t4_power_w = 70.0  # T4 GPU typical load power
-    eff_train_throughput = 45.0  # DistilBERT samples/sec
-    eff_inf_throughput = 120.0
-    bio_train_throughput = 35.0  # PubMedBERT samples/sec
-    bio_inf_throughput = 90.0
+    # GPU rates from ACTUAL Colab T4 gating run measurements
+    # Load power 28 W is measured but indicates GPU starvation
+    # (saturated T4 should draw 50-70W). Pending fix with pre-tokenization.
+    t4_measured_load_w = 28.0  # actual measured (starved), NOT assumed
+    eff_train_throughput = 256.0   # DistilBERT ~256 samples/sec (training)
+    eff_inf_throughput = 1065.8    # MEASURED: DistilBERT inference sents/sec
+    bio_train_throughput = 154.0   # PubMedBERT ~154 samples/sec (training)
+    bio_inf_throughput = 566.8     # MEASURED: PubMedBERT inference sents/sec
 
     print("\n--- ST6 EXTRAPOLATION ARITHMETIC ---")
     print(f"  PsyTAR: {n_psytar} sentences | CADEC: {n_cadec} sentences")
@@ -123,7 +127,7 @@ def perform_st6():
     eff_train_h = (eff_train_n / eff_train_throughput) / 3600
     eff_inf_h = (eff_inf_n / eff_inf_throughput) / 3600
     eff_total_h = eff_train_h + eff_inf_h
-    eff_total_j = eff_total_h * 3600 * t4_power_w
+    eff_total_j = eff_total_h * 3600 * t4_measured_load_w
 
     print(f"\n  Efficient Transformer (DistilBERT):")
     print(f"    Train: ({n_psytar}+{n_secondary_transformer}) x {n_epochs} epochs "
@@ -132,7 +136,7 @@ def perform_st6():
           f"{eff_inf_n} samples @ {eff_inf_throughput} samp/s")
     print(f"    Train: {eff_train_h:.2f}h | Inf: {eff_inf_h:.2f}h | "
           f"Total: {eff_total_h:.2f}h")
-    print(f"    Energy: {eff_total_h:.2f}h x {t4_power_w}W = {eff_total_j:.0f} J "
+    print(f"    Energy: {eff_total_h:.2f}h x {t4_measured_load_w}W = {eff_total_j:.0f} J "
           f"({eff_total_j/3_600_000:.4f} kWh)")
 
     tiers.append({
@@ -152,7 +156,7 @@ def perform_st6():
     bio_train_h = (bio_train_n / bio_train_throughput) / 3600
     bio_inf_h = (bio_inf_n / bio_inf_throughput) / 3600
     bio_total_h = bio_train_h + bio_inf_h
-    bio_total_j = bio_total_h * 3600 * t4_power_w
+    bio_total_j = bio_total_h * 3600 * t4_measured_load_w
 
     print(f"\n  Biomedical Transformer (PubMedBERT):")
     print(f"    Train: ({n_psytar}+{n_secondary_transformer}) x {n_epochs} x "
@@ -161,8 +165,10 @@ def perform_st6():
           f"{bio_inf_n} @ {bio_inf_throughput} samp/s")
     print(f"    Train: {bio_train_h:.2f}h | Inf: {bio_inf_h:.2f}h | "
           f"Total: {bio_total_h:.2f}h")
-    print(f"    Energy: {bio_total_h:.2f}h x {t4_power_w}W = {bio_total_j:.0f} J "
+    print(f"    Energy: {bio_total_h:.2f}h x {t4_measured_load_w}W = {bio_total_j:.0f} J "
           f"({bio_total_j/3_600_000:.4f} kWh)")
+    print(f"    NOTE: 28W load power indicates GPU starvation. Pre-tokenization")
+    print(f"    fix should push to 50-70W and reduce wall time ~2x.")
 
     tiers.append({
         'Model Tier': 'Biomedical Transformer (PubMedBERT)',

@@ -2,23 +2,24 @@
 # -*- coding: utf-8 -*-
 """
 ================================================================================
-COLAB T4 GPU TRANSFORMER PRIMARY ADR PIPELINE (ST3b & ST6 VALIDATION)
+COLAB T4 GPU TRANSFORMER PRIMARY ADR PIPELINE (Round 3 Corrected)
 ================================================================================
 Repository: Talhaasif7/Energy-Aware-Drug-Review
 Script Path: scripts/colab_gpu_transformer_primary_adr.py
 
-Description:
-Self-contained, standalone script for Google Colab (T4 GPU environment) to execute
-real empirical fine-tuning, calibration, and energy benchmarking for transformer models:
-  - Model 1 (Efficient Transformer): distilbert-base-uncased
-  - Model 2 (Biomedical Transformer): microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract
+Round 3 Fixes:
+  - Added missing sklearn.metrics imports (roc_auc_score, average_precision_score)
+  - Added nvidia-smi power logging: idle baseline trace + per-arm load traces
+  - Pre-tokenization into tensors before GPU transfer (fixes dataloader starvation)
+  - Logs fitted Temperature T values + calibration-split NLL pre/post
+  - Ensures .npz prediction files are auto-downloaded on Colab
+  - F1@t* properly tuned on calibration split (not copied from F1@0.5)
+  - 3-repeat GPU energy CV for measurement stability
 
-Includes CodeCarbon tracking for GPU training energy (J & kWh), inference throughput,
-post-hoc recalibration (Temperature Scaling & Isotonic Regression), expected calibration error
-(Uniform & Adaptive ECE), Brier score, and NLL on PsyTAR test split & CADEC zero-shot target.
-
-Colab Quick Run Command:
-  !pip install codecarbon transformers datasets accelerate evaluate torch pandas numpy scikit-learn scipy
+Colab Quick Run:
+  !pip install codecarbon transformers datasets accelerate torch pandas numpy scikit-learn scipy
+  !git clone https://github.com/Talhaasif7/Energy-Aware-Drug-Review.git
+  %cd Energy-Aware-Drug-Review
   !python scripts/colab_gpu_transformer_primary_adr.py
 ================================================================================
 """
@@ -35,7 +36,10 @@ from scipy.optimize import minimize_scalar
 from scipy.special import logit, expit, softmax
 from sklearn.model_selection import train_test_split
 from sklearn.isotonic import IsotonicRegression
-from sklearn.metrics import f1_score, brier_score_loss, log_loss
+from sklearn.metrics import (
+    f1_score, brier_score_loss, log_loss,
+    roc_auc_score, average_precision_score
+)
 
 # Ensure UTF-8 output encoding for console compatibility
 if hasattr(sys.stdout, 'reconfigure'):
@@ -51,7 +55,7 @@ def setup_colab_environment():
     """Install required packages if running inside Google Colab."""
     if 'google.colab' in sys.modules:
         print("[SETUP] Google Colab environment detected. Checking dependencies...")
-        reqs = ["codecarbon", "transformers", "datasets", "accelerate", "evaluate", "torch"]
+        reqs = ["codecarbon", "transformers", "datasets", "accelerate", "torch"]
         for req in reqs:
             try:
                 __import__(req)
@@ -63,7 +67,7 @@ def setup_colab_environment():
 setup_colab_environment()
 
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, TensorDataset
 from torch.optim import AdamW
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
@@ -79,23 +83,26 @@ except ImportError:
 # ==============================================================================
 # GATING FLAG:
 # Set SMOKE_TEST_MODE = True for fast validation (1 seed, 2,000 PsyTAR subset, 2 epochs).
-# Set SMOKE_TEST_MODE = False for full Phase-1 matrix (5 seeds, full PsyTAR, 3 epochs).
+# Set SMOKE_TEST_MODE = False for full Phase-1 matrix (3 seeds, full PsyTAR, 3 epochs).
 SMOKE_TEST_MODE = True
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64           # Increased from 32 to reduce GPU starvation
 MAX_SEQ_LENGTH = 128
 LEARNING_RATE = 2e-5
+NUM_WORKERS = 2           # DataLoader workers for prefetching
+GPU_CV_REPEATS = 3        # Inference energy measurement repeats for CV
 
 if SMOKE_TEST_MODE:
     SEEDS = [42]
     EPOCHS = 2
     SUBSET_SIZE = 2000
+    GPU_CV_REPEATS = 1
     print("\n>>> RUNNING IN SMOKE TEST MODE (ST3b Gating: 1 seed, 2,000 PsyTAR subset, 2 epochs) <<<")
 else:
-    SEEDS = [42, 123, 456, 789, 999]
+    SEEDS = [42, 123, 456]
     EPOCHS = 3
     SUBSET_SIZE = None
-    print("\n>>> RUNNING IN FULL PHASE-1 MATRIX MODE (5 seeds, Full PsyTAR dataset, 3 epochs) <<<")
+    print("\n>>> RUNNING IN FULL PHASE-1 MATRIX MODE (3 seeds, Full PsyTAR dataset, 3 epochs) <<<")
 
 TARGET_MODELS = {
     'Efficient Transformer': 'distilbert-base-uncased',
@@ -103,20 +110,104 @@ TARGET_MODELS = {
 }
 
 # ==============================================================================
-# 2. AUTOMATIC DATA LOADING & REPOSITORY CLONING LOGIC
+# 2. NVIDIA-SMI POWER MEASUREMENT UTILITIES
+# ==============================================================================
+def query_gpu_power():
+    """Query current GPU power draw in Watts via nvidia-smi."""
+    try:
+        result = subprocess.run(
+            ['nvidia-smi', '--query-gpu=power.draw', '--format=csv,noheader,nounits'],
+            capture_output=True, text=True, timeout=5
+        )
+        return float(result.stdout.strip())
+    except Exception:
+        return None
+
+def query_gpu_utilization():
+    """Query current GPU utilization % via nvidia-smi."""
+    try:
+        result = subprocess.run(
+            ['nvidia-smi', '--query-gpu=utilization.gpu', '--format=csv,noheader,nounits'],
+            capture_output=True, text=True, timeout=5
+        )
+        return float(result.stdout.strip())
+    except Exception:
+        return None
+
+def measure_gpu_idle_power(duration_s=60):
+    """
+    Measure GPU idle power by sampling nvidia-smi every 1 second
+    for `duration_s` seconds while the GPU is idle.
+    Returns: (mean_idle_watts, std_idle_watts, samples)
+    """
+    print(f"\n[GPU IDLE] Measuring GPU idle power for {duration_s}s...")
+    torch.cuda.empty_cache()
+    time.sleep(2)  # let GPU settle
+
+    readings = []
+    for i in range(duration_s):
+        pw = query_gpu_power()
+        if pw is not None:
+            readings.append(pw)
+        time.sleep(1)
+
+    if readings:
+        mean_w = np.mean(readings)
+        std_w = np.std(readings)
+        print(f"[GPU IDLE] Idle power: {mean_w:.2f} W (std={std_w:.2f} W, N={len(readings)})")
+        return mean_w, std_w, readings
+    else:
+        print("[GPU IDLE] nvidia-smi not available; using fallback 11.0 W")
+        return 11.0, 0.0, []
+
+def measure_gpu_load_power_during(func, label="workload"):
+    """
+    Run `func()` while sampling GPU power every 0.5 seconds.
+    Returns: (func_result, mean_load_watts, std_load_watts, mean_util_pct, samples)
+    """
+    readings_w = []
+    readings_util = []
+    stop_flag = [False]
+
+    import threading
+    def sampler():
+        while not stop_flag[0]:
+            pw = query_gpu_power()
+            ut = query_gpu_utilization()
+            if pw is not None:
+                readings_w.append(pw)
+            if ut is not None:
+                readings_util.append(ut)
+            time.sleep(0.5)
+
+    t = threading.Thread(target=sampler, daemon=True)
+    t.start()
+
+    result = func()
+
+    stop_flag[0] = True
+    t.join(timeout=2)
+
+    mean_w = np.mean(readings_w) if readings_w else 0.0
+    std_w = np.std(readings_w) if readings_w else 0.0
+    mean_util = np.mean(readings_util) if readings_util else 0.0
+    print(f"[GPU LOAD] {label}: {mean_w:.2f} W (std={std_w:.2f}), "
+          f"Util={mean_util:.1f}%, N={len(readings_w)} samples")
+    return result, mean_w, std_w, mean_util, readings_w
+
+
+# ==============================================================================
+# 3. DATA LOADING & PRE-TOKENIZATION
 # ==============================================================================
 def resolve_data_paths():
-    """
-    Check if dataset files exist locally.
-    If not, attempt to clone repo or create fallback dataset.
-    """
+    """Check if dataset files exist locally or clone repo."""
     possible_roots = [
         os.getcwd(),
         r"e:\AI Green",
         "/content/Energy-Aware-Drug-Review",
         os.path.join(os.getcwd(), "Energy-Aware-Drug-Review")
     ]
-    
+
     psytar_rel = os.path.join("data", "01_primary_adr_detection", "dev_psytar", "psytar_harmonised.csv")
     cadec_rel  = os.path.join("data", "01_primary_adr_detection", "external_val_cadec", "cadec_harmonised.csv")
 
@@ -132,7 +223,7 @@ def resolve_data_paths():
             break
 
     if not psytar_path or not cadec_path:
-        print("[DATA] Local CSVs not found in standard paths. Attempting git clone...")
+        print("[DATA] Local CSVs not found. Attempting git clone...")
         try:
             subprocess.run(["git", "clone", "https://github.com/Talhaasif7/Energy-Aware-Drug-Review.git"], check=True)
             clone_root = os.path.join(os.getcwd(), "Energy-Aware-Drug-Review")
@@ -142,148 +233,147 @@ def resolve_data_paths():
                 psytar_path = p_cand
                 cadec_path  = c_cand
         except Exception as e:
-            print(f"[DATA] Git clone attempt failed/skipped: {e}")
+            print(f"[DATA] Git clone failed: {e}")
 
     if not psytar_path or not cadec_path:
-        print("[DATA] Creating synthetic dataset fallback for isolated testing...")
-        os.makedirs(os.path.dirname(psytar_rel), exist_ok=True)
-        os.makedirs(os.path.dirname(cadec_rel), exist_ok=True)
-        
-        # Synthetic PsyTAR
-        np.random.seed(42)
-        texts_p = ["Side effect nausea headache weight gain" if i % 2 == 0 else "Patient recovered completely felt great" for i in range(2000)]
-        labels_p = [1 if i % 2 == 0 else 0 for i in range(2000)]
-        df_p = pd.DataFrame({'text': texts_p, 'label': labels_p})
-        df_p.to_csv(psytar_rel, index=False)
-        psytar_path = psytar_rel
+        raise FileNotFoundError("Dataset files not found. Upload CSVs or fix git clone.")
 
-        # Synthetic CADEC
-        texts_c = ["Dizziness and muscle cramps" if i % 3 == 0 else "No side effects experienced" for i in range(1000)]
-        labels_c = [1 if i % 3 == 0 else 0 for i in range(1000)]
-        df_c = pd.DataFrame({'text': texts_c, 'label': labels_c})
-        df_c.to_csv(cadec_rel, index=False)
-        cadec_path = cadec_rel
-
-    print(f"[DATA] Resolved PsyTAR path: {psytar_path}")
-    print(f"[DATA] Resolved CADEC path : {cadec_path}")
+    print(f"[DATA] PsyTAR: {psytar_path}")
+    print(f"[DATA] CADEC:  {cadec_path}")
     return psytar_path, cadec_path
 
+
+def pre_tokenize(texts, labels, tokenizer, max_len=128):
+    """
+    Pre-tokenize all texts into tensors on CPU BEFORE creating DataLoader.
+    This eliminates the dataloader CPU bottleneck that causes GPU starvation.
+    Returns a TensorDataset ready for DataLoader.
+    """
+    encoding = tokenizer(
+        list(texts),
+        truncation=True,
+        max_length=max_len,
+        padding='max_length',
+        return_tensors='pt'
+    )
+    labels_tensor = torch.tensor(list(labels), dtype=torch.long)
+    return TensorDataset(encoding['input_ids'], encoding['attention_mask'], labels_tensor)
+
+
 # ==============================================================================
-# 3. DATASET CLASS & METRIC HELPERS
+# 4. METRIC HELPERS
 # ==============================================================================
-class ADRTextDataset(Dataset):
-    """PyTorch Dataset wrapper for sequence classification."""
-    def __init__(self, texts, labels, tokenizer, max_len=128):
-        self.texts = list(texts)
-        self.labels = list(labels)
-        self.tokenizer = tokenizer
-        self.max_len = max_len
-
-    def __len__(self):
-        return len(self.texts)
-
-    def __getitem__(self, idx):
-        text = str(self.texts[idx])
-        label = int(self.labels[idx])
-        encoding = self.tokenizer(
-            text,
-            truncation=True,
-            max_length=self.max_len,
-            padding='max_length',
-            return_tensors='pt'
-        )
-        item = {key: val.squeeze(0) for key, val in encoding.items()}
-        item['labels'] = torch.tensor(label, dtype=torch.long)
-        return item
-
-def compute_ece_uniform(y_true, y_probs, n_bins=10):
-    """Expected Calibration Error with 10 equal-width bins."""
-    bins = np.linspace(0.0, 1.0, n_bins + 1)
-    bin_indices = np.digitize(y_probs, bins) - 1
-    bin_indices = np.clip(bin_indices, 0, n_bins - 1)
-
-    ece = 0.0
-    n_samples = len(y_true)
-
-    for b in range(n_bins):
-        mask = bin_indices == b
-        bin_size = np.sum(mask)
-        if bin_size > 0:
-            bin_acc = np.mean(y_true[mask])
-            bin_conf = np.mean(y_probs[mask])
-            ece += (bin_size / n_samples) * abs(bin_acc - bin_conf)
-
-    return float(ece)
-
 def compute_ece_adaptive(y_true, y_probs, n_bins=10):
-    """Adaptive Expected Calibration Error with 10 equal-frequency quantile bins."""
+    """Adaptive ECE with equal-frequency quantile bins."""
     n_samples = len(y_true)
     if n_samples == 0:
         return 0.0
-
-    quantiles = np.linspace(0, 100, n_bins + 1)
-    bins = np.percentile(y_probs, quantiles)
-    bins = np.unique(bins)
-    if len(bins) <= 1:
-        return 0.0
-
-    bin_indices = np.digitize(y_probs, bins) - 1
-    bin_indices = np.clip(bin_indices, 0, len(bins) - 2)
-
+    sorted_idx = np.argsort(y_probs)
+    y_true_s = y_true[sorted_idx]
+    y_probs_s = y_probs[sorted_idx]
+    bin_size = max(1, n_samples // n_bins)
     ece = 0.0
-    for b in range(len(bins) - 1):
-        mask = bin_indices == b
-        bin_size = np.sum(mask)
-        if bin_size > 0:
-            bin_acc = np.mean(y_true[mask])
-            bin_conf = np.mean(y_probs[mask])
-            ece += (bin_size / n_samples) * abs(bin_acc - bin_conf)
-
+    for i in range(n_bins):
+        start = i * bin_size
+        end = start + bin_size if i < n_bins - 1 else n_samples
+        if start >= n_samples:
+            break
+        bt = y_true_s[start:end]
+        bp = y_probs_s[start:end]
+        bn = len(bt)
+        if bn > 0:
+            ece += (bn / n_samples) * abs(np.mean(bt) - np.mean(bp))
     return float(ece)
 
-def validate_probabilities(probs_2d, model_name):
-    """Check that predicted probabilities are well-formed."""
-    has_nan = np.isnan(probs_2d).any()
-    has_inf = np.isinf(probs_2d).any()
-    in_range = (probs_2d >= 0.0).all() and (probs_2d <= 1.0).all()
-    sums_to_one = np.allclose(probs_2d.sum(axis=1), 1.0, atol=1e-3)
-    valid = (not has_nan) and (not has_inf) and in_range and sums_to_one
-    if not valid:
-        print(f"[WARN] Probability validation issue in {model_name}: NaN={has_nan}, Inf={has_inf}, Range={in_range}, Sum1={sums_to_one}")
-    return valid
+
+def bootstrap_ece_ci(y_true, y_probs, n_bins=10, n_bootstrap=1000):
+    """Bootstrap 95% CI for adaptive ECE."""
+    rng = np.random.RandomState(42)
+    n = len(y_true)
+    boot_eces = []
+    for _ in range(n_bootstrap):
+        idx = rng.randint(0, n, size=n)
+        boot_eces.append(compute_ece_adaptive(y_true[idx], y_probs[idx], n_bins))
+    return float(np.percentile(boot_eces, 2.5)), float(np.percentile(boot_eces, 97.5))
+
+
+def find_optimal_threshold(y_true, y_probs):
+    """Find threshold maximizing F1 on given set."""
+    best_f1 = 0.0
+    best_t = 0.5
+    for t in np.arange(0.05, 0.96, 0.01):
+        f1 = f1_score(y_true, (y_probs >= t).astype(int), pos_label=1, zero_division=0)
+        if f1 > best_f1:
+            best_f1 = f1
+            best_t = float(t)
+    return best_t, best_f1
+
 
 class TemperatureScaler:
     """Post-hoc Temperature Scaling on raw logits."""
     def __init__(self):
         self.T = 1.0
+        self.nll_pre = None
+        self.nll_post = None
 
     def fit(self, y_calib, logits_calib):
-        # logits_calib: shape (N, 2)
+        """Fit T on calibration split logits. Logs NLL pre/post."""
         log_odds = logits_calib[:, 1] - logits_calib[:, 0]
+        # NLL before scaling (T=1)
+        p1_pre = expit(log_odds)
+        p_pre = np.column_stack([1.0 - p1_pre, p1_pre])
+        self.nll_pre = float(log_loss(y_calib, p_pre, labels=[0, 1]))
 
         def nll_objective(T_val):
             if T_val <= 0:
                 return 1e9
             scaled_p1 = expit(log_odds / T_val)
-            scaled_p0 = 1.0 - scaled_p1
-            scaled_p = np.column_stack([scaled_p0, scaled_p1])
+            scaled_p = np.column_stack([1.0 - scaled_p1, scaled_p1])
             return log_loss(y_calib, scaled_p, labels=[0, 1])
 
         res = minimize_scalar(nll_objective, bounds=(0.01, 10.0), method='bounded')
         self.T = float(res.x)
+        self.nll_post = float(res.fun)
         return self
 
     def transform(self, logits):
         log_odds = logits[:, 1] - logits[:, 0]
         scaled_p1 = expit(log_odds / self.T)
-        scaled_p0 = 1.0 - scaled_p1
-        return np.column_stack([scaled_p0, scaled_p1])
+        return np.column_stack([1.0 - scaled_p1, scaled_p1])
+
+
+def eval_full_metrics(y_true, probs_2d, threshold=0.5):
+    """Compute complete metric bundle from probability array."""
+    p1 = probs_2d[:, 1]
+    auroc = float(roc_auc_score(y_true, p1))
+    auprc = float(average_precision_score(y_true, p1))
+
+    y_pred_fixed = (p1 >= 0.5).astype(int)
+    f1_fixed = float(f1_score(y_true, y_pred_fixed, pos_label=1, zero_division=0))
+
+    y_pred_tuned = (p1 >= threshold).astype(int)
+    f1_tuned = float(f1_score(y_true, y_pred_tuned, pos_label=1, zero_division=0))
+
+    ece_ada = compute_ece_adaptive(y_true, p1)
+    ece_ci_lo, ece_ci_hi = bootstrap_ece_ci(y_true, p1)
+    brier = float(brier_score_loss(y_true, p1))
+    nll = float(log_loss(y_true, probs_2d, labels=[0, 1]))
+
+    return {
+        'AUROC': auroc, 'AUPRC': auprc,
+        'F1@0.5': f1_fixed, 'F1@t*': f1_tuned, 't*': threshold,
+        'ECE_adaptive': ece_ada,
+        'ECE_CI_lo': ece_ci_lo, 'ECE_CI_hi': ece_ci_hi,
+        'Brier': brier, 'NLL': nll
+    }
+
 
 # ==============================================================================
-# 4. FINE-TUNING & INFERENCE ENGINE
+# 5. FINE-TUNING & INFERENCE ENGINE
 # ==============================================================================
-def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df, test_df, cadec_df, seed):
-    """Run fine-tuning, inference, calibration, and metric evaluation for 1 seed."""
+def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df,
+                                test_df, cadec_df, seed, gpu_idle_w):
+    """Run fine-tuning, inference, calibration, and evaluation for 1 seed."""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     use_fp16 = torch.cuda.is_available()
 
@@ -294,23 +384,44 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df, te
 
     # Load Tokenizer & Model
     tokenizer = AutoTokenizer.from_pretrained(model_hf_path)
-    model = AutoModelForSequenceClassification.from_pretrained(model_hf_path, num_labels=2).to(device)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        model_hf_path, num_labels=2).to(device)
 
-    # Prepare DataLoaders
-    train_dataset = ADRTextDataset(train_df['text'], train_df['label'], tokenizer, MAX_SEQ_LENGTH)
-    calib_dataset = ADRTextDataset(calib_df['text'], calib_df['label'], tokenizer, MAX_SEQ_LENGTH)
-    test_dataset  = ADRTextDataset(test_df['text'], test_df['label'], tokenizer, MAX_SEQ_LENGTH)
-    cadec_dataset = ADRTextDataset(cadec_df['text'], cadec_df['label'], tokenizer, MAX_SEQ_LENGTH)
+    # PRE-TOKENIZE into tensors on CPU (fixes GPU starvation)
+    print(f"  Pre-tokenizing datasets on CPU...")
+    train_dataset = pre_tokenize(train_df['text'], train_df['label'], tokenizer, MAX_SEQ_LENGTH)
+    calib_dataset = pre_tokenize(calib_df['text'], calib_df['label'], tokenizer, MAX_SEQ_LENGTH)
+    test_dataset  = pre_tokenize(test_df['text'], test_df['label'], tokenizer, MAX_SEQ_LENGTH)
+    cadec_dataset = pre_tokenize(cadec_df['text'], cadec_df['label'], tokenizer, MAX_SEQ_LENGTH)
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    calib_loader = DataLoader(calib_dataset, batch_size=BATCH_SIZE, shuffle=False)
-    test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
-    cadec_loader = DataLoader(cadec_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
+                              num_workers=NUM_WORKERS, pin_memory=True)
+    calib_loader = DataLoader(calib_dataset, batch_size=BATCH_SIZE, shuffle=False,
+                              num_workers=NUM_WORKERS, pin_memory=True)
+    test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False,
+                              num_workers=NUM_WORKERS, pin_memory=True)
+    cadec_loader = DataLoader(cadec_dataset, batch_size=BATCH_SIZE, shuffle=False,
+                              num_workers=NUM_WORKERS, pin_memory=True)
 
     optimizer = AdamW(model.parameters(), lr=LEARNING_RATE)
     scaler = torch.cuda.amp.GradScaler(enabled=use_fp16)
 
-    # 1. FINE-TUNING WITH CODECARBON TRACKING
+    # ---- FINE-TUNING with power measurement ----
+    def do_training():
+        model.train()
+        for epoch in range(EPOCHS):
+            for batch in train_loader:
+                optimizer.zero_grad()
+                input_ids = batch[0].to(device)
+                attention_mask = batch[1].to(device)
+                labels = batch[2].to(device)
+                with torch.cuda.amp.autocast(enabled=use_fp16):
+                    outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+                    loss = outputs.loss
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+
     os.makedirs("./energy_logs", exist_ok=True)
     tracker_train = None
     if CODECARBON_AVAILABLE:
@@ -321,23 +432,8 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df, te
             tracker_train = None
 
     t0_train = time.perf_counter()
-    model.train()
-
-    for epoch in range(EPOCHS):
-        for batch in train_loader:
-            optimizer.zero_grad()
-            input_ids = batch['input_ids'].to(device)
-            attention_mask = batch['attention_mask'].to(device)
-            labels = batch['labels'].to(device)
-
-            with torch.cuda.amp.autocast(enabled=use_fp16):
-                outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
-                loss = outputs.loss
-
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-
+    _, train_load_w, train_load_std, train_util, _ = measure_gpu_load_power_during(
+        do_training, label=f"{model_name} Training")
     t1_train = time.perf_counter()
     train_time_secs = t1_train - t0_train
 
@@ -347,14 +443,25 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df, te
             train_energy_kwh = tracker_train.stop() or 0.0
         except Exception:
             train_energy_kwh = 0.0
-    
-    # Estimate GPU energy if CodeCarbon returns 0 on Colab T4 (~70W load power)
     if train_energy_kwh == 0.0 and torch.cuda.is_available():
-        train_energy_kwh = (train_time_secs / 3600.0) * 0.070
-    train_energy_joules = float(train_energy_kwh * 3600000.0) if isinstance(train_energy_kwh, float) else 0.0
+        train_energy_kwh = (train_time_secs / 3600.0) * (train_load_w / 1000.0)
+    train_energy_joules = float(train_energy_kwh * 3600000.0)
 
-    # 2. INFERENCE & LOGITS EXTRACTION FUNCTION
-    def run_inference(dataloader):
+    # ---- INFERENCE with power measurement ----
+    def run_inference(dataloader, label="inference"):
+        model.eval()
+        logits_list = []
+        def do_inf():
+            nonlocal logits_list
+            with torch.no_grad():
+                for batch in dataloader:
+                    input_ids = batch[0].to(device)
+                    attention_mask = batch[1].to(device)
+                    with torch.cuda.amp.autocast(enabled=use_fp16):
+                        outputs = model(input_ids, attention_mask=attention_mask)
+                    logits_list.append(outputs.logits.cpu().numpy())
+            return np.concatenate(logits_list, axis=0)
+
         tracker_inf = None
         if CODECARBON_AVAILABLE:
             try:
@@ -363,20 +470,11 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df, te
             except Exception:
                 tracker_inf = None
 
-        t0_inf = time.perf_counter()
-        model.eval()
-        logits_list = []
-
-        with torch.no_grad():
-            for batch in dataloader:
-                input_ids = batch['input_ids'].to(device)
-                attention_mask = batch['attention_mask'].to(device)
-                with torch.cuda.amp.autocast(enabled=use_fp16):
-                    outputs = model(input_ids, attention_mask=attention_mask)
-                logits_list.append(outputs.logits.cpu().numpy())
-
-        t1_inf = time.perf_counter()
-        inf_time = t1_inf - t0_inf
+        t0 = time.perf_counter()
+        logits_arr, load_w, load_std, util_pct, _ = measure_gpu_load_power_during(
+            do_inf, label=label)
+        t1 = time.perf_counter()
+        inf_time = t1 - t0
 
         inf_energy_kwh = 0.0
         if tracker_inf:
@@ -385,114 +483,103 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df, te
             except Exception:
                 inf_energy_kwh = 0.0
         if inf_energy_kwh == 0.0 and torch.cuda.is_available():
-            inf_energy_kwh = (inf_time / 3600.0) * 0.070
+            inf_energy_kwh = (inf_time / 3600.0) * (load_w / 1000.0)
 
-        logits_arr = np.concatenate(logits_list, axis=0)
-        return logits_arr, inf_time, float(inf_energy_kwh * 3600000.0)
+        return logits_arr, inf_time, float(inf_energy_kwh * 3600000.0), load_w, util_pct
 
-    # Run Inference on Calibration, PsyTAR Test, and CADEC Target
-    logits_calib, _, _ = run_inference(calib_loader)
-    logits_test, inf_time_test, inf_joules_test = run_inference(test_loader)
-    logits_cadec, inf_time_cadec, inf_joules_cadec = run_inference(cadec_loader)
+    # Run inference on calib, test, and CADEC
+    logits_calib, _, _, _, _ = run_inference(calib_loader, f"{model_name} Calib Inf")
+    logits_test, inf_time_test, inf_j_test, inf_load_w_test, inf_util_test = \
+        run_inference(test_loader, f"{model_name} PsyTAR Test Inf")
+    logits_cadec, inf_time_cadec, inf_j_cadec, inf_load_w_cadec, inf_util_cadec = \
+        run_inference(cadec_loader, f"{model_name} CADEC Inf")
 
-    # Compute Inference Throughput & Energy per 1k sentences
+    # GPU energy CV (repeat test inference for stability)
+    inf_j_repeats = [inf_j_test]
+    if GPU_CV_REPEATS > 1:
+        for rep in range(GPU_CV_REPEATS - 1):
+            _, _, j_rep, _, _ = run_inference(test_loader, f"{model_name} CV Rep {rep+2}")
+            inf_j_repeats.append(j_rep)
+    inf_j_cv = np.std(inf_j_repeats) / np.mean(inf_j_repeats) if np.mean(inf_j_repeats) > 0 else 0
+    print(f"  GPU Inference Energy CV: {inf_j_cv*100:.2f}% over {len(inf_j_repeats)} repeats")
+
+    # Compute per-1k gross and net energy
     n_test = len(test_df)
     throughput_test = n_test / inf_time_test if inf_time_test > 0 else 0.0
-    inf_energy_1k_test = (inf_joules_test / n_test) * 1000.0 if n_test > 0 else 0.0
+    inf_gross_1k = (inf_j_test / n_test) * 1000.0 if n_test > 0 else 0.0
+    # Net = gross * (net_power / load_power)
+    net_power_w = inf_load_w_test - gpu_idle_w
+    inf_net_1k = inf_gross_1k * (net_power_w / inf_load_w_test) if inf_load_w_test > 0 else inf_gross_1k
 
     # Probabilities
     probs_calib_uncal = softmax(logits_calib, axis=1)
     probs_test_uncal  = softmax(logits_test, axis=1)
     probs_cadec_uncal = softmax(logits_cadec, axis=1)
 
-    validate_probabilities(probs_test_uncal, f"{model_name} (PsyTAR Test Uncal)")
-    validate_probabilities(probs_cadec_uncal, f"{model_name} (CADEC Target Uncal)")
-
-    # 3. RECALIBRATION FIT ON 20% CALIBRATION SPLIT
     y_calib = calib_df['label'].values
     y_test  = test_df['label'].values
     y_cadec = cadec_df['label'].values
 
-    # Method A: Temperature Scaling
+    # ---- RECALIBRATION ----
+    # Temperature Scaling (fit on CALIBRATION split logits)
     temp_scaler = TemperatureScaler()
     temp_scaler.fit(y_calib, logits_calib)
     probs_test_temp  = temp_scaler.transform(logits_test)
     probs_cadec_temp = temp_scaler.transform(logits_cadec)
+    probs_calib_temp = temp_scaler.transform(logits_calib)
 
-    # Method B: Isotonic Regression
+    print(f"  Temperature T = {temp_scaler.T:.4f}")
+    print(f"  Calib NLL: pre={temp_scaler.nll_pre:.4f} -> post={temp_scaler.nll_post:.4f}")
+    print(f"  NLL change: {temp_scaler.nll_post - temp_scaler.nll_pre:+.4f}")
+
+    # Isotonic Regression (fit on CALIBRATION split probabilities)
     iso_reg = IsotonicRegression(out_of_bounds='clip', y_min=0.0, y_max=1.0)
     iso_reg.fit(probs_calib_uncal[:, 1], y_calib)
-
     iso_p1_test  = iso_reg.transform(probs_test_uncal[:, 1])
     probs_test_iso = np.column_stack([1.0 - iso_p1_test, iso_p1_test])
-
     iso_p1_cadec = iso_reg.transform(probs_cadec_uncal[:, 1])
     probs_cadec_iso = np.column_stack([1.0 - iso_p1_cadec, iso_p1_cadec])
+    iso_p1_calib = iso_reg.transform(probs_calib_uncal[:, 1])
+    probs_calib_iso = np.column_stack([1.0 - iso_p1_calib, iso_p1_calib])
 
-    # 4. EVALUATION METRICS HELPER (FULL METRIC BUNDLE)
-    def eval_probs_dict(y_true, probs_2d, y_calib=None, probs_calib_2d=None):
-        p1 = probs_2d[:, 1]
-        
-        # Threshold-invariant discrimination
-        auroc = float(roc_auc_score(y_true, p1))
-        auprc = float(average_precision_score(y_true, p1))
+    # ---- EVALUATE ALL METHODS ----
+    methods = {
+        'Uncalibrated': (probs_test_uncal, probs_cadec_uncal, probs_calib_uncal),
+        'Temperature Scaling': (probs_test_temp, probs_cadec_temp, probs_calib_temp),
+        'Isotonic Regression': (probs_test_iso, probs_cadec_iso, probs_calib_iso),
+    }
 
-        # Fixed 0.5 threshold F1
-        y_pred = (p1 >= 0.5).astype(int)
-        macro_f1 = float(f1_score(y_true, y_pred, average='macro', zero_division=0))
-        adr_f1   = float(f1_score(y_true, y_pred, pos_label=1, zero_division=0))
+    eval_results = {}
+    for method_name, (p_test, p_cadec, p_calib) in methods.items():
+        # Find optimal threshold on CALIBRATION split
+        t_star, _ = find_optimal_threshold(y_calib, p_calib[:, 1])
 
-        # Threshold-tuned F1 (tuned on calib set if provided)
-        best_t = 0.5
-        tuned_f1 = adr_f1
-        if y_calib is not None and probs_calib_2d is not None:
-            p_cal1 = probs_calib_2d[:, 1]
-            for t_cand in np.arange(0.05, 0.96, 0.01):
-                f1_cand = f1_score(y_calib, (p_cal1 >= t_cand).astype(int), pos_label=1, zero_division=0)
-                if f1_cand > tuned_f1:
-                    tuned_f1 = float(f1_cand)
-                    best_t = float(t_cand)
+        # Evaluate on TEST set using calib-tuned threshold
+        psytar_metrics = eval_full_metrics(y_test, p_test, threshold=t_star)
 
-        # Calibration
-        ece_uni  = float(compute_ece_uniform(y_true, p1, n_bins=10))
-        ece_ada  = float(compute_ece_adaptive(y_true, p1, n_bins=10))
-        
-        # Bootstrap CIs on ECE
-        rng = np.random.RandomState(42)
-        n_boot = 500
-        boot_eces = []
-        n_s = len(y_true)
-        for _ in range(n_boot):
-            idx = rng.randint(0, n_s, size=n_s)
-            boot_eces.append(compute_ece_adaptive(y_true[idx], p1[idx], n_bins=10))
-        ece_ci_lo = float(np.percentile(boot_eces, 2.5))
-        ece_ci_hi = float(np.percentile(boot_eces, 97.5))
+        # Evaluate on CADEC (zero-shot) using same threshold
+        cadec_metrics = eval_full_metrics(y_cadec, p_cadec, threshold=t_star)
 
-        brier    = float(brier_score_loss(y_true, p1))
-        nll      = float(log_loss(y_true, probs_2d, labels=[0, 1]))
-
-        return {
-            'AUROC': auroc,
-            'AUPRC': auprc,
-            'ADR F1': adr_f1,
-            'Macro F1': macro_f1,
-            'F1@t*': tuned_f1,
-            't*': best_t,
-            'ECE Uniform': ece_uni,
-            'ECE Adaptive': ece_ada,
-            'ECE CI lo': ece_ci_lo,
-            'ECE CI hi': ece_ci_hi,
-            'Brier Score': brier,
-            'NLL': nll
+        eval_results[method_name] = {
+            'psytar': psytar_metrics,
+            'cadec': cadec_metrics
         }
 
-    # Gross vs Net Energy per 1k sentences (assuming 11W idle floor for T4 board)
-    t4_idle_w = 11.0
-    t4_load_w = 28.0  # Measured load power on T4
-    net_power_ratio = (t4_load_w - t4_idle_w) / t4_load_w if t4_load_w > 0 else 1.0
-    inf_net_energy_1k_test = inf_energy_1k_test * net_power_ratio
+        print(f"\n  {method_name}:")
+        print(f"    PsyTAR: AUROC={psytar_metrics['AUROC']:.4f} "
+              f"AUPRC={psytar_metrics['AUPRC']:.4f} "
+              f"F1@t*={psytar_metrics['F1@t*']:.4f} (t*={t_star:.2f}) "
+              f"F1@0.5={psytar_metrics['F1@0.5']:.4f} "
+              f"ECE={psytar_metrics['ECE_adaptive']:.4f} "
+              f"[{psytar_metrics['ECE_CI_lo']:.4f},{psytar_metrics['ECE_CI_hi']:.4f}]")
+        print(f"    CADEC:  AUROC={cadec_metrics['AUROC']:.4f} "
+              f"AUPRC={cadec_metrics['AUPRC']:.4f} "
+              f"F1@t*={cadec_metrics['F1@t*']:.4f} "
+              f"F1@0.5={cadec_metrics['F1@0.5']:.4f} "
+              f"ECE={cadec_metrics['ECE_adaptive']:.4f} "
+              f"[{cadec_metrics['ECE_CI_lo']:.4f},{cadec_metrics['ECE_CI_hi']:.4f}]")
 
-    # Save predictions array artifact for CPU-side recomputation
+    # ---- SAVE PREDICTION ARTIFACTS ----
     os.makedirs("results", exist_ok=True)
     npz_filename = f"results/{model_name.lower().replace(' ', '_')}_seed{seed}_predictions.npz"
     np.savez_compressed(
@@ -503,218 +590,205 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df, te
         probs_test_uncal=probs_test_uncal,
         probs_test_temp=probs_test_temp,
         probs_test_iso=probs_test_iso,
+        probs_cadec_uncal=probs_cadec_uncal,
+        probs_cadec_temp=probs_cadec_temp,
+        probs_cadec_iso=probs_cadec_iso,
         y_calib=y_calib,
         y_test=y_test,
         y_cadec=y_cadec
     )
-    print(f"[ARTIFACT] Persistent predictions saved to: {npz_filename}")
+    print(f"  [ARTIFACT] Predictions saved: {npz_filename}")
 
-    # Package Results for Seed
+    # Auto-download on Colab
+    if 'google.colab' in sys.modules:
+        try:
+            from google.colab import files
+            files.download(npz_filename)
+            print(f"  [COLAB] Auto-download triggered for {npz_filename}")
+        except Exception as e:
+            print(f"  [COLAB] Download notice: {e}")
+
+    # Package results
     seed_result = {
         'seed': seed,
         'train_time_sec': float(train_time_secs),
         'train_energy_joules': float(train_energy_joules),
-        'inf_throughput_sents_sec': float(throughput_test),
-        'inf_gross_energy_1k_joules': float(inf_energy_1k_test),
-        'inf_net_energy_1k_joules': float(inf_net_energy_1k_test),
+        'train_load_watts': float(train_load_w),
+        'train_util_pct': float(train_util),
+        'inf_throughput_sps': float(throughput_test),
+        'inf_gross_energy_1k_j': float(inf_gross_1k),
+        'inf_net_energy_1k_j': float(inf_net_1k),
+        'inf_load_watts_psytar': float(inf_load_w_test),
+        'inf_load_watts_cadec': float(inf_load_w_cadec),
+        'inf_util_pct_psytar': float(inf_util_test),
+        'inf_util_pct_cadec': float(inf_util_cadec),
+        'gpu_idle_watts': float(gpu_idle_w),
+        'inf_energy_cv_pct': float(inf_j_cv * 100),
         'temperature_T': float(temp_scaler.T),
-        'psytar_eval': {
-            'Uncalibrated': eval_probs_dict(y_test, probs_test_uncal, y_calib, probs_calib_uncal),
-            'Temperature Scaling': eval_probs_dict(y_test, probs_test_temp, y_calib, probs_calib_uncal),
-            'Isotonic Regression': eval_probs_dict(y_test, probs_test_iso, y_calib, probs_calib_uncal)
-        },
-        'cadec_zero_shot': {
-            'Uncalibrated': eval_probs_dict(y_cadec, probs_cadec_uncal, y_calib, probs_calib_uncal),
-            'Temperature Scaling': eval_probs_dict(y_cadec, probs_cadec_temp, y_calib, probs_calib_uncal),
-            'Isotonic Regression': eval_probs_dict(y_cadec, probs_cadec_iso, y_calib, probs_calib_uncal)
-        }
+        'calib_nll_pre': float(temp_scaler.nll_pre),
+        'calib_nll_post': float(temp_scaler.nll_post),
+        'eval_results': eval_results,
     }
 
     # Clean memory
-    del model, tokenizer, train_loader, calib_loader, test_loader, cadec_loader
+    del model, tokenizer
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
     return seed_result
 
+
 # ==============================================================================
-# 5. MAIN PIPELINE EXECUTION & ARTIFACT GENERATION
+# 6. MAIN PIPELINE
 # ==============================================================================
 def main():
     psytar_path, cadec_path = resolve_data_paths()
 
-    print(f"\nLoading PsyTAR dataset from: {psytar_path}")
+    print(f"\nLoading PsyTAR from: {psytar_path}")
     df_psytar_full = pd.read_csv(psytar_path)
-    print(f"Loading CADEC dataset from : {cadec_path}")
+    print(f"Loading CADEC from:  {cadec_path}")
     df_cadec_full  = pd.read_csv(cadec_path)
 
     # Subset PsyTAR if in Smoke Test mode
     if SUBSET_SIZE and len(df_psytar_full) > SUBSET_SIZE:
         df_psytar, _ = train_test_split(
-            df_psytar_full,
-            train_size=SUBSET_SIZE,
-            stratify=df_psytar_full['label'],
-            random_state=42
-        )
-        print(f"Extracted stratified subset of {len(df_psytar)} PsyTAR units for gating test.")
+            df_psytar_full, train_size=SUBSET_SIZE,
+            stratify=df_psytar_full['label'], random_state=42)
+        print(f"Stratified subset: {len(df_psytar)} PsyTAR units.")
     else:
         df_psytar = df_psytar_full
-        print(f"Using full PsyTAR dataset of {len(df_psytar)} units.")
+        print(f"Full PsyTAR: {len(df_psytar)} units.")
 
-    print(f"CADEC Zero-Shot Target dataset size: {len(df_cadec_full)} units.")
+    print(f"CADEC zero-shot target: {len(df_cadec_full)} units.")
+
+    # ---- MEASURE GPU IDLE POWER (60-second trace) ----
+    if torch.cuda.is_available():
+        gpu_idle_w, gpu_idle_std, _ = measure_gpu_idle_power(duration_s=60)
+    else:
+        gpu_idle_w = 0.0
+
+    # ---- FORCE DEVICE PINNING ----
+    if torch.cuda.is_available():
+        os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+        print(f"\nGPU: {torch.cuda.get_device_name(0)}")
+        print(f"GPU Idle Power: {gpu_idle_w:.2f} W")
 
     all_model_results = {}
 
     for model_name, model_hf_path in TARGET_MODELS.items():
-        print(f"\n==================================================================================")
-        print(f" STARTING EXPERIMENTAL RUN: {model_name} ({model_hf_path})")
-        print(f"==================================================================================")
+        print(f"\n{'='*80}")
+        print(f" STARTING: {model_name} ({model_hf_path})")
+        print(f"{'='*80}")
 
         seed_results = []
 
         for seed in SEEDS:
-            # 3-Way Stratified Split: Train 60%, Calibration 20%, Test 20%
+            # 3-Way Stratified Split: 60% Train, 20% Calib, 20% Test
             train_df, calib_test_df = train_test_split(
-                df_psytar,
-                train_size=0.6,
-                stratify=df_psytar['label'],
-                random_state=seed
-            )
+                df_psytar, train_size=0.6,
+                stratify=df_psytar['label'], random_state=seed)
             calib_df, test_df = train_test_split(
-                calib_test_df,
-                test_size=0.5,
-                stratify=calib_test_df['label'],
-                random_state=seed
-            )
+                calib_test_df, test_size=0.5,
+                stratify=calib_test_df['label'], random_state=seed)
+
+            print(f"  Split (seed={seed}): Train={len(train_df)} "
+                  f"Calib={len(calib_df)} Test={len(test_df)}")
 
             res = train_and_eval_single_seed(
-                model_name, model_hf_path, train_df, calib_df, test_df, df_cadec_full, seed
-            )
+                model_name, model_hf_path,
+                train_df, calib_df, test_df, df_cadec_full,
+                seed, gpu_idle_w)
             seed_results.append(res)
 
         all_model_results[model_name] = seed_results
 
-    # Aggregate & Summarize Results
-    print("\n" + "="*110)
-    print("           EMPIRICAL GPU TRANSFORMER BENCHMARK SUMMARY (COLAB T4)")
-    print("="*110)
-
-    summary_rows = []
+    # ---- SUMMARY TABLE ----
+    print("\n" + "=" * 110)
+    print("        EMPIRICAL GPU TRANSFORMER BENCHMARK SUMMARY (COLAB T4)")
+    print("=" * 110)
 
     for model_name, seeds_res in all_model_results.items():
-        avg_train_time = np.mean([r['train_time_sec'] for r in seeds_res])
-        avg_train_joules = np.mean([r['train_energy_joules'] for r in seeds_res])
-        avg_throughput = np.mean([r['inf_throughput_sents_sec'] for r in seeds_res])
-        avg_gross_inf_1k = np.mean([r['inf_gross_energy_1k_joules'] for r in seeds_res])
-        avg_net_inf_1k = np.mean([r['inf_net_energy_1k_joules'] for r in seeds_res])
-        avg_temp = np.mean([r['temperature_T'] for r in seeds_res])
+        print(f"\n  === {model_name} ===")
+        avg_T = np.mean([r['temperature_T'] for r in seeds_res])
+        avg_nll_pre = np.mean([r['calib_nll_pre'] for r in seeds_res])
+        avg_nll_post = np.mean([r['calib_nll_post'] for r in seeds_res])
+        avg_throughput = np.mean([r['inf_throughput_sps'] for r in seeds_res])
+        avg_gross = np.mean([r['inf_gross_energy_1k_j'] for r in seeds_res])
+        avg_net = np.mean([r['inf_net_energy_1k_j'] for r in seeds_res])
+        avg_load = np.mean([r['inf_load_watts_psytar'] for r in seeds_res])
+        avg_util = np.mean([r['inf_util_pct_psytar'] for r in seeds_res])
+        avg_cv = np.mean([r['inf_energy_cv_pct'] for r in seeds_res])
+
+        print(f"    Temperature T = {avg_T:.4f}")
+        print(f"    Calib NLL: pre={avg_nll_pre:.4f} -> post={avg_nll_post:.4f} "
+              f"(delta={avg_nll_post - avg_nll_pre:+.4f})")
+        print(f"    Throughput: {avg_throughput:.1f} sents/s")
+        print(f"    GPU Load: {avg_load:.1f} W | Util: {avg_util:.1f}%")
+        print(f"    Gross Energy: {avg_gross:.2f} J/1k | Net Energy: {avg_net:.2f} J/1k")
+        print(f"    Energy CV: {avg_cv:.2f}%")
 
         for method in ['Uncalibrated', 'Temperature Scaling', 'Isotonic Regression']:
-            # PsyTAR Test metrics
-            psytar_auroc = np.mean([r['psytar_eval'][method]['AUROC'] for r in seeds_res])
-            psytar_auprc = np.mean([r['psytar_eval'][method]['AUPRC'] for r in seeds_res])
-            psytar_f1_fixed = np.mean([r['psytar_eval'][method]['ADR F1'] for r in seeds_res])
-            psytar_f1_tuned = np.mean([r['psytar_eval'][method]['F1@t*'] for r in seeds_res])
-            psytar_t_star = np.mean([r['psytar_eval'][method]['t*'] for r in seeds_res])
-            psytar_ece_u = np.mean([r['psytar_eval'][method]['ECE Uniform'] for r in seeds_res])
-            psytar_ece_a = np.mean([r['psytar_eval'][method]['ECE Adaptive'] for r in seeds_res])
-            psytar_ci_lo = np.mean([r['psytar_eval'][method]['ECE CI lo'] for r in seeds_res])
-            psytar_ci_hi = np.mean([r['psytar_eval'][method]['ECE CI hi'] for r in seeds_res])
-            psytar_nll = np.mean([r['psytar_eval'][method]['NLL'] for r in seeds_res])
+            ps = [r['eval_results'][method]['psytar'] for r in seeds_res]
+            cd = [r['eval_results'][method]['cadec'] for r in seeds_res]
 
-            # CADEC Target metrics
-            cadec_auroc = np.mean([r['cadec_zero_shot'][method]['AUROC'] for r in seeds_res])
-            cadec_auprc = np.mean([r['cadec_zero_shot'][method]['AUPRC'] for r in seeds_res])
-            cadec_f1_fixed = np.mean([r['cadec_zero_shot'][method]['ADR F1'] for r in seeds_res])
-            cadec_f1_tuned = np.mean([r['cadec_zero_shot'][method]['F1@t*'] for r in seeds_res])
-            cadec_ece_u = np.mean([r['cadec_zero_shot'][method]['ECE Uniform'] for r in seeds_res])
-            cadec_ece_a = np.mean([r['cadec_zero_shot'][method]['ECE Adaptive'] for r in seeds_res])
-            cadec_ci_lo = np.mean([r['cadec_zero_shot'][method]['ECE CI lo'] for r in seeds_res])
-            cadec_ci_hi = np.mean([r['cadec_zero_shot'][method]['ECE CI hi'] for r in seeds_res])
-            cadec_nll = np.mean([r['cadec_zero_shot'][method]['NLL'] for r in seeds_res])
+            print(f"\n    {method}:")
+            print(f"      PsyTAR: AUROC={np.mean([m['AUROC'] for m in ps]):.4f} "
+                  f"AUPRC={np.mean([m['AUPRC'] for m in ps]):.4f} "
+                  f"F1@t*={np.mean([m['F1@t*'] for m in ps]):.4f} "
+                  f"F1@0.5={np.mean([m['F1@0.5'] for m in ps]):.4f} "
+                  f"ECE={np.mean([m['ECE_adaptive'] for m in ps]):.4f} "
+                  f"[{np.mean([m['ECE_CI_lo'] for m in ps]):.4f},"
+                  f"{np.mean([m['ECE_CI_hi'] for m in ps]):.4f}]")
+            print(f"      CADEC:  AUROC={np.mean([m['AUROC'] for m in cd]):.4f} "
+                  f"AUPRC={np.mean([m['AUPRC'] for m in cd]):.4f} "
+                  f"F1@t*={np.mean([m['F1@t*'] for m in cd]):.4f} "
+                  f"F1@0.5={np.mean([m['F1@0.5'] for m in cd]):.4f} "
+                  f"ECE={np.mean([m['ECE_adaptive'] for m in cd]):.4f} "
+                  f"[{np.mean([m['ECE_CI_lo'] for m in cd]):.4f},"
+                  f"{np.mean([m['ECE_CI_hi'] for m in cd]):.4f}]")
 
-            summary_rows.append({
-                'Model': model_name,
-                'Method': method,
-                'PsyTAR AUROC': psytar_auroc,
-                'PsyTAR AUPRC': psytar_auprc,
-                'PsyTAR F1@t*': psytar_f1_tuned,
-                'PsyTAR t*': psytar_t_star,
-                'PsyTAR F1@0.5': psytar_f1_fixed,
-                'PsyTAR ECE Adaptive': psytar_ece_a,
-                'PsyTAR ECE 95% CI': f"[{psytar_ci_lo:.4f}, {psytar_ci_hi:.4f}]",
-                'PsyTAR ECE Uniform': psytar_ece_u,
-                'PsyTAR NLL': psytar_nll,
-                'CADEC AUROC': cadec_auroc,
-                'CADEC AUPRC': cadec_auprc,
-                'CADEC F1@t*': cadec_f1_tuned,
-                'CADEC F1@0.5': cadec_f1_fixed,
-                'CADEC ECE Adaptive': cadec_ece_a,
-                'CADEC ECE 95% CI': f"[{cadec_ci_lo:.4f}, {cadec_ci_hi:.4f}]",
-                'CADEC ECE Uniform': cadec_ece_u,
-                'CADEC NLL': cadec_nll,
-                'Train Time (s)': avg_train_time,
-                'Train Energy (J)': avg_train_joules,
-                'Inf Throughput (sents/s)': avg_throughput,
-                'Inf Gross Energy/1k (J)': avg_gross_inf_1k,
-                'Inf Net Energy/1k (J)': avg_net_inf_1k
-            })
-
-    df_summary = pd.DataFrame(summary_rows)
-
-    formatted_df = pd.DataFrame({
-        'Model': df_summary['Model'],
-        'Method': df_summary['Method'],
-        'PsyTAR AUROC': df_summary['PsyTAR AUROC'].map(lambda x: f"{x:.4f}"),
-        'PsyTAR AUPRC': df_summary['PsyTAR AUPRC'].map(lambda x: f"{x:.4f}"),
-        'PsyTAR F1@t*': df_summary['PsyTAR F1@t*'].map(lambda x: f"{x:.4f}"),
-        'PsyTAR ECE-Ada': df_summary['PsyTAR ECE Adaptive'].map(lambda x: f"{x:.4f}"),
-        'PsyTAR ECE 95% CI': df_summary['PsyTAR ECE 95% CI'],
-        'PsyTAR NLL': df_summary['PsyTAR NLL'].map(lambda x: f"{x:.4f}"),
-        'CADEC AUROC': df_summary['CADEC AUROC'].map(lambda x: f"{x:.4f}"),
-        'CADEC AUPRC': df_summary['CADEC AUPRC'].map(lambda x: f"{x:.4f}"),
-        'CADEC F1@t*': df_summary['CADEC F1@t*'].map(lambda x: f"{x:.4f}"),
-        'CADEC ECE-Ada': df_summary['CADEC ECE Adaptive'].map(lambda x: f"{x:.4f}"),
-        'CADEC NLL': df_summary['CADEC NLL'].map(lambda x: f"{x:.4f}"),
-        'Inf Throughput': df_summary['Inf Throughput (sents/s)'].map(lambda x: f"{x:.1f} s/s"),
-        'Gross J/1k': df_summary['Inf Gross Energy/1k (J)'].map(lambda x: f"{x:.2f}J"),
-        'Net J/1k': df_summary['Inf Net Energy/1k (J)'].map(lambda x: f"{x:.2f}J")
-    })
-
-    print("\n--- EMPIRICAL GPU RESULTS TABLE ---")
-    print(formatted_df.to_string(index=False))
-
-    # Export to JSON
+    # ---- EXPORT TO JSON ----
     results_dir = "results"
     os.makedirs(results_dir, exist_ok=True)
-    json_export_path = os.path.join(results_dir, "colab_transformer_gpu_results.json")
-    export_payload = {
+    json_path = os.path.join(results_dir, "colab_transformer_gpu_results.json")
+
+    # Convert numpy types for JSON serialization
+    def convert(obj):
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return obj
+
+    export = {
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         "smoke_test_mode": SMOKE_TEST_MODE,
         "seeds": SEEDS,
         "epochs": EPOCHS,
         "batch_size": BATCH_SIZE,
-        "results": all_model_results,
-        "summary_table": summary_rows
+        "gpu_idle_watts": float(gpu_idle_w),
+        "results": {k: [{kk: convert(vv) for kk, vv in r.items()} for r in v]
+                    for k, v in all_model_results.items()}
     }
 
-    with open(json_export_path, "w", encoding="utf-8") as f:
-        json.dump(export_payload, f, indent=2)
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(export, f, indent=2, default=convert)
+    print(f"\n[ARTIFACT] Results JSON: {os.path.abspath(json_path)}")
 
-    print(f"\n[ARTIFACT] Structured empirical results exported to: {os.path.abspath(json_export_path)}")
-
-    # Colab Auto-Download
+    # Auto-download JSON on Colab
     if 'google.colab' in sys.modules:
         try:
             from google.colab import files
-            print("[COLAB] Triggering automatic download of result JSON...")
-            files.download(json_export_path)
+            files.download(json_path)
         except Exception as e:
-            print(f"[COLAB] Auto-download prompt notice: {e}")
+            print(f"[COLAB] Download notice: {e}")
 
-    print("\n==================================================================================")
-    print("   Empirical Google Colab GPU validation finished successfully.")
-    print("==================================================================================\n")
+    print("\n" + "=" * 80)
+    print("  GPU validation complete. Download .npz and .json artifacts.")
+    print("=" * 80 + "\n")
+
 
 if __name__ == "__main__":
     main()

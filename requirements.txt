@@ -1,17 +1,58 @@
-# Core Data Science & NLP
-pandas>=2.0.0
-openpyxl>=3.1.0
-nltk>=3.8.1
-numpy>=1.24.0
-scipy>=1.10.0
-scikit-learn>=1.3.0
-lightgbm>=4.0.0
-matplotlib>=3.7.0
+# Python dependencies — Energy-Aware Drug-Review Safety Signals (ECC-MS)
+#
+# NOTE (2026-08-24): this file was rewritten while assembling the Linux handoff
+# package. If you had local edits here, check them against the sections below.
+#
+# Version floors, not exact pins. Pinning against an unknown host's available
+# wheels causes more failures than it prevents, and the pipeline depends on no
+# behaviour that changed within these ranges. The versions actually resolved on
+# any given run are captured in handoff_out/env_pip_freeze.txt by
+# run_on_linux.sh, so a completed run stays reproducible after the fact.
+#
+#   python3 -m venv .venv
+#   source .venv/bin/activate          # Windows: .venv\Scripts\activate
+#   pip install -r requirements.txt
+#
+# ---------------------------------------------------------------------------
+# CORE — required by the CPU pipeline (Buckets B and C in RUN_ORDER.md)
+# This is all you need to run scripts/run_all_cpu.py end to end. The transformer
+# arms were trained once on a Colab T4 and arrive as .npz artifacts in results/,
+# so no GPU stack is needed to reproduce the comparison.
+# ---------------------------------------------------------------------------
+numpy>=1.23
+pandas>=1.5
+scikit-learn>=1.2
+scipy>=1.9
+lightgbm>=3.3
+matplotlib>=3.6
+openpyxl>=3.1          # pandas reads PsyTAR_dataset.xlsx through this (ST7)
 
-# Energy Measurement & System Metrics
-codecarbon>=3.0.0
-psutil>=5.9.0
+# ---------------------------------------------------------------------------
+# ENERGY INSTRUMENTATION
+# codecarbon is used by ST2/ST3/ST4. It reports a real sensor reading only where
+# it can reach one; on Windows without Intel Power Gadget it falls back to a
+# TDP-fraction software model, which is an estimate. Where Intel RAPL is readable
+# (Linux, bare metal) the pipeline prefers RAPL and records both figures.
+# ST3 degrades cleanly if codecarbon is absent.
+# psutil is used by the ST2 energy sanity check.
+# ---------------------------------------------------------------------------
+codecarbon>=2.3
+psutil>=5.9
 
-# PyTorch & Transformers (for GPU experiments)
-torch>=2.0.0
-transformers>=4.30.0
+# ---------------------------------------------------------------------------
+# CORPUS HARMONISATION — only needed to REGENERATE the harmonised CSVs from raw
+# PsyTAR/CADEC sources (scripts/harmonise_st1.py). The harmonised CSVs are
+# already committed with their SHA-256 digests recorded, so a reproduction run
+# does not need these.
+# ---------------------------------------------------------------------------
+nltk>=3.8
+
+# ---------------------------------------------------------------------------
+# GPU / TRANSFORMER ARM — Bucket A only
+# (scripts/colab_gpu_transformer_primary_adr.py, run once on a Colab T4)
+# Colab preinstalls compatible builds of both, so you normally install nothing
+# there. Listed for completeness / local GPU reproduction. Do NOT install these
+# on a CPU-only host just to run the CPU pipeline: they are large and unused.
+# ---------------------------------------------------------------------------
+# torch>=2.0
+# transformers>=4.35

@@ -2,25 +2,34 @@
 # -*- coding: utf-8 -*-
 """
 ================================================================================
-COLAB T4 GPU TRANSFORMER PRIMARY ADR PIPELINE (Round 3 Corrected)
+COLAB T4 GPU TRANSFORMER PRIMARY ADR PIPELINE (Round 5 Rigorous Overhaul)
 ================================================================================
-Repository: Talhaasif7/Energy-Aware-Drug-Review
 Script Path: scripts/colab_gpu_transformer_primary_adr.py
 
-Round 3 Fixes:
-  - Added missing sklearn.metrics imports (roc_auc_score, average_precision_score)
-  - Added nvidia-smi power logging: idle baseline trace + per-arm load traces
-  - Pre-tokenization into tensors before GPU transfer (fixes dataloader starvation)
-  - Logs fitted Temperature T values + calibration-split NLL pre/post
-  - Ensures .npz prediction files are auto-downloaded on Colab
-  - F1@t* properly tuned on calibration split (not copied from F1@0.5)
-  - 3-repeat GPU energy CV for measurement stability
+Round 5 fixes implemented here:
+  - DATA IS UPLOADED, NOT CLONED. The private repo is never git-cloned; the two
+    harmonised CSVs are uploaded to Colab (files.upload) or read from /content.
+  - FULL RUN BY DEFAULT (SMOKE_TEST_MODE = False): 3 seeds, full PsyTAR, 3 epochs.
+  - REAL SATURATED-BATCH ENERGY. A dedicated steady-state benchmark drives the
+    model with a fixed full-size batch, samples nvidia-smi power at 100 ms, and
+    integrates energy trapezoidally over the trace so power, throughput and
+    energy are captured TOGETHER (3 repeats -> CV). This is the primary energy
+    number (it roughly doubles the earlier starved estimate — expected).
+  - THE .npz NOW STORES train/calib/test/cadec TEXTS (+ all labels), so the CPU
+    runner reproduces the classical arms on the EXACT same examples -> the paired
+    ΔAUROC bootstrap is on one shared frozen split by construction.
+  - Still logs fitted Temperature T, calibration-split NLL pre/post, ECE CIs.
 
-Colab Quick Run:
+Carried over from Round 3:
+  - Pre-tokenization into tensors before GPU transfer (fixes dataloader starvation)
+  - F1@t* tuned on the calibration split (not copied from F1@0.5)
+
+Colab quick run (NO repo clone — repo is private):
   !pip install codecarbon transformers datasets accelerate torch pandas numpy scikit-learn scipy
-  !git clone https://github.com/Talhaasif7/Energy-Aware-Drug-Review.git
-  %cd Energy-Aware-Drug-Review
-  !python scripts/colab_gpu_transformer_primary_adr.py
+  # then in a cell, upload the two harmonised CSVs when prompted:
+  #   psytar_harmonised.csv   and   cadec_harmonised.csv
+  !python colab_gpu_transformer_primary_adr.py
+  # download the produced results/*.npz and results/colab_transformer_gpu_results.json
 ================================================================================
 """
 
@@ -82,9 +91,10 @@ except ImportError:
 # 1. CONFIGURATION & GATING FLAGS
 # ==============================================================================
 # GATING FLAG:
-# Set SMOKE_TEST_MODE = True for fast validation (1 seed, 2,000 PsyTAR subset, 2 epochs).
-# Set SMOKE_TEST_MODE = False for full Phase-1 matrix (3 seeds, full PsyTAR, 3 epochs).
-SMOKE_TEST_MODE = True
+# SMOKE_TEST_MODE = True  -> fast validation (1 seed, 2,000 PsyTAR subset, 2 epochs).
+# SMOKE_TEST_MODE = False -> full Phase-1 matrix (3 seeds, full PsyTAR, 3 epochs).
+# Round 5: default is the FULL run.
+SMOKE_TEST_MODE = False
 
 BATCH_SIZE = 64           # Increased from 32 to reduce GPU starvation
 MAX_SEQ_LENGTH = 128
@@ -92,12 +102,25 @@ LEARNING_RATE = 2e-5
 NUM_WORKERS = 2           # DataLoader workers for prefetching
 GPU_CV_REPEATS = 3        # Inference energy measurement repeats for CV
 
+# --- Saturated-batch energy benchmark (Round 5) ---
+# A fixed full-size batch is pushed through the model repeatedly to reach
+# steady-state GPU power; nvidia-smi is sampled at SATURATED_SAMPLE_INTERVAL_S
+# and energy is integrated trapezoidally over the trace. power + throughput +
+# energy are therefore measured in ONE run, repeated SATURATED_REPEATS times.
+SATURATED_SAMPLE_INTERVAL_S = 0.1   # 100 ms power sampling
+SATURATED_WARMUP_S = 8.0
+SATURATED_MEASURE_S = 20.0
+SATURATED_REPEATS = 3
+
 if SMOKE_TEST_MODE:
     SEEDS = [42]
     EPOCHS = 2
     SUBSET_SIZE = 2000
     GPU_CV_REPEATS = 1
-    print("\n>>> RUNNING IN SMOKE TEST MODE (ST3b Gating: 1 seed, 2,000 PsyTAR subset, 2 epochs) <<<")
+    SATURATED_WARMUP_S = 3.0
+    SATURATED_MEASURE_S = 5.0
+    SATURATED_REPEATS = 1
+    print("\n>>> RUNNING IN SMOKE TEST MODE (1 seed, 2,000 PsyTAR subset, 2 epochs) <<<")
 else:
     SEEDS = [42, 123, 456]
     EPOCHS = 3
@@ -196,81 +219,182 @@ def measure_gpu_load_power_during(func, label="workload"):
     return result, mean_w, std_w, mean_util, readings_w
 
 
+def saturated_inference_benchmark(model, tokenizer, device, use_fp16,
+                                  sample_text, gpu_idle_w):
+    """
+    Round 5 primary energy measurement.
+
+    Drives the model with a FIXED full-size batch (BATCH_SIZE x MAX_SEQ_LENGTH,
+    padded) repeatedly so the GPU reaches steady-state power, then over a
+    measurement window captures — simultaneously —
+      * the nvidia-smi power trace (sampled every SATURATED_SAMPLE_INTERVAL_S),
+      * the number of sequences processed (throughput), and
+      * the energy, integrated TRAPEZOIDALLY over the power trace.
+    Repeated SATURATED_REPEATS times -> mean + coefficient of variation.
+
+    gross J/1k = load_power / throughput x 1000
+    net   J/1k = gross x (load_power - idle_power) / load_power
+    where load_power is the trace-integrated (time-weighted mean) power.
+
+    Returns an aggregate dict with saturated_* metrics + per-repeat detail.
+    """
+    import threading
+
+    model.eval()
+    enc = tokenizer([str(sample_text)] * BATCH_SIZE, truncation=True,
+                    max_length=MAX_SEQ_LENGTH, padding='max_length',
+                    return_tensors='pt')
+    input_ids = enc['input_ids'].to(device)
+    attention_mask = enc['attention_mask'].to(device)
+
+    def one_forward():
+        with torch.no_grad():
+            with torch.cuda.amp.autocast(enabled=use_fp16):
+                model(input_ids, attention_mask=attention_mask)
+
+    # Warm-up (fill kernels/caches, spin clocks up) — not measured.
+    print(f"  [SATURATED] warm-up {SATURATED_WARMUP_S:.0f}s ...")
+    t_end = time.perf_counter() + SATURATED_WARMUP_S
+    while time.perf_counter() < t_end:
+        one_forward()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+
+    reps = []
+    for r in range(SATURATED_REPEATS):
+        samples = []  # (timestamp_s, watts)
+        stop = [False]
+
+        def sampler():
+            while not stop[0]:
+                pw = query_gpu_power()
+                if pw is not None:
+                    samples.append((time.perf_counter(), pw))
+                time.sleep(SATURATED_SAMPLE_INTERVAL_S)
+
+        th = threading.Thread(target=sampler, daemon=True)
+        th.start()
+
+        n_batches = 0
+        t0 = time.perf_counter()
+        while (time.perf_counter() - t0) < SATURATED_MEASURE_S:
+            one_forward()
+            n_batches += 1
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        t1 = time.perf_counter()
+        stop[0] = True
+        th.join(timeout=2)
+
+        elapsed = t1 - t0
+        n_seq = n_batches * BATCH_SIZE
+        throughput = n_seq / elapsed if elapsed > 0 else 0.0
+
+        if len(samples) >= 2:
+            ts = np.array([s[0] for s in samples]) - samples[0][0]
+            ws = np.array([s[1] for s in samples])
+            energy_trace_j = float(np.trapz(ws, ts))          # trapezoidal integral
+            window_s = float(ts[-1] - ts[0])
+            load_w = energy_trace_j / window_s if window_s > 0 else float(np.mean(ws))
+        else:
+            load_w = query_gpu_power() or 0.0
+            energy_trace_j = load_w * elapsed
+            window_s = elapsed
+
+        # Energy attributable to the timed inference work.
+        energy_infer_j = load_w * elapsed
+        gross_1k = (energy_infer_j / n_seq * 1000.0) if n_seq > 0 else 0.0
+        net_power = max(0.0, load_w - gpu_idle_w)
+        net_1k = gross_1k * (net_power / load_w) if load_w > 0 else gross_1k
+
+        reps.append({
+            'throughput_sps': throughput, 'load_w': load_w,
+            'gross_1k_j': gross_1k, 'net_1k_j': net_1k,
+            'energy_trace_j': energy_trace_j, 'window_s': window_s,
+            'n_seq': n_seq, 'n_power_samples': len(samples),
+        })
+        print(f"    [SATURATED] rep {r+1}: {throughput:,.0f} seq/s | "
+              f"load={load_w:.2f} W | gross={gross_1k:.3f} J/1k | "
+              f"net={net_1k:.3f} J/1k | {len(samples)} pwr samples")
+
+    def _agg(key):
+        return float(np.mean([d[key] for d in reps]))
+
+    gross_mean = _agg('gross_1k_j')
+    gross_vals = [d['gross_1k_j'] for d in reps]
+    cv_pct = float(np.std(gross_vals) / gross_mean * 100.0) if gross_mean > 0 else 0.0
+
+    return {
+        'saturated_throughput_sps': _agg('throughput_sps'),
+        'saturated_load_watts': _agg('load_w'),
+        'saturated_gross_energy_1k_j': gross_mean,
+        'saturated_net_energy_1k_j': _agg('net_1k_j'),
+        'saturated_energy_cv_pct': cv_pct,
+        'saturated_repeats': len(reps),
+        'saturated_sample_interval_s': SATURATED_SAMPLE_INTERVAL_S,
+        'saturated_measure_s': SATURATED_MEASURE_S,
+        'saturated_per_repeat': reps,
+    }
+
+
 # ==============================================================================
 # 3. DATA LOADING & PRE-TOKENIZATION
 # ==============================================================================
 def resolve_data_paths():
     """
-    Automatically resolve paths for PsyTAR and CADEC harmonised datasets.
-    Supports manually uploaded files in Colab (/content/ or current directory)
-    as well as standard repository paths.
+    Resolve the PsyTAR + CADEC harmonised CSVs from UPLOADED files.
+
+    IMPORTANT (Round 5): the source repository is PRIVATE and is never cloned.
+    The two harmonised CSVs are provided by the user:
+      * in Colab, they are uploaded interactively (google.colab.files.upload) if
+        not already sitting in /content;
+      * locally, they are read from the working directory / repo data path.
     """
     import glob
 
-    # Candidate file names
-    psytar_candidates = [
-        "psytar_harmonised.csv",
-        "/content/psytar_harmonised.csv",
-        os.path.join(os.getcwd(), "psytar_harmonised.csv"),
-        os.path.join("data", "01_primary_adr_detection", "dev_psytar", "psytar_harmonised.csv"),
-        "/content/Energy-Aware-Drug-Review/data/01_primary_adr_detection/dev_psytar/psytar_harmonised.csv",
-        r"e:\AI Green\data\01_primary_adr_detection\dev_psytar\psytar_harmonised.csv"
+    fn_psytar = "psytar_harmonised.csv"
+    fn_cadec = "cadec_harmonised.csv"
+    search_dirs = [
+        os.getcwd(),
+        "/content",
+        "/content/data",
+        os.path.join("data", "01_primary_adr_detection", "dev_psytar"),
+        os.path.join("data", "01_primary_adr_detection", "external_val_cadec"),
     ]
 
-    cadec_candidates = [
-        "cadec_harmonised.csv",
-        "/content/cadec_harmonised.csv",
-        os.path.join(os.getcwd(), "cadec_harmonised.csv"),
-        os.path.join("data", "01_primary_adr_detection", "external_val_cadec", "cadec_harmonised.csv"),
-        "/content/Energy-Aware-Drug-Review/data/01_primary_adr_detection/external_val_cadec/cadec_harmonised.csv",
-        r"e:\AI Green\data\01_primary_adr_detection\external_val_cadec\cadec_harmonised.csv"
-    ]
+    def find(fname):
+        for d in search_dirs:
+            p = os.path.join(d, fname)
+            if os.path.exists(p):
+                return p
+        hits = glob.glob(os.path.join(os.getcwd(), "**", fname), recursive=True)
+        return hits[0] if hits else None
 
-    psytar_path = None
-    cadec_path = None
+    psytar_path = find(fn_psytar)
+    cadec_path = find(fn_cadec)
 
-    # Check direct candidates
-    for p in psytar_candidates:
-        if os.path.exists(p):
-            psytar_path = p
-            break
-
-    for c in cadec_candidates:
-        if os.path.exists(c):
-            cadec_path = c
-            break
-
-    # Recursive glob search if direct paths not found
-    if not psytar_path:
-        matches = glob.glob("/**/psytar_harmonised.csv", recursive=True) + glob.glob("./**/psytar_harmonised.csv", recursive=True)
-        if matches:
-            psytar_path = matches[0]
-
-    if not cadec_path:
-        matches = glob.glob("/**/cadec_harmonised.csv", recursive=True) + glob.glob("./**/cadec_harmonised.csv", recursive=True)
-        if matches:
-            cadec_path = matches[0]
-
-    if not psytar_path or not cadec_path:
-        print("[DATA] Local CSVs not found in standard paths. Attempting git clone fallback...")
-        try:
-            subprocess.run(["git", "clone", "https://github.com/Talhaasif7/Energy-Aware-Drug-Review.git"], check=True)
-            clone_root = os.path.join(os.getcwd(), "Energy-Aware-Drug-Review")
-            p_cand = os.path.join(clone_root, "data", "01_primary_adr_detection", "dev_psytar", "psytar_harmonised.csv")
-            c_cand = os.path.join(clone_root, "data", "01_primary_adr_detection", "external_val_cadec", "cadec_harmonised.csv")
-            if os.path.exists(p_cand):
-                psytar_path = p_cand
-            if os.path.exists(c_cand):
-                cadec_path = c_cand
-        except Exception as e:
-            print(f"[DATA] Git clone fallback notice: {e}")
+    # In Colab, prompt an upload for whatever is still missing (NO repo clone).
+    if 'google.colab' in sys.modules and (not psytar_path or not cadec_path):
+        from google.colab import files
+        print("[UPLOAD] Repo is private -> not cloning. Please upload the two "
+              "harmonised CSVs you exported locally:")
+        print(f"         {fn_psytar}  and  {fn_cadec}")
+        uploaded = files.upload()
+        for fname in uploaded:
+            low = os.path.basename(fname).lower()
+            if "psytar" in low:
+                psytar_path = os.path.join(os.getcwd(), fname)
+            elif "cadec" in low:
+                cadec_path = os.path.join(os.getcwd(), fname)
+        psytar_path = psytar_path or find(fn_psytar)
+        cadec_path = cadec_path or find(fn_cadec)
 
     if not psytar_path or not cadec_path:
         raise FileNotFoundError(
-            f"Dataset files not found! Please ensure 'psytar_harmonised.csv' and 'cadec_harmonised.csv' "
-            f"are uploaded to /content/ or the current working directory.\n"
-            f"Found PsyTAR: {psytar_path}\nFound CADEC: {cadec_path}"
-        )
+            "Harmonised CSVs not found. Upload '{}' and '{}' to Colab "
+            "(or place them in the working directory). The private repo is "
+            "intentionally NOT cloned.\n  Found PsyTAR: {}\n  Found CADEC: {}"
+            .format(fn_psytar, fn_cadec, psytar_path, cadec_path))
 
     print(f"[DATA] Resolved PsyTAR dataset: {psytar_path}")
     print(f"[DATA] Resolved CADEC dataset : {cadec_path}")
@@ -537,6 +661,16 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df,
     inf_j_cv = np.std(inf_j_repeats) / np.mean(inf_j_repeats) if np.mean(inf_j_repeats) > 0 else 0
     print(f"  GPU Inference Energy CV: {inf_j_cv*100:.2f}% over {len(inf_j_repeats)} repeats")
 
+    # ---- SATURATED-BATCH ENERGY (Round 5 PRIMARY energy measurement) ----
+    # power + throughput + energy captured together at steady state, 3 repeats.
+    sat = saturated_inference_benchmark(
+        model, tokenizer, device, use_fp16,
+        sample_text=test_df['text'].iloc[0], gpu_idle_w=gpu_idle_w)
+    print(f"  [SATURATED] mean gross={sat['saturated_gross_energy_1k_j']:.3f} J/1k | "
+          f"net={sat['saturated_net_energy_1k_j']:.3f} J/1k | "
+          f"throughput={sat['saturated_throughput_sps']:,.0f} seq/s | "
+          f"CV={sat['saturated_energy_cv_pct']:.2f}%")
+
     # Compute per-1k gross and net energy
     n_test = len(test_df)
     throughput_test = n_test / inf_time_test if inf_time_test > 0 else 0.0
@@ -616,6 +750,14 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df,
     # ---- SAVE PREDICTION ARTIFACTS ----
     os.makedirs("results", exist_ok=True)
     npz_filename = f"results/{model_name.lower().replace(' ', '_')}_seed{seed}_predictions.npz"
+    # Round 5: store the TEXTS of every split so the local CPU runner reproduces
+    # the classical arms on the EXACT same examples (guaranteed shared frozen
+    # split for the paired ΔAUROC bootstrap — no split reconstruction needed).
+    train_texts_arr = np.array([str(t) for t in train_df['text'].tolist()])
+    calib_texts_arr = np.array([str(t) for t in calib_df['text'].tolist()])
+    test_texts_arr  = np.array([str(t) for t in test_df['text'].tolist()])
+    cadec_texts_arr = np.array([str(t) for t in cadec_df['text'].tolist()])
+    y_train = train_df['label'].values
     np.savez_compressed(
         npz_filename,
         logits_calib=logits_calib,
@@ -627,11 +769,16 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df,
         probs_cadec_uncal=probs_cadec_uncal,
         probs_cadec_temp=probs_cadec_temp,
         probs_cadec_iso=probs_cadec_iso,
+        y_train=y_train,
         y_calib=y_calib,
         y_test=y_test,
-        y_cadec=y_cadec
+        y_cadec=y_cadec,
+        train_texts=train_texts_arr,
+        calib_texts=calib_texts_arr,
+        test_texts=test_texts_arr,
+        cadec_texts=cadec_texts_arr,
     )
-    print(f"  [ARTIFACT] Predictions saved: {npz_filename}")
+    print(f"  [ARTIFACT] Predictions + split texts saved: {npz_filename}")
 
     # Auto-download on Colab
     if 'google.colab' in sys.modules:
@@ -661,6 +808,15 @@ def train_and_eval_single_seed(model_name, model_hf_path, train_df, calib_df,
         'temperature_T': float(temp_scaler.T),
         'calib_nll_pre': float(temp_scaler.nll_pre),
         'calib_nll_post': float(temp_scaler.nll_post),
+        # ---- Round 5 saturated-batch energy (primary) ----
+        'saturated_throughput_sps': sat['saturated_throughput_sps'],
+        'saturated_load_watts': sat['saturated_load_watts'],
+        'saturated_gross_energy_1k_j': sat['saturated_gross_energy_1k_j'],
+        'saturated_net_energy_1k_j': sat['saturated_net_energy_1k_j'],
+        'saturated_energy_cv_pct': sat['saturated_energy_cv_pct'],
+        'saturated_repeats': sat['saturated_repeats'],
+        'saturated_sample_interval_s': sat['saturated_sample_interval_s'],
+        'saturated_per_repeat': sat['saturated_per_repeat'],
         'eval_results': eval_results,
     }
 
@@ -752,14 +908,23 @@ def main():
         avg_load = np.mean([r['inf_load_watts_psytar'] for r in seeds_res])
         avg_util = np.mean([r['inf_util_pct_psytar'] for r in seeds_res])
         avg_cv = np.mean([r['inf_energy_cv_pct'] for r in seeds_res])
+        # Saturated-batch (Round 5 primary) energy, averaged across seeds.
+        sat_gross = np.mean([r['saturated_gross_energy_1k_j'] for r in seeds_res])
+        sat_net = np.mean([r['saturated_net_energy_1k_j'] for r in seeds_res])
+        sat_thr = np.mean([r['saturated_throughput_sps'] for r in seeds_res])
+        sat_load = np.mean([r['saturated_load_watts'] for r in seeds_res])
+        sat_cv = np.mean([r['saturated_energy_cv_pct'] for r in seeds_res])
 
         print(f"    Temperature T = {avg_T:.4f}")
         print(f"    Calib NLL: pre={avg_nll_pre:.4f} -> post={avg_nll_post:.4f} "
               f"(delta={avg_nll_post - avg_nll_pre:+.4f})")
-        print(f"    Throughput: {avg_throughput:.1f} sents/s")
-        print(f"    GPU Load: {avg_load:.1f} W | Util: {avg_util:.1f}%")
-        print(f"    Gross Energy: {avg_gross:.2f} J/1k | Net Energy: {avg_net:.2f} J/1k")
-        print(f"    Energy CV: {avg_cv:.2f}%")
+        print(f"    [SATURATED / PRIMARY] throughput={sat_thr:,.0f} seq/s | "
+              f"load={sat_load:.1f} W | gross={sat_gross:.2f} J/1k | "
+              f"net={sat_net:.2f} J/1k | CV={sat_cv:.2f}%")
+        print(f"    [dataloader-pass / secondary] throughput={avg_throughput:.1f} sents/s | "
+              f"GPU Load={avg_load:.1f} W | Util={avg_util:.1f}%")
+        print(f"    [dataloader-pass / secondary] Gross={avg_gross:.2f} J/1k | "
+              f"Net={avg_net:.2f} J/1k | CV={avg_cv:.2f}%")
 
         for method in ['Uncalibrated', 'Temperature Scaling', 'Isotonic Regression']:
             ps = [r['eval_results'][method]['psytar'] for r in seeds_res]

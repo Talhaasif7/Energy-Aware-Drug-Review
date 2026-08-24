@@ -1,0 +1,1192 @@
+{
+  "provenance": {
+    "generated_by": "run_frozen_split_analysis.py",
+    "primary_seed": 42,
+    "split_source": "npz_texts",
+    "test_N": 1201,
+    "cadec_N": 7823,
+    "cadec_aligned_with_transformer": true,
+    "n_bootstrap": 2000,
+    "psytar_csv_sha16": "859fb25f0fb1854f",
+    "cadec_csv_sha16": "87f88871fa9b07c7",
+    "druglib_csv_sha16": "960d3f25de715bdb",
+    "cpu_energy_provenance": {
+      "Logistic Regression": "measured_throughput_x_ST2_power",
+      "LightGBM": "measured_throughput_x_ST2_power",
+      "_meta": "measured_ST3"
+    },
+    "gpu_energy_provenance": {
+      "DistilBERT": "saturated_run",
+      "PubMedBERT": "saturated_run"
+    }
+  },
+  "fitted_temperatures_cpu": {
+    "Logistic Regression": 0.7162988861842681,
+    "LightGBM": 0.9060147843480577
+  },
+  "energy_by_model": {
+    "Logistic Regression": {
+      "inf_j_gross": 0.022157574027187432,
+      "inf_j_net": 0.0010590016998288114,
+      "throughput_sps": 319963.88001046726,
+      "load_w": 7.072,
+      "idle_w": 6.734,
+      "net_power_w": 0.3380000000000001,
+      "energy_cv_pct": 5.0056912815914405,
+      "n_repeats": 3,
+      "measure_window_s": 12.0,
+      "method": "throughput_only_saturated",
+      "provenance": "measured_throughput_x_ST2_power"
+    },
+    "LightGBM": {
+      "inf_j_gross": 0.06294501062579468,
+      "inf_j_net": 0.020301982300432366,
+      "throughput_sps": 157964.75721797158,
+      "load_w": 9.94,
+      "idle_w": 6.734,
+      "net_power_w": 3.2059999999999995,
+      "energy_cv_pct": 1.7745733580430776,
+      "n_repeats": 3,
+      "measure_window_s": 12.0,
+      "method": "throughput_only_saturated",
+      "provenance": "measured_throughput_x_ST2_power"
+    },
+    "_meta": {
+      "generated_by": "measure_cpu_energy.py",
+      "rapl_available": false,
+      "rapl_domains": 0,
+      "idle_power_w": 6.734,
+      "idle_source": "ST2_constant",
+      "bench_rows": 50000,
+      "seed": 42,
+      "provenance": "measured_ST3"
+    },
+    "DistilBERT": {
+      "inf_j_gross": 57.03556249619698,
+      "inf_j_net": 31.335613656246846,
+      "throughput_sps": 1172.3149822549676,
+      "load_w": 66.86032873328396,
+      "idle_w": 30.12666666666666,
+      "energy_cv_pct": 0.3277161322380267,
+      "temperature_T": 1.3515513176382983,
+      "calib_nll_pre": 0.3332824399956919,
+      "calib_nll_post": 0.3173306171062185,
+      "train_load_watts": 65.18336881419235,
+      "n_seeds": 3,
+      "provenance": "saturated_run"
+    },
+    "PubMedBERT": {
+      "inf_j_gross": 110.2417587589478,
+      "inf_j_net": 60.47074787404452,
+      "throughput_sps": 605.3365598408875,
+      "load_w": 66.73051170814735,
+      "idle_w": 30.12666666666666,
+      "energy_cv_pct": 0.5994065370039915,
+      "temperature_T": 1.5805723580993718,
+      "calib_nll_pre": 0.3694111258547323,
+      "calib_nll_post": 0.3316702461818059,
+      "train_load_watts": 65.39128297904418,
+      "n_seeds": 3,
+      "provenance": "saturated_run"
+    }
+  },
+  "per_arm_metrics": {
+    "Logistic Regression + Uncalibrated": {
+      "auroc": 0.876043470939184,
+      "ece": 0.06375978230071537,
+      "auprc": 0.8125130634975034,
+      "f1_at_tstar": 0.6966887417218544,
+      "ece_ci": [
+        0.053863130846226556,
+        0.09035523814589463
+      ],
+      "brier": 0.13973080780321598,
+      "nll": 0.43732475436880586,
+      "cadec_ece": 0.08388958974984002,
+      "cadec_auroc": 0.837852832906361,
+      "energy_gross": 0.022157574027187432,
+      "energy_net": 0.0010590016998288114
+    },
+    "Logistic Regression + TempScale": {
+      "auroc": 0.876043470939184,
+      "ece": 0.04458427630261457,
+      "auprc": 0.8125130634975034,
+      "f1_at_tstar": 0.6966887417218544,
+      "ece_ci": [
+        0.0328842239362212,
+        0.06912855977135704
+      ],
+      "brier": 0.1374038053394365,
+      "nll": 0.4244313769445351,
+      "cadec_ece": 0.0673574552172811,
+      "cadec_auroc": 0.837852832906361,
+      "energy_gross": 0.022157574027187432,
+      "energy_net": 0.0010590016998288114
+    },
+    "Logistic Regression + Isotonic": {
+      "auroc": 0.874179056004619,
+      "ece": 0.023962738288273916,
+      "auprc": 0.7933386329386769,
+      "f1_at_tstar": 0.7308132875143184,
+      "ece_ci": [
+        0.01701492389110324,
+        0.04654133895668481
+      ],
+      "brier": 0.13609510819492507,
+      "nll": 0.4201712295147843,
+      "cadec_ece": 0.033891195832006414,
+      "cadec_auroc": 0.8361884154999729,
+      "energy_gross": 0.022157574027187432,
+      "energy_net": 0.0010590016998288114
+    },
+    "LightGBM + Uncalibrated": {
+      "auroc": 0.8626602795419553,
+      "ece": 0.019362288157810863,
+      "auprc": 0.8011223638254489,
+      "f1_at_tstar": 0.6813471502590673,
+      "ece_ci": [
+        0.020595531718961065,
+        0.05021845371040647
+      ],
+      "brier": 0.1414047910370165,
+      "nll": 0.4368895612216817,
+      "cadec_ece": 0.0502016841457386,
+      "cadec_auroc": 0.798915145512004,
+      "energy_gross": 0.06294501062579468,
+      "energy_net": 0.020301982300432366
+    },
+    "LightGBM + TempScale": {
+      "auroc": 0.8626602795419553,
+      "ece": 0.018749536749659956,
+      "auprc": 0.8011223638254489,
+      "f1_at_tstar": 0.6813471502590673,
+      "ece_ci": [
+        0.01849676191438985,
+        0.04978819168921607
+      ],
+      "brier": 0.14133714090819705,
+      "nll": 0.4358721078887395,
+      "cadec_ece": 0.05857202039610342,
+      "cadec_auroc": 0.798915145512004,
+      "energy_gross": 0.06294501062579468,
+      "energy_net": 0.020301982300432366
+    },
+    "LightGBM + Isotonic": {
+      "auroc": 0.8606079195535028,
+      "ece": 0.025563480849658225,
+      "auprc": 0.7776686392398825,
+      "f1_at_tstar": 0.7048780487804878,
+      "ece_ci": [
+        0.019553323480954687,
+        0.04967767357666502
+      ],
+      "brier": 0.14206064297390297,
+      "nll": 0.43869075104437316,
+      "cadec_ece": 0.05099721984922343,
+      "cadec_auroc": 0.7980398347867286,
+      "energy_gross": 0.06294501062579468,
+      "energy_net": 0.020301982300432366
+    },
+    "PubMedBERT + Uncalibrated": {
+      "auroc": 0.9276366435719783,
+      "ece": 0.08071886232552379,
+      "auprc": 0.888473590066075,
+      "f1_at_tstar": 0.7896678966789668,
+      "ece_ci": [
+        0.059490724288851486,
+        0.09532892177940704
+      ],
+      "brier": 0.11197966714431484,
+      "nll": 0.3955272423912014,
+      "cadec_ece": 0.057971229246018344,
+      "cadec_auroc": 0.919084955863107,
+      "energy_gross": 110.2417587589478,
+      "energy_net": 60.47074787404452
+    },
+    "PubMedBERT + TempScale": {
+      "auroc": 0.9276411542532718,
+      "ece": 0.04167507332693985,
+      "auprc": 0.8888114413062873,
+      "f1_at_tstar": 0.7896678966789668,
+      "ece_ci": [
+        0.030871969946547236,
+        0.06305861798885923
+      ],
+      "brier": 0.10454843667057132,
+      "nll": 0.33894682213588256,
+      "cadec_ece": 0.028396412604161723,
+      "cadec_auroc": 0.9190797463087843,
+      "energy_gross": 110.2417587589478,
+      "energy_net": 60.47074787404452
+    },
+    "PubMedBERT + Isotonic": {
+      "auroc": 0.9276546862971516,
+      "ece": 0.020223620606896957,
+      "auprc": 0.8779993344411469,
+      "f1_at_tstar": 0.8027366020524516,
+      "ece_ci": [
+        0.012994458153232016,
+        0.03788819956332663
+      ],
+      "brier": 0.10238444841626844,
+      "nll": 0.35212852608483447,
+      "cadec_ece": 0.03421635655319024,
+      "cadec_auroc": 0.9180567728782154,
+      "energy_gross": 110.2417587589478,
+      "energy_net": 60.47074787404452
+    },
+    "DistilBERT + Uncalibrated": {
+      "auroc": 0.9180529493841416,
+      "ece": 0.07097519327460677,
+      "auprc": 0.8759646864601559,
+      "f1_at_tstar": 0.7703703703703704,
+      "ece_ci": [
+        0.05447770499071411,
+        0.08986071912970371
+      ],
+      "brier": 0.11537893607363202,
+      "nll": 0.38805573609384575,
+      "cadec_ece": 0.06544652619691636,
+      "cadec_auroc": 0.9042312141007147,
+      "energy_gross": 57.03556249619698,
+      "energy_net": 31.335613656246846
+    },
+    "DistilBERT + TempScale": {
+      "auroc": 0.9180484387028482,
+      "ece": 0.04544032769528586,
+      "auprc": 0.8760936109096357,
+      "f1_at_tstar": 0.7703703703703704,
+      "ece_ci": [
+        0.035355160692680056,
+        0.06814405220325552
+      ],
+      "brier": 0.11073642763640258,
+      "nll": 0.3578981458446485,
+      "cadec_ece": 0.04355370925309193,
+      "cadec_auroc": 0.9042342764738639,
+      "energy_gross": 57.03556249619698,
+      "energy_net": 31.335613656246846
+    },
+    "DistilBERT + Isotonic": {
+      "auroc": 0.9163524225365665,
+      "ece": 0.02565508005276443,
+      "auprc": 0.859418387105155,
+      "f1_at_tstar": 0.8,
+      "ece_ci": [
+        0.01871150073178381,
+        0.04657557944743543
+      ],
+      "brier": 0.10797283937246661,
+      "nll": 0.42830585103397967,
+      "cadec_ece": 0.04787175794300345,
+      "cadec_auroc": 0.9017782884079673,
+      "energy_gross": 57.03556249619698,
+      "energy_net": 31.335613656246846
+    }
+  },
+  "catalogue": [
+    {
+      "name": "Logistic Regression + Uncalibrated",
+      "model": "Logistic Regression",
+      "recal": "Uncalibrated",
+      "auroc": 0.876043470939184,
+      "ece": 0.06375978230071537,
+      "cadec_ece": 0.08388958974984002,
+      "cadec_auroc": 0.837852832906361,
+      "inf_j_gross": 0.022157574027187432,
+      "inf_j_net": 0.0010590016998288114
+    },
+    {
+      "name": "Logistic Regression + TempScale",
+      "model": "Logistic Regression",
+      "recal": "Temperature Scaling",
+      "auroc": 0.876043470939184,
+      "ece": 0.04458427630261457,
+      "cadec_ece": 0.0673574552172811,
+      "cadec_auroc": 0.837852832906361,
+      "inf_j_gross": 0.022157574027187432,
+      "inf_j_net": 0.0010590016998288114
+    },
+    {
+      "name": "Logistic Regression + Isotonic",
+      "model": "Logistic Regression",
+      "recal": "Isotonic Regression",
+      "auroc": 0.874179056004619,
+      "ece": 0.023962738288273916,
+      "cadec_ece": 0.033891195832006414,
+      "cadec_auroc": 0.8361884154999729,
+      "inf_j_gross": 0.022157574027187432,
+      "inf_j_net": 0.0010590016998288114
+    },
+    {
+      "name": "LightGBM + Uncalibrated",
+      "model": "LightGBM",
+      "recal": "Uncalibrated",
+      "auroc": 0.8626602795419553,
+      "ece": 0.019362288157810863,
+      "cadec_ece": 0.0502016841457386,
+      "cadec_auroc": 0.798915145512004,
+      "inf_j_gross": 0.06294501062579468,
+      "inf_j_net": 0.020301982300432366
+    },
+    {
+      "name": "LightGBM + TempScale",
+      "model": "LightGBM",
+      "recal": "Temperature Scaling",
+      "auroc": 0.8626602795419553,
+      "ece": 0.018749536749659956,
+      "cadec_ece": 0.05857202039610342,
+      "cadec_auroc": 0.798915145512004,
+      "inf_j_gross": 0.06294501062579468,
+      "inf_j_net": 0.020301982300432366
+    },
+    {
+      "name": "LightGBM + Isotonic",
+      "model": "LightGBM",
+      "recal": "Isotonic Regression",
+      "auroc": 0.8606079195535028,
+      "ece": 0.025563480849658225,
+      "cadec_ece": 0.05099721984922343,
+      "cadec_auroc": 0.7980398347867286,
+      "inf_j_gross": 0.06294501062579468,
+      "inf_j_net": 0.020301982300432366
+    },
+    {
+      "name": "PubMedBERT + Uncalibrated",
+      "model": "PubMedBERT",
+      "recal": "Uncalibrated",
+      "auroc": 0.9276366435719783,
+      "ece": 0.08071886232552379,
+      "cadec_ece": 0.057971229246018344,
+      "cadec_auroc": 0.919084955863107,
+      "inf_j_gross": 110.2417587589478,
+      "inf_j_net": 60.47074787404452
+    },
+    {
+      "name": "PubMedBERT + TempScale",
+      "model": "PubMedBERT",
+      "recal": "Temperature Scaling",
+      "auroc": 0.9276411542532718,
+      "ece": 0.04167507332693985,
+      "cadec_ece": 0.028396412604161723,
+      "cadec_auroc": 0.9190797463087843,
+      "inf_j_gross": 110.2417587589478,
+      "inf_j_net": 60.47074787404452
+    },
+    {
+      "name": "PubMedBERT + Isotonic",
+      "model": "PubMedBERT",
+      "recal": "Isotonic Regression",
+      "auroc": 0.9276546862971516,
+      "ece": 0.020223620606896957,
+      "cadec_ece": 0.03421635655319024,
+      "cadec_auroc": 0.9180567728782154,
+      "inf_j_gross": 110.2417587589478,
+      "inf_j_net": 60.47074787404452
+    },
+    {
+      "name": "DistilBERT + Uncalibrated",
+      "model": "DistilBERT",
+      "recal": "Uncalibrated",
+      "auroc": 0.9180529493841416,
+      "ece": 0.07097519327460677,
+      "cadec_ece": 0.06544652619691636,
+      "cadec_auroc": 0.9042312141007147,
+      "inf_j_gross": 57.03556249619698,
+      "inf_j_net": 31.335613656246846
+    },
+    {
+      "name": "DistilBERT + TempScale",
+      "model": "DistilBERT",
+      "recal": "Temperature Scaling",
+      "auroc": 0.9180484387028482,
+      "ece": 0.04544032769528586,
+      "cadec_ece": 0.04355370925309193,
+      "cadec_auroc": 0.9042342764738639,
+      "inf_j_gross": 57.03556249619698,
+      "inf_j_net": 31.335613656246846
+    },
+    {
+      "name": "DistilBERT + Isotonic",
+      "model": "DistilBERT",
+      "recal": "Isotonic Regression",
+      "auroc": 0.9163524225365665,
+      "ece": 0.02565508005276443,
+      "cadec_ece": 0.04787175794300345,
+      "cadec_auroc": 0.9017782884079673,
+      "inf_j_gross": 57.03556249619698,
+      "inf_j_net": 31.335613656246846
+    }
+  ],
+  "paired_delta_auroc": [
+    {
+      "model_a": "Logistic Regression",
+      "model_b": "LightGBM",
+      "delta_auroc": 0.013383191397228655,
+      "ci_lo": -6.724360610119124e-06,
+      "ci_hi": 0.026756572762307126,
+      "statistical_tie": true
+    },
+    {
+      "model_a": "Logistic Regression",
+      "model_b": "PubMedBERT",
+      "delta_auroc": -0.05159317263279428,
+      "ci_lo": -0.0687630919722727,
+      "ci_hi": -0.03456619166966177,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "Logistic Regression",
+      "model_b": "DistilBERT",
+      "delta_auroc": -0.042009478444957615,
+      "ci_lo": -0.05909357728385327,
+      "ci_hi": -0.02519492154839577,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "LightGBM",
+      "model_b": "PubMedBERT",
+      "delta_auroc": -0.06497636403002294,
+      "ci_lo": -0.08296923697890995,
+      "ci_hi": -0.046910588976962826,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "LightGBM",
+      "model_b": "DistilBERT",
+      "delta_auroc": -0.05539266984218627,
+      "ci_lo": -0.07432753486969906,
+      "ci_hi": -0.03684049984859249,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "PubMedBERT",
+      "model_b": "DistilBERT",
+      "delta_auroc": 0.009583694187836667,
+      "ci_lo": -0.0014236761503052474,
+      "ci_hi": 0.020683670924123272,
+      "statistical_tie": true
+    }
+  ],
+  "eccms_grid": [
+    {
+      "tau": 0.03,
+      "E_gross_J_per_1k": 0.5,
+      "feasible_arms": 4,
+      "feasible_arm_names": [
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ],
+      "argmax_selected": "Logistic Regression + Isotonic",
+      "bootstrap_tie_selected": "Logistic Regression + Isotonic",
+      "bootstrap_tie_selected_auroc": 0.874179056004619,
+      "bootstrap_tie_selected_gross_J": 0.022157574027187432,
+      "bootstrap_tie_selected_cadec_ece": 0.033891195832006414,
+      "selected_satisfies_tau_on_CADEC": false,
+      "tie_info": {
+        "leader": "Logistic Regression + Isotonic",
+        "leader_model": "Logistic Regression",
+        "tied_models": [
+          "LightGBM",
+          "Logistic Regression"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          },
+          "LightGBM": {
+            "delta_auroc": 0.013383191397228655,
+            "ci_lo": -6.724360610119124e-06,
+            "ci_hi": 0.026756572762307126,
+            "statistical_tie": true,
+            "is_leader": false
+          }
+        },
+        "selected": "Logistic Regression + Isotonic",
+        "selected_energy_gross": 0.022157574027187432,
+        "selected_energy_net": 0.0010590016998288114
+      },
+      "margin_0.01": "Logistic Regression + Isotonic",
+      "margin_0.02": "Logistic Regression + Isotonic",
+      "margin_0.03": "Logistic Regression + Isotonic"
+    },
+    {
+      "tau": 0.03,
+      "E_gross_J_per_1k": 10.0,
+      "feasible_arms": 4,
+      "feasible_arm_names": [
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ],
+      "argmax_selected": "Logistic Regression + Isotonic",
+      "bootstrap_tie_selected": "Logistic Regression + Isotonic",
+      "bootstrap_tie_selected_auroc": 0.874179056004619,
+      "bootstrap_tie_selected_gross_J": 0.022157574027187432,
+      "bootstrap_tie_selected_cadec_ece": 0.033891195832006414,
+      "selected_satisfies_tau_on_CADEC": false,
+      "tie_info": {
+        "leader": "Logistic Regression + Isotonic",
+        "leader_model": "Logistic Regression",
+        "tied_models": [
+          "LightGBM",
+          "Logistic Regression"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          },
+          "LightGBM": {
+            "delta_auroc": 0.013383191397228655,
+            "ci_lo": -6.724360610119124e-06,
+            "ci_hi": 0.026756572762307126,
+            "statistical_tie": true,
+            "is_leader": false
+          }
+        },
+        "selected": "Logistic Regression + Isotonic",
+        "selected_energy_gross": 0.022157574027187432,
+        "selected_energy_net": 0.0010590016998288114
+      },
+      "margin_0.01": "Logistic Regression + Isotonic",
+      "margin_0.02": "Logistic Regression + Isotonic",
+      "margin_0.03": "Logistic Regression + Isotonic"
+    },
+    {
+      "tau": 0.03,
+      "E_gross_J_per_1k": 60.0,
+      "feasible_arms": 5,
+      "feasible_arm_names": [
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic",
+        "DistilBERT + Isotonic"
+      ],
+      "argmax_selected": "DistilBERT + Isotonic",
+      "bootstrap_tie_selected": "DistilBERT + Isotonic",
+      "bootstrap_tie_selected_auroc": 0.9163524225365665,
+      "bootstrap_tie_selected_gross_J": 57.03556249619698,
+      "bootstrap_tie_selected_cadec_ece": 0.04787175794300345,
+      "selected_satisfies_tau_on_CADEC": false,
+      "tie_info": {
+        "leader": "DistilBERT + Isotonic",
+        "leader_model": "DistilBERT",
+        "tied_models": [
+          "DistilBERT"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.042009478444957615,
+            "ci_lo": 0.025194921548395737,
+            "ci_hi": 0.05909357728385326,
+            "statistical_tie": false,
+            "is_leader": false
+          },
+          "LightGBM": {
+            "delta_auroc": 0.05539266984218627,
+            "ci_lo": 0.03684049984859248,
+            "ci_hi": 0.07432753486969905,
+            "statistical_tie": false,
+            "is_leader": false
+          },
+          "DistilBERT": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          }
+        },
+        "selected": "DistilBERT + Isotonic",
+        "selected_energy_gross": 57.03556249619698,
+        "selected_energy_net": 31.335613656246846
+      },
+      "margin_0.01": "DistilBERT + Isotonic",
+      "margin_0.02": "DistilBERT + Isotonic",
+      "margin_0.03": "DistilBERT + Isotonic"
+    },
+    {
+      "tau": 0.05,
+      "E_gross_J_per_1k": 0.5,
+      "feasible_arms": 5,
+      "feasible_arm_names": [
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ],
+      "argmax_selected": "Logistic Regression + TempScale",
+      "bootstrap_tie_selected": "Logistic Regression + TempScale",
+      "bootstrap_tie_selected_auroc": 0.876043470939184,
+      "bootstrap_tie_selected_gross_J": 0.022157574027187432,
+      "bootstrap_tie_selected_cadec_ece": 0.0673574552172811,
+      "selected_satisfies_tau_on_CADEC": false,
+      "tie_info": {
+        "leader": "Logistic Regression + TempScale",
+        "leader_model": "Logistic Regression",
+        "tied_models": [
+          "LightGBM",
+          "Logistic Regression"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          },
+          "LightGBM": {
+            "delta_auroc": 0.013383191397228655,
+            "ci_lo": -6.724360610119124e-06,
+            "ci_hi": 0.026756572762307126,
+            "statistical_tie": true,
+            "is_leader": false
+          }
+        },
+        "selected": "Logistic Regression + TempScale",
+        "selected_energy_gross": 0.022157574027187432,
+        "selected_energy_net": 0.0010590016998288114
+      },
+      "margin_0.01": "Logistic Regression + TempScale",
+      "margin_0.02": "Logistic Regression + TempScale",
+      "margin_0.03": "Logistic Regression + TempScale"
+    },
+    {
+      "tau": 0.05,
+      "E_gross_J_per_1k": 10.0,
+      "feasible_arms": 5,
+      "feasible_arm_names": [
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ],
+      "argmax_selected": "Logistic Regression + TempScale",
+      "bootstrap_tie_selected": "Logistic Regression + TempScale",
+      "bootstrap_tie_selected_auroc": 0.876043470939184,
+      "bootstrap_tie_selected_gross_J": 0.022157574027187432,
+      "bootstrap_tie_selected_cadec_ece": 0.0673574552172811,
+      "selected_satisfies_tau_on_CADEC": false,
+      "tie_info": {
+        "leader": "Logistic Regression + TempScale",
+        "leader_model": "Logistic Regression",
+        "tied_models": [
+          "LightGBM",
+          "Logistic Regression"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          },
+          "LightGBM": {
+            "delta_auroc": 0.013383191397228655,
+            "ci_lo": -6.724360610119124e-06,
+            "ci_hi": 0.026756572762307126,
+            "statistical_tie": true,
+            "is_leader": false
+          }
+        },
+        "selected": "Logistic Regression + TempScale",
+        "selected_energy_gross": 0.022157574027187432,
+        "selected_energy_net": 0.0010590016998288114
+      },
+      "margin_0.01": "Logistic Regression + TempScale",
+      "margin_0.02": "Logistic Regression + TempScale",
+      "margin_0.03": "Logistic Regression + TempScale"
+    },
+    {
+      "tau": 0.05,
+      "E_gross_J_per_1k": 60.0,
+      "feasible_arms": 7,
+      "feasible_arm_names": [
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic",
+        "DistilBERT + TempScale",
+        "DistilBERT + Isotonic"
+      ],
+      "argmax_selected": "DistilBERT + TempScale",
+      "bootstrap_tie_selected": "DistilBERT + TempScale",
+      "bootstrap_tie_selected_auroc": 0.9180484387028482,
+      "bootstrap_tie_selected_gross_J": 57.03556249619698,
+      "bootstrap_tie_selected_cadec_ece": 0.04355370925309193,
+      "selected_satisfies_tau_on_CADEC": true,
+      "tie_info": {
+        "leader": "DistilBERT + TempScale",
+        "leader_model": "DistilBERT",
+        "tied_models": [
+          "DistilBERT"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.042009478444957615,
+            "ci_lo": 0.025194921548395737,
+            "ci_hi": 0.05909357728385326,
+            "statistical_tie": false,
+            "is_leader": false
+          },
+          "LightGBM": {
+            "delta_auroc": 0.05539266984218627,
+            "ci_lo": 0.03684049984859248,
+            "ci_hi": 0.07432753486969905,
+            "statistical_tie": false,
+            "is_leader": false
+          },
+          "DistilBERT": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          }
+        },
+        "selected": "DistilBERT + TempScale",
+        "selected_energy_gross": 57.03556249619698,
+        "selected_energy_net": 31.335613656246846
+      },
+      "margin_0.01": "DistilBERT + TempScale",
+      "margin_0.02": "DistilBERT + TempScale",
+      "margin_0.03": "DistilBERT + TempScale"
+    },
+    {
+      "tau": 0.07,
+      "E_gross_J_per_1k": 0.5,
+      "feasible_arms": 6,
+      "feasible_arm_names": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ],
+      "argmax_selected": "Logistic Regression + Uncalibrated",
+      "bootstrap_tie_selected": "Logistic Regression + Uncalibrated",
+      "bootstrap_tie_selected_auroc": 0.876043470939184,
+      "bootstrap_tie_selected_gross_J": 0.022157574027187432,
+      "bootstrap_tie_selected_cadec_ece": 0.08388958974984002,
+      "selected_satisfies_tau_on_CADEC": false,
+      "tie_info": {
+        "leader": "Logistic Regression + Uncalibrated",
+        "leader_model": "Logistic Regression",
+        "tied_models": [
+          "LightGBM",
+          "Logistic Regression"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          },
+          "LightGBM": {
+            "delta_auroc": 0.013383191397228655,
+            "ci_lo": -6.724360610119124e-06,
+            "ci_hi": 0.026756572762307126,
+            "statistical_tie": true,
+            "is_leader": false
+          }
+        },
+        "selected": "Logistic Regression + Uncalibrated",
+        "selected_energy_gross": 0.022157574027187432,
+        "selected_energy_net": 0.0010590016998288114
+      },
+      "margin_0.01": "Logistic Regression + Uncalibrated",
+      "margin_0.02": "Logistic Regression + Uncalibrated",
+      "margin_0.03": "Logistic Regression + Uncalibrated"
+    },
+    {
+      "tau": 0.07,
+      "E_gross_J_per_1k": 10.0,
+      "feasible_arms": 6,
+      "feasible_arm_names": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ],
+      "argmax_selected": "Logistic Regression + Uncalibrated",
+      "bootstrap_tie_selected": "Logistic Regression + Uncalibrated",
+      "bootstrap_tie_selected_auroc": 0.876043470939184,
+      "bootstrap_tie_selected_gross_J": 0.022157574027187432,
+      "bootstrap_tie_selected_cadec_ece": 0.08388958974984002,
+      "selected_satisfies_tau_on_CADEC": false,
+      "tie_info": {
+        "leader": "Logistic Regression + Uncalibrated",
+        "leader_model": "Logistic Regression",
+        "tied_models": [
+          "LightGBM",
+          "Logistic Regression"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          },
+          "LightGBM": {
+            "delta_auroc": 0.013383191397228655,
+            "ci_lo": -6.724360610119124e-06,
+            "ci_hi": 0.026756572762307126,
+            "statistical_tie": true,
+            "is_leader": false
+          }
+        },
+        "selected": "Logistic Regression + Uncalibrated",
+        "selected_energy_gross": 0.022157574027187432,
+        "selected_energy_net": 0.0010590016998288114
+      },
+      "margin_0.01": "Logistic Regression + Uncalibrated",
+      "margin_0.02": "Logistic Regression + Uncalibrated",
+      "margin_0.03": "Logistic Regression + Uncalibrated"
+    },
+    {
+      "tau": 0.07,
+      "E_gross_J_per_1k": 60.0,
+      "feasible_arms": 8,
+      "feasible_arm_names": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic",
+        "DistilBERT + TempScale",
+        "DistilBERT + Isotonic"
+      ],
+      "argmax_selected": "DistilBERT + TempScale",
+      "bootstrap_tie_selected": "DistilBERT + TempScale",
+      "bootstrap_tie_selected_auroc": 0.9180484387028482,
+      "bootstrap_tie_selected_gross_J": 57.03556249619698,
+      "bootstrap_tie_selected_cadec_ece": 0.04355370925309193,
+      "selected_satisfies_tau_on_CADEC": true,
+      "tie_info": {
+        "leader": "DistilBERT + TempScale",
+        "leader_model": "DistilBERT",
+        "tied_models": [
+          "DistilBERT"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.042009478444957615,
+            "ci_lo": 0.025194921548395737,
+            "ci_hi": 0.05909357728385326,
+            "statistical_tie": false,
+            "is_leader": false
+          },
+          "LightGBM": {
+            "delta_auroc": 0.05539266984218627,
+            "ci_lo": 0.03684049984859248,
+            "ci_hi": 0.07432753486969905,
+            "statistical_tie": false,
+            "is_leader": false
+          },
+          "DistilBERT": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          }
+        },
+        "selected": "DistilBERT + TempScale",
+        "selected_energy_gross": 57.03556249619698,
+        "selected_energy_net": 31.335613656246846
+      },
+      "margin_0.01": "DistilBERT + TempScale",
+      "margin_0.02": "DistilBERT + TempScale",
+      "margin_0.03": "DistilBERT + TempScale"
+    },
+    {
+      "tau": 0.1,
+      "E_gross_J_per_1k": 0.5,
+      "feasible_arms": 6,
+      "feasible_arm_names": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ],
+      "argmax_selected": "Logistic Regression + Uncalibrated",
+      "bootstrap_tie_selected": "Logistic Regression + Uncalibrated",
+      "bootstrap_tie_selected_auroc": 0.876043470939184,
+      "bootstrap_tie_selected_gross_J": 0.022157574027187432,
+      "bootstrap_tie_selected_cadec_ece": 0.08388958974984002,
+      "selected_satisfies_tau_on_CADEC": true,
+      "tie_info": {
+        "leader": "Logistic Regression + Uncalibrated",
+        "leader_model": "Logistic Regression",
+        "tied_models": [
+          "LightGBM",
+          "Logistic Regression"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          },
+          "LightGBM": {
+            "delta_auroc": 0.013383191397228655,
+            "ci_lo": -6.724360610119124e-06,
+            "ci_hi": 0.026756572762307126,
+            "statistical_tie": true,
+            "is_leader": false
+          }
+        },
+        "selected": "Logistic Regression + Uncalibrated",
+        "selected_energy_gross": 0.022157574027187432,
+        "selected_energy_net": 0.0010590016998288114
+      },
+      "margin_0.01": "Logistic Regression + Uncalibrated",
+      "margin_0.02": "Logistic Regression + Uncalibrated",
+      "margin_0.03": "Logistic Regression + Uncalibrated"
+    },
+    {
+      "tau": 0.1,
+      "E_gross_J_per_1k": 10.0,
+      "feasible_arms": 6,
+      "feasible_arm_names": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ],
+      "argmax_selected": "Logistic Regression + Uncalibrated",
+      "bootstrap_tie_selected": "Logistic Regression + Uncalibrated",
+      "bootstrap_tie_selected_auroc": 0.876043470939184,
+      "bootstrap_tie_selected_gross_J": 0.022157574027187432,
+      "bootstrap_tie_selected_cadec_ece": 0.08388958974984002,
+      "selected_satisfies_tau_on_CADEC": true,
+      "tie_info": {
+        "leader": "Logistic Regression + Uncalibrated",
+        "leader_model": "Logistic Regression",
+        "tied_models": [
+          "LightGBM",
+          "Logistic Regression"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          },
+          "LightGBM": {
+            "delta_auroc": 0.013383191397228655,
+            "ci_lo": -6.724360610119124e-06,
+            "ci_hi": 0.026756572762307126,
+            "statistical_tie": true,
+            "is_leader": false
+          }
+        },
+        "selected": "Logistic Regression + Uncalibrated",
+        "selected_energy_gross": 0.022157574027187432,
+        "selected_energy_net": 0.0010590016998288114
+      },
+      "margin_0.01": "Logistic Regression + Uncalibrated",
+      "margin_0.02": "Logistic Regression + Uncalibrated",
+      "margin_0.03": "Logistic Regression + Uncalibrated"
+    },
+    {
+      "tau": 0.1,
+      "E_gross_J_per_1k": 60.0,
+      "feasible_arms": 9,
+      "feasible_arm_names": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic",
+        "DistilBERT + Uncalibrated",
+        "DistilBERT + TempScale",
+        "DistilBERT + Isotonic"
+      ],
+      "argmax_selected": "DistilBERT + Uncalibrated",
+      "bootstrap_tie_selected": "DistilBERT + Uncalibrated",
+      "bootstrap_tie_selected_auroc": 0.9180529493841416,
+      "bootstrap_tie_selected_gross_J": 57.03556249619698,
+      "bootstrap_tie_selected_cadec_ece": 0.06544652619691636,
+      "selected_satisfies_tau_on_CADEC": true,
+      "tie_info": {
+        "leader": "DistilBERT + Uncalibrated",
+        "leader_model": "DistilBERT",
+        "tied_models": [
+          "DistilBERT"
+        ],
+        "delta_auroc_vs_leader": {
+          "Logistic Regression": {
+            "delta_auroc": 0.042009478444957615,
+            "ci_lo": 0.025194921548395737,
+            "ci_hi": 0.05909357728385326,
+            "statistical_tie": false,
+            "is_leader": false
+          },
+          "LightGBM": {
+            "delta_auroc": 0.05539266984218627,
+            "ci_lo": 0.03684049984859248,
+            "ci_hi": 0.07432753486969905,
+            "statistical_tie": false,
+            "is_leader": false
+          },
+          "DistilBERT": {
+            "delta_auroc": 0.0,
+            "ci_lo": 0.0,
+            "ci_hi": 0.0,
+            "statistical_tie": true,
+            "is_leader": true
+          }
+        },
+        "selected": "DistilBERT + Uncalibrated",
+        "selected_energy_gross": 57.03556249619698,
+        "selected_energy_net": 31.335613656246846
+      },
+      "margin_0.01": "DistilBERT + Uncalibrated",
+      "margin_0.02": "DistilBERT + Uncalibrated",
+      "margin_0.03": "DistilBERT + Uncalibrated"
+    }
+  ],
+  "feasible_reconcile_cells": [
+    {
+      "tau": 0.05,
+      "E_gross_J_per_1k": 60.0,
+      "feasible": 7,
+      "arms": [
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic",
+        "DistilBERT + TempScale",
+        "DistilBERT + Isotonic"
+      ]
+    },
+    {
+      "tau": 0.07,
+      "E_gross_J_per_1k": 10.0,
+      "feasible": 6,
+      "arms": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ]
+    },
+    {
+      "tau": 0.07,
+      "E_gross_J_per_1k": 60.0,
+      "feasible": 8,
+      "arms": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic",
+        "DistilBERT + TempScale",
+        "DistilBERT + Isotonic"
+      ]
+    },
+    {
+      "tau": 0.1,
+      "E_gross_J_per_1k": 0.5,
+      "feasible": 6,
+      "arms": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ]
+    },
+    {
+      "tau": 0.1,
+      "E_gross_J_per_1k": 10.0,
+      "feasible": 6,
+      "arms": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic"
+      ]
+    },
+    {
+      "tau": 0.1,
+      "E_gross_J_per_1k": 60.0,
+      "feasible": 9,
+      "arms": [
+        "Logistic Regression + Uncalibrated",
+        "Logistic Regression + TempScale",
+        "Logistic Regression + Isotonic",
+        "LightGBM + Uncalibrated",
+        "LightGBM + TempScale",
+        "LightGBM + Isotonic",
+        "DistilBERT + Uncalibrated",
+        "DistilBERT + TempScale",
+        "DistilBERT + Isotonic"
+      ]
+    }
+  ],
+  "druglib": {
+    "status": "OK",
+    "path": "data/02_secondary_sentiment_scaling/dev_uci_drug_review/uci_druglib_harmonised.csv",
+    "path_source": "canonical_path",
+    "sha16": "960d3f25de715bdb",
+    "rows_raw": 4107,
+    "rows_nonempty_text": 4107,
+    "rows_dropped_empty_text": 0,
+    "label_counts": {
+      "0": 588,
+      "1": 568,
+      "2": 2951
+    },
+    "columns": [
+      "text",
+      "label",
+      "drug_name",
+      "condition",
+      "rating_original",
+      "side_effects"
+    ]
+  }
+}

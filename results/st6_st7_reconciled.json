@@ -1,0 +1,186 @@
+{
+  "_meta": {
+    "script": "budget_and_subgroup_st6_st7.py",
+    "generated_utc": "2026-08-24 05:57:25Z",
+    "note": "ST6 budget extrapolation + ST7 subgroup feasibility. All energy terms are derived from measured benchmarks (results/cpu_energy_measured.json, results/colab_transformer_gpu_results.json); corpus sizes are read from the harmonised CSVs. Nothing here is hand-entered.",
+    "subgroup_min_n": 200,
+    "inputs_captured": true
+  },
+  "st6_inputs": {
+    "corpus_sizes": {
+      "psytar": 6003,
+      "cadec": 7823,
+      "uci_druglib": 4107,
+      "webmd": 320093
+    },
+    "corpus_size_provenance": {
+      "psytar": "measured_from_harmonised_csv",
+      "cadec": "measured_from_harmonised_csv",
+      "uci_druglib": "measured_from_harmonised_csv",
+      "webmd": "measured_from_harmonised_csv"
+    },
+    "n_secondary_cpu": 324200,
+    "n_secondary_transformer_cap": 30000,
+    "n_seeds": 5,
+    "n_epochs_transformer": 3,
+    "cpu_train_rates_st3": {
+      "LR": {
+        "sec_per_sample": 0.0037756250000000003,
+        "j_per_sample": 0.0020023750000000002
+      },
+      "GBDT": {
+        "sec_per_sample": 0.0018593750000000001,
+        "j_per_sample": 0.0031030000000000003
+      },
+      "source": "ST3 CodeCarbon run, 1600 training samples"
+    },
+    "cpu_inference_measured": {
+      "LR": {
+        "gross_1k": 0.022157574027187432,
+        "net_1k": 0.0010590016998288114,
+        "inf_throughput": 319963.88001046726,
+        "load_w": 7.072,
+        "energy_cv_pct": 5.0056912815914405,
+        "idle_w": 6.734,
+        "rapl_available": false,
+        "provenance": "measured_throughput_x_ST2_power"
+      },
+      "GBDT": {
+        "gross_1k": 0.06294501062579468,
+        "net_1k": 0.020301982300432366,
+        "inf_throughput": 157964.75721797158,
+        "load_w": 9.94,
+        "energy_cv_pct": 1.7745733580430776,
+        "idle_w": 6.734,
+        "rapl_available": false,
+        "provenance": "measured_throughput_x_ST2_power"
+      }
+    },
+    "gpu_measured": {
+      "DistilBERT": {
+        "gross_1k": 57.03556249619698,
+        "net_1k": 31.335613656246846,
+        "inf_throughput": 1172.3149822549676,
+        "inf_load_w": 66.86032873328396,
+        "train_load_w": 65.18336881419235,
+        "idle_w": 30.12666666666666,
+        "provenance": "saturated_run"
+      },
+      "PubMedBERT": {
+        "gross_1k": 110.2417587589478,
+        "net_1k": 60.47074787404452,
+        "inf_throughput": 605.3365598408875,
+        "inf_load_w": 66.73051170814735,
+        "train_load_w": 65.39128297904418,
+        "idle_w": 30.12666666666666,
+        "provenance": "saturated_run"
+      }
+    },
+    "nominal_train_throughput_sps": {
+      "DistilBERT": 256.0,
+      "PubMedBERT": 154.0
+    },
+    "superseded_cpu_inference_constant": {
+      "expression": "0.0228 / 1000 / 100 (LR), 0.0161 / 1000 / 100 (GBDT)",
+      "defect": "same expression used for both sec/sample and J/sample",
+      "status": "removed; inference now read from cpu_energy_measured.json"
+    }
+  },
+  "st6_budget": [
+    {
+      "Model Tier": "Classical Linear (LR)",
+      "Hardware": "CPU",
+      "Train Time": "1.89 min",
+      "Inf Time": "0.09 min",
+      "Total Time (h)": 0.03292050816543389,
+      "Total Energy (J)": 96.88540663114426,
+      "Total Energy (kWh)": 2.6912612953095628e-05,
+      "Status": "PASSED",
+      "provenance": "measured_throughput_x_ST2_power"
+    },
+    {
+      "Model Tier": "Classical GBDT (LightGBM)",
+      "Hardware": "CPU",
+      "Train Time": "0.93 min",
+      "Inf Time": "0.18 min",
+      "Total Time (h)": 0.0184218171576718,
+      "Total Energy (J)": 197.63250131504114,
+      "Total Energy (kWh)": 5.489791703195587e-05,
+      "Status": "PASSED",
+      "provenance": "measured_throughput_x_ST2_power"
+    },
+    {
+      "Model Tier": "Efficient Transformer (DistilBERT)",
+      "Hardware": "Colab T4",
+      "Train Time": "0.59 h",
+      "Inf Time": "0.04 h",
+      "Total Time (h)": 0.6307967632380942,
+      "Total Energy (J)": 148293.90700795467,
+      "Total Energy (kWh)": 0.041192751946654074,
+      "Status": "PASSED",
+      "provenance": "saturated_run"
+    },
+    {
+      "Model Tier": "Biomedical Transformer (PubMedBERT)",
+      "Hardware": "Colab T4",
+      "Train Time": "0.97 h",
+      "Inf Time": "0.09 h",
+      "Total Time (h)": 1.0608885268499624,
+      "Total Energy (J)": 250161.5871974251,
+      "Total Energy (kWh)": 0.06948932977706253,
+      "Status": "PASSED",
+      "provenance": "saturated_run"
+    }
+  ],
+  "st7_subgroups": [
+    {
+      "Level": "Drug Class",
+      "Group": "PsyTAR: SNRI",
+      "N": 3254,
+      "ADR %": "34.1%",
+      "Status": "OK (N\u2265200)"
+    },
+    {
+      "Level": "Drug Class",
+      "Group": "PsyTAR: SSRI",
+      "N": 2749,
+      "ADR %": "38.6%",
+      "Status": "OK (N\u2265200)"
+    },
+    {
+      "Level": "Individual Drug",
+      "Group": "PsyTAR: Cymbalta",
+      "N": 1705,
+      "ADR %": "36.1%",
+      "Status": "OK (N\u2265200)"
+    },
+    {
+      "Level": "Individual Drug",
+      "Group": "PsyTAR: Effexorxr",
+      "N": 1549,
+      "ADR %": "31.8%",
+      "Status": "OK (N\u2265200)"
+    },
+    {
+      "Level": "Individual Drug",
+      "Group": "PsyTAR: Lexapro",
+      "N": 1491,
+      "ADR %": "39.4%",
+      "Status": "OK (N\u2265200)"
+    },
+    {
+      "Level": "Individual Drug",
+      "Group": "PsyTAR: Zoloft",
+      "N": 1258,
+      "ADR %": "37.5%",
+      "Status": "OK (N\u2265200)"
+    },
+    {
+      "Level": "Note",
+      "Group": "CADEC (all)",
+      "N": 7823,
+      "ADR %": "36.6%",
+      "Status": "EXCLUDED from subgroup analysis (78% Lipitor \u2192 one drug + noise)"
+    }
+  ]
+}

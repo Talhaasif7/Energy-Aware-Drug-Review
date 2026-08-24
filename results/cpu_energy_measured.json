@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "generated_by": "measure_cpu_energy.py",
+    "rapl_available": false,
+    "rapl_domains": 0,
+    "idle_power_w": 6.734,
+    "idle_source": "ST2_constant",
+    "bench_rows": 50000,
+    "seed": 42
+  },
+  "Logistic Regression": {
+    "inf_j_gross": 0.022157574027187432,
+    "inf_j_net": 0.0010590016998288114,
+    "throughput_sps": 319963.88001046726,
+    "load_w": 7.072,
+    "idle_w": 6.734,
+    "net_power_w": 0.3380000000000001,
+    "energy_cv_pct": 5.0056912815914405,
+    "n_repeats": 3,
+    "measure_window_s": 12.0,
+    "method": "throughput_only_saturated",
+    "provenance": "measured_throughput_x_ST2_power"
+  },
+  "LightGBM": {
+    "inf_j_gross": 0.06294501062579468,
+    "inf_j_net": 0.020301982300432366,
+    "throughput_sps": 157964.75721797158,
+    "load_w": 9.94,
+    "idle_w": 6.734,
+    "net_power_w": 3.2059999999999995,
+    "energy_cv_pct": 1.7745733580430776,
+    "n_repeats": 3,
+    "measure_window_s": 12.0,
+    "method": "throughput_only_saturated",
+    "provenance": "measured_throughput_x_ST2_power"
+  }
+}

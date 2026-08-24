@@ -194,13 +194,16 @@ def compute_full_metrics(y_true, y_probs, threshold=0.5, n_bins=10):
     f1_tuned = f1_score(y_true, y_pred_tuned, pos_label=1, zero_division=0)
     macro_f1_tuned = f1_score(y_true, y_pred_tuned, average='macro', zero_division=0)
 
-    # Calibration
+    # Calibration: adaptive (equal-mass) ECE is primary, with bootstrap 95% CI;
+    # equal-width ECE is reported as a secondary comparison metric.
     ece_adaptive, ece_lo, ece_hi = bootstrap_ece(
-        y_true, y_probs, n_bins=n_bins, method='adaptive'
-    )
+        y_true, y_probs, n_bins=n_bins, method='adaptive')
     ece_ew = compute_ece_equal_width(y_true, y_probs, n_bins=n_bins)
-    brier = brier_score_loss(y_true, y_probs)
-    nll = log_loss(y_true, y_probs, labels=[0, 1])
+
+    # Proper scoring rules
+    brier = float(brier_score_loss(y_true, y_probs))
+    p2d = np.column_stack([1.0 - y_probs, y_probs])
+    nll = float(log_loss(y_true, p2d, labels=[0, 1]))
 
     return {
         'AUROC': auroc,
@@ -217,6 +220,35 @@ def compute_full_metrics(y_true, y_probs, threshold=0.5, n_bins=10):
         'Brier': brier,
         'NLL': nll,
     }
+
+
+def bootstrap_delta_auroc(y_true, y_probs_model1, y_probs_model2, n_bootstrap=1000, seed=42):
+    """
+    Bootstrap 95% Confidence Interval for paired difference in AUROC on shared test set.
+    Delta_AUROC = AUROC(Model 1) - AUROC(Model 2)
+    Returns: (delta_point, ci_lower, ci_upper)
+    """
+    from sklearn.metrics import roc_auc_score
+    rng = np.random.RandomState(seed)
+    n_samples = len(y_true)
+    auroc1_point = float(roc_auc_score(y_true, y_probs_model1))
+    auroc2_point = float(roc_auc_score(y_true, y_probs_model2))
+    delta_point = auroc1_point - auroc2_point
+
+    delta_boots = []
+    for _ in range(n_bootstrap):
+        idx = rng.randint(0, n_samples, size=n_samples)
+        y_b = y_true[idx]
+        if len(np.unique(y_b)) < 2:
+            continue
+        a1 = roc_auc_score(y_b, y_probs_model1[idx])
+        a2 = roc_auc_score(y_b, y_probs_model2[idx])
+        delta_boots.append(a1 - a2)
+
+    ci_lo = float(np.percentile(delta_boots, 2.5))
+    ci_hi = float(np.percentile(delta_boots, 97.5))
+    return delta_point, ci_lo, ci_hi
+
 
 
 # ---------------------------------------------------------------------------

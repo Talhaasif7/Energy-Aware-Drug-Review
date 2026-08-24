@@ -156,7 +156,7 @@ def main():
                   f"ECE={cadec_m['ECE_adaptive']:.4f} "
                   f"[{cadec_m['ECE_CI_lo']:.4f},{cadec_m['ECE_CI_hi']:.4f}]")
 
-        # Paired delta ECE: temp vs uncal, iso vs uncal
+        # Paired delta ECE & AUROC tests
         print(f"\n  Paired Bootstrap ΔECE Tests:")
         for method_name, (p_test, _) in methods.items():
             if method_name == 'Uncalibrated':
@@ -166,6 +166,14 @@ def main():
             sig = "SIGNIFICANT" if d_hi < 0 else "non-significant (CI crosses 0)"
             print(f"    {method_name} vs Uncal: ΔECE={d_point:+.4f} "
                   f"[{d_lo:+.4f}, {d_hi:+.4f}] — {sig}")
+
+        # Compute paired delta AUROC vs baseline LR (AUROC = 0.8835)
+        from metrics_utils import bootstrap_delta_auroc
+        print(f"\n  Paired Bootstrap ΔAUROC Tests (Transformer vs Uncalibrated):")
+        # Compare Uncalibrated vs Isotonic
+        da_point, da_lo, da_hi = bootstrap_delta_auroc(
+            y_test, probs_test_uncal[:, 1], probs_test_iso[:, 1])
+        print(f"    Uncalibrated vs Isotonic ΔAUROC: {da_point:+.4f} [{da_lo:+.4f}, {da_hi:+.4f}]")
 
         all_results[basename] = file_results
 

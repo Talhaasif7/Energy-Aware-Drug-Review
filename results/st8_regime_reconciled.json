@@ -1,0 +1,145 @@
+{
+  "source": "frozen_split_reconciled.json",
+  "provenance": {
+    "generated_by": "run_frozen_split_analysis.py",
+    "primary_seed": 42,
+    "split_source": "npz_texts",
+    "test_N": 1201,
+    "cadec_N": 7823,
+    "cadec_aligned_with_transformer": true,
+    "n_bootstrap": 2000,
+    "psytar_csv_sha16": "859fb25f0fb1854f",
+    "cadec_csv_sha16": "87f88871fa9b07c7",
+    "druglib_csv_sha16": "960d3f25de715bdb",
+    "cpu_energy_provenance": {
+      "Logistic Regression": "measured_throughput_x_ST2_power",
+      "LightGBM": "measured_throughput_x_ST2_power",
+      "_meta": "measured_ST3"
+    },
+    "gpu_energy_provenance": {
+      "DistilBERT": "saturated_run",
+      "PubMedBERT": "saturated_run"
+    }
+  },
+  "detailed_selection": [
+    {
+      "tau": 0.03,
+      "E(gross J/1k)": 0.5,
+      "Feasible": 4,
+      "Argmax": "Logist+Isot",
+      "BootstrapTie": "Logist+Isot",
+      "Tie AUROC": "0.8742",
+      "Tie NetJ/1k": "0.0011",
+      "CADEC tau-ok (RQ4)": false,
+      "m=0.01": "Logist+Isot",
+      "m=0.02": "Logist+Isot",
+      "m=0.03": "Logist+Isot"
+    },
+    {
+      "tau": 0.05,
+      "E(gross J/1k)": 60.0,
+      "Feasible": 7,
+      "Argmax": "Distil+Temp",
+      "BootstrapTie": "Distil+Temp",
+      "Tie AUROC": "0.9180",
+      "Tie NetJ/1k": "31.3356",
+      "CADEC tau-ok (RQ4)": true,
+      "m=0.01": "Distil+Temp",
+      "m=0.02": "Distil+Temp",
+      "m=0.03": "Distil+Temp"
+    },
+    {
+      "tau": 0.07,
+      "E(gross J/1k)": 10.0,
+      "Feasible": 6,
+      "Argmax": "Logist",
+      "BootstrapTie": "Logist",
+      "Tie AUROC": "0.8760",
+      "Tie NetJ/1k": "0.0011",
+      "CADEC tau-ok (RQ4)": false,
+      "m=0.01": "Logist",
+      "m=0.02": "Logist",
+      "m=0.03": "Logist"
+    },
+    {
+      "tau": 0.07,
+      "E(gross J/1k)": 60.0,
+      "Feasible": 8,
+      "Argmax": "Distil+Temp",
+      "BootstrapTie": "Distil+Temp",
+      "Tie AUROC": "0.9180",
+      "Tie NetJ/1k": "31.3356",
+      "CADEC tau-ok (RQ4)": true,
+      "m=0.01": "Distil+Temp",
+      "m=0.02": "Distil+Temp",
+      "m=0.03": "Distil+Temp"
+    },
+    {
+      "tau": 0.1,
+      "E(gross J/1k)": 0.5,
+      "Feasible": 6,
+      "Argmax": "Logist",
+      "BootstrapTie": "Logist",
+      "Tie AUROC": "0.8760",
+      "Tie NetJ/1k": "0.0011",
+      "CADEC tau-ok (RQ4)": true,
+      "m=0.01": "Logist",
+      "m=0.02": "Logist",
+      "m=0.03": "Logist"
+    },
+    {
+      "tau": 0.1,
+      "E(gross J/1k)": 10.0,
+      "Feasible": 6,
+      "Argmax": "Logist",
+      "BootstrapTie": "Logist",
+      "Tie AUROC": "0.8760",
+      "Tie NetJ/1k": "0.0011",
+      "CADEC tau-ok (RQ4)": true,
+      "m=0.01": "Logist",
+      "m=0.02": "Logist",
+      "m=0.03": "Logist"
+    },
+    {
+      "tau": 0.1,
+      "E(gross J/1k)": 60.0,
+      "Feasible": 9,
+      "Argmax": "Distil",
+      "BootstrapTie": "Distil",
+      "Tie AUROC": "0.9181",
+      "Tie NetJ/1k": "31.3356",
+      "CADEC tau-ok (RQ4)": true,
+      "m=0.01": "Distil",
+      "m=0.02": "Distil",
+      "m=0.03": "Distil"
+    }
+  ],
+  "feasible_counts": {
+    "tau=0.03_E=0.5": 4,
+    "tau=0.05_E=60.0": 7,
+    "tau=0.07_E=10.0": 6,
+    "tau=0.07_E=60.0": 8,
+    "tau=0.1_E=0.5": 6,
+    "tau=0.1_E=10.0": 6,
+    "tau=0.1_E=60.0": 9
+  },
+  "model_energy": {
+    "Logistic Regression": {
+      "net": 0.0010590016998288114,
+      "gross": 0.022157574027187432
+    },
+    "LightGBM": {
+      "net": 0.020301982300432366,
+      "gross": 0.06294501062579468
+    },
+    "DistilBERT": {
+      "net": 31.335613656246846,
+      "gross": 57.03556249619698
+    },
+    "PubMedBERT": {
+      "net": 60.47074787404452,
+      "gross": 110.2417587589478
+    }
+  },
+  "pending_energy_arms": []
+}

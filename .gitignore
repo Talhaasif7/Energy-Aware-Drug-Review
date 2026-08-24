@@ -51,3 +51,21 @@ Thumbs.db
 
 # Large dataset files (>100MB GitHub limit)
 data/02_secondary_sentiment_scaling/external_val_webmd/*.csv
+
+# --- Repo hygiene: keep model artifacts out of the root ---
+# Prediction arrays and GPU/CPU result JSONs are canonical ONLY under results/.
+# These anchored root patterns stop stray copies (e.g. files pasted or
+# re-downloaded into the repo root) from ever being committed.
+/*.npz
+/colab_transformer_gpu_results*.json
+/gpu_metrics_recomputed*.json
+/frozen_split_reconciled*.json
+/st8_regime_reconciled*.json
+/st6_st7_reconciled*.json
+/cpu_energy_measured*.json
+
+# Browser re-download duplicates, e.g. "results (1).json", "preds (2).npz"
+* (1).*
+* (2).*
+* (3).*
+* - Copy.*

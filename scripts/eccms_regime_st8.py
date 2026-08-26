@@ -73,9 +73,13 @@ def get_energy(arm, use_gross=True):
     return v if v is not None else float('inf')
 
 
-def feasible(arms, tau, E, use_gross=True):
-    return [a for a in arms
-            if a['ece'] <= tau + 1e-12 and get_energy(a, use_gross) <= E + 1e-12]
+def feasible(arms, tau, E, use_gross=True, use_ece_ci=True):
+    res = []
+    for a in arms:
+        ece_val = a.get('ece_ci_hi', a.get('ece_upper', a['ece'])) if use_ece_ci else a['ece']
+        if ece_val <= tau + 1e-12 and get_energy(a, use_gross) <= E + 1e-12:
+            res.append(a)
+    return res
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +206,7 @@ def main():
 
     # ---- dense grids for the regime map ----
     tau_grid = [0.01, 0.02, 0.03, 0.05, 0.07, 0.10, 0.15, 0.20]
-    E_grid = [0.1, 0.5, 1.0, 10.0, 30.0, 60.0, 100.0]
+    E_grid = [0.1, 0.5, 1.0, 10.0, 30.0, 60.0, 100.0, 120.0, 150.0, 200.0]
 
     def print_map(title, selector):
         print(f"\n--- {title} (budget = GROSS J/1k) ---")
@@ -227,7 +231,8 @@ def main():
     print("\n--- DETAILED SELECTION TABLE (bootstrap tie + fixed-margin strip + RQ4) ---")
     detail_rows = []
     reconcile_cells = [(0.03, 0.5), (0.05, 60.0), (0.07, 10.0), (0.07, 60.0),
-                       (0.10, 0.5), (0.10, 10.0), (0.10, 60.0)]
+                       (0.10, 0.5), (0.10, 10.0), (0.10, 60.0),
+                       (0.05, 120.0), (0.07, 120.0), (0.10, 120.0)]
     for tau, E in reconcile_cells:
         argmax_sel, n = select_argmax(catalogue, tau, E, m_auroc)
         tie_sel, _ = select_bootstrap_tie(catalogue, tau, E, tie_lookup, m_auroc)

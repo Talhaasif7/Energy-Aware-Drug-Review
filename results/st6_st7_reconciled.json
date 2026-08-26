@@ -1,7 +1,7 @@
 {
   "_meta": {
     "script": "budget_and_subgroup_st6_st7.py",
-    "generated_utc": "2026-08-24 05:57:25Z",
+    "generated_utc": "2026-08-26 12:19:53Z",
     "note": "ST6 budget extrapolation + ST7 subgroup feasibility. All energy terms are derived from measured benchmarks (results/cpu_energy_measured.json, results/colab_transformer_gpu_results.json); corpus sizes are read from the harmonised CSVs. Nothing here is hand-entered.",
     "subgroup_min_n": 200,
     "inputs_captured": true
@@ -32,28 +32,53 @@
         "sec_per_sample": 0.0018593750000000001,
         "j_per_sample": 0.0031030000000000003
       },
-      "source": "ST3 CodeCarbon run, 1600 training samples"
+      "source": "results/st3_cpu_energy.json",
+      "provenance": "ST3_JSON_ABSENT; LR_fallback; GBDT_fallback",
+      "records": {
+        "LR": {
+          "s_per_sample": 0.0037756250000000003,
+          "j_per_sample": 0.0020023750000000002,
+          "n_train": 1600,
+          "train_seconds": 6.041,
+          "train_energy_j": 3.2038,
+          "energy_source": "documented_constant",
+          "rapl_available": null,
+          "cpu_model": null,
+          "provenance": "DOCUMENTED_FALLBACK_not_measured_here"
+        },
+        "GBDT": {
+          "s_per_sample": 0.0018593750000000001,
+          "j_per_sample": 0.0031030000000000003,
+          "n_train": 1600,
+          "train_seconds": 2.975,
+          "train_energy_j": 4.9648,
+          "energy_source": "documented_constant",
+          "rapl_available": null,
+          "cpu_model": null,
+          "provenance": "DOCUMENTED_FALLBACK_not_measured_here"
+        }
+      }
     },
     "cpu_inference_measured": {
       "LR": {
-        "gross_1k": 0.022157574027187432,
-        "net_1k": 0.0010590016998288114,
-        "inf_throughput": 319963.88001046726,
-        "load_w": 7.072,
-        "energy_cv_pct": 5.0056912815914405,
-        "idle_w": 6.734,
-        "rapl_available": false,
-        "provenance": "measured_throughput_x_ST2_power"
+        "gross_1k": 0.16479584355200425,
+        "net_1k": 0.15572110479983556,
+        "inf_throughput": 953445.1391460416,
+        "load_w": 157.08700314671876,
+        "energy_cv_pct": 1.3793846244881873,
+        "idle_w": 8.65023949750118,
+        "rapl_available": true,
+        "provenance": "measured_rapl_saturated"
       },
       "GBDT": {
-        "gross_1k": 0.06294501062579468,
-        "net_1k": 0.020301982300432366,
-        "inf_throughput": 157964.75721797158,
-        "load_w": 9.94,
-        "energy_cv_pct": 1.7745733580430776,
-        "idle_w": 6.734,
-        "rapl_available": false,
-        "provenance": "measured_throughput_x_ST2_power"
+        "gross_1k": 0.36660614916850626,
+        "net_1k": 0.3529347037365466,
+        "inf_throughput": 632725.5123468407,
+        "load_w": 231.96018353340006,
+        "energy_cv_pct": 1.0694486368320568,
+        "idle_w": 8.65023949750118,
+        "rapl_available": true,
+        "provenance": "measured_rapl_saturated"
       }
     },
     "gpu_measured": {
@@ -91,23 +116,23 @@
       "Model Tier": "Classical Linear (LR)",
       "Hardware": "CPU",
       "Train Time": "1.89 min",
-      "Inf Time": "0.09 min",
-      "Total Time (h)": 0.03292050816543389,
-      "Total Energy (J)": 96.88540663114426,
-      "Total Energy (kWh)": 2.6912612953095628e-05,
+      "Inf Time": "0.03 min",
+      "Total Time (h)": 0.03196293320629234,
+      "Total Energy (J)": 333.6813374433355,
+      "Total Energy (kWh)": 9.268926040092654e-05,
       "Status": "PASSED",
-      "provenance": "measured_throughput_x_ST2_power"
+      "provenance": "measured_rapl_saturated"
     },
     {
       "Model Tier": "Classical GBDT (LightGBM)",
       "Hardware": "CPU",
       "Train Time": "0.93 min",
-      "Inf Time": "0.18 min",
-      "Total Time (h)": 0.0184218171576718,
-      "Total Energy (J)": 197.63250131504114,
-      "Total Energy (kWh)": 5.489791703195587e-05,
+      "Inf Time": "0.04 min",
+      "Total Time (h)": 0.01623135913780427,
+      "Total Energy (J)": 701.7449123268748,
+      "Total Energy (kWh)": 0.00019492914231302076,
       "Status": "PASSED",
-      "provenance": "measured_throughput_x_ST2_power"
+      "provenance": "measured_rapl_saturated"
     },
     {
       "Model Tier": "Efficient Transformer (DistilBERT)",

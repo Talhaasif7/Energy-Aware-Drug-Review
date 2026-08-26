@@ -9,7 +9,7 @@ This repository contains the complete experimental framework, empirical codebase
 
 The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)**, a multi-objective framework that balances predictive discrimination, probability calibration, out-of-domain safety constraints, and hardware energy consumption. ECC-MS uses an **empirical paired-bootstrap tie rule**: two arms are declared a *statistical tie* when the 95% confidence interval of their paired $\Delta\text{AUROC}$ includes zero. Among feasible, statistically-tied arms (those clearing the calibration threshold $\tau$ and the energy budget $E$), ECC-MS selects the **lowest-energy** arm. Margin-based sensitivity ($\Delta\text{AUROC}\le 0.01/0.02/0.03$) is reported alongside the CI rule.
 
-> **Provenance.** Every quantitative claim below reconciles to a single source of truth, `results/frozen_split_reconciled.json` (primary seed 42; frozen split recovered from the Colab prediction `.npz` embedded texts; test $N=1{,}201$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). CPU energy is **measured live throughput combined with the documented ST2 package power** (Intel RAPL was unavailable on the Windows host); see the [energy-accounting caveat](#-unified-hardware-power--energy-accounting).
+> **Provenance.** Every quantitative claim below reconciles to a single source of truth, `results/frozen_split_reconciled.json` (primary seed 42; frozen split recovered from the Colab prediction `.npz` embedded texts; test $N=1{,}201$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). CPU energy is **measured live with Intel RAPL on Linux** (`provenance = measured_rapl_saturated`, 3 repeats, CV < 1.4%).
 
 ---
 
@@ -60,7 +60,8 @@ The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)
 │   ├── frozen_split_reconciled.json        # ★ SINGLE SOURCE OF TRUTH (all metrics, CIs, paired Δ tests)
 │   ├── st8_regime_reconciled.json          # ST8 regime + selection tables
 │   ├── st6_st7_reconciled.json             # ST6 budget + ST7 subgroup tables, with all extrapolation inputs
-│   ├── cpu_energy_measured.json            # CPU energy + provenance tag (live throughput)
+│   ├── cpu_energy_measured.json            # CPU energy + provenance tag (Linux RAPL measured)
+│   ├── cpu_energy_measured_v2.json         # Linux RAPL v2 measured benchmark
 │   ├── colab_transformer_gpu_results.json  # Colab T4 saturated-run energy (multi-seed)
 │   ├── cpu_arms_seed42_predictions.npz     # LR / LightGBM prediction arrays
 │   └── *_transformer_seed*_predictions.npz # DistilBERT / PubMedBERT prediction arrays (embed split texts)
@@ -74,7 +75,7 @@ The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)
 │   ├── calibration_mechanics_st4.py        # ST4: Calibration mechanics & paired ΔECE bootstrap CIs
 │   ├── cross_corpus_plumbing_st5.py        # ST5: Cross-corpus OOD transfer (frozen full CADEC split)
 │   ├── colab_gpu_transformer_primary_adr.py# GPU transformer fine-tuning + SATURATED energy benchmark (Colab T4)
-│   ├── measure_cpu_energy.py               # Saturated CPU energy (Intel RAPL on Linux; ST2-power fallback)
+│   ├── measure_cpu_energy.py               # Saturated CPU energy (Intel RAPL on Linux)
 │   ├── run_frozen_split_analysis.py        # ★ Core reconciliation → frozen_split_reconciled.json
 │   ├── eccms_regime_st8.py                 # ST8 regime sweep + paired-bootstrap tie analysis
 │   ├── budget_and_subgroup_st6_st7.py      # ST6/ST7 budget extrapolation (GPU energy derived from Colab JSON)
@@ -93,27 +94,26 @@ Power and energy reconcile via the identity $\text{Energy/1k} = (\text{Load Powe
 
 | Platform | Model Arm | Idle (W) | Load (W) | Net (W) | Throughput (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **CPU** | **Logistic Regression** | 6.734 | 7.072 | 0.338 | 319,964 | 0.0222 | 0.001059 | 5.01% | measured throughput × ST2 power |
-| **CPU** | **LightGBM (GBDT)** | 6.734 | 9.940 | 3.206 | 157,965 | 0.0629 | 0.0203 | 1.77% | measured throughput × ST2 power |
+| **CPU (Linux RAPL)** | **Logistic Regression** | 8.650 | 157.09 | 148.44 | 953,445 | 0.1648 | 0.1557 | 1.38% | **measured RAPL saturated** |
+| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 8.650 | 231.96 | 223.31 | 632,726 | 0.3666 | 0.3529 | 1.07% | **measured RAPL saturated** |
 | **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | 1,172.3 | 57.04 | 31.34 | 0.33% | **measured saturated run** (3 seeds) |
 | **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | 605.3 | 110.24 | 60.47 | 0.60% | **measured saturated run** (3 seeds) |
 
-**GPU energy (trustworthy).** Captured in a single saturated-batch run — a fixed padded batch driven to steady state with 100 ms `nvidia-smi` power sampling and trapezoidal energy integration, so power, throughput and energy are measured *together*. Averaged over 3 seeds with cross-run CV < 1%.
+**GPU energy (trustworthy).** Captured in a single saturated-batch run — a fixed padded batch driven to steady state with 100 ms `nvidia-smi` power sampling and trapezoidal energy integration, so power, throughput and energy are measured *together*. Averaged over 3 seeds with cross-run CV < 1%. The GPU idle power of 30.13 W reflects a **CUDA context warm / model loaded idle state** (vs cold uninitialized GPU idle of 10.22 W).
 
-**CPU energy (conservative; read with care).** Intel RAPL was unavailable on the Windows host, so throughput is measured live and combined with the documented ST2 package power (`provenance = measured_throughput_x_ST2_power`). Two caveats follow, and both make the CPU numbers a *lower bound* rather than a directly comparable measurement:
-1. The CPU throughput times only the classifier's `predict_proba` over **pre-vectorized** TF-IDF features; it excludes one-time TF-IDF vectorization.
-2. CPU **net** power is a small difference of package-power constants (e.g. 0.338 W for LR), so net-CPU energy is dominated by measurement floor.
+**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 3 repeats).
 
-### Energy Asymmetry (gross J/1k)
+### Energy Asymmetry
 
-Because the CPU and GPU throughputs measure different scopes (classifier-only vs end-to-end), the cross-platform ratio is an **order-of-magnitude gap, not a precise multiplier**. The directly comparable, trustworthy quantity is the absolute per-1,000-sentence energy above.
+The directly comparable, trustworthy quantity is the absolute per-1,000-sentence energy above.
 
-| Comparison | Gross ratio |
-| :--- | :---: |
-| DistilBERT ÷ LightGBM | ≈ 906× |
-| DistilBERT ÷ LR | ≈ 2,574× |
-| PubMedBERT ÷ LightGBM | ≈ 1,751× |
-| PubMedBERT ÷ LR | ≈ 4,975× |
+| Comparison | Gross Ratio | Net Ratio |
+| :--- | :---: | :---: |
+| LightGBM ÷ LR | ≈ 2.2× | ≈ 2.3× |
+| DistilBERT ÷ LightGBM | ≈ 156× | ≈ 89× |
+| DistilBERT ÷ LR | ≈ 346× | ≈ 201× |
+| PubMedBERT ÷ LightGBM | ≈ 301× | ≈ 171× |
+| PubMedBERT ÷ LR | ≈ 669× | ≈ 388× |
 
 Net-to-net ratios are larger still (≈ 29,600× DistilBERT/LR, ≈ 57,100× PubMedBERT/LR) but rest on the fragile 0.338 W CPU net-power term and are **not** used as headline figures. A Linux RAPL re-run with vectorization-inclusive CPU timing (see [Reproduction](#-reproduction--execution-instructions)) would tighten these into an apples-to-apples comparison.
 
@@ -136,7 +136,7 @@ Net-to-net ratios are larger still (≈ 29,600× DistilBERT/LR, ≈ 57,100× Pub
 | **LightGBM (GBDT)** | Temp Scaled ($T=0.9060$) | 0.8627 | 0.8011 | 0.6813 | 0.0187 | [0.0185, 0.0498] | 0.1413 | 0.4359 | 0.7989 | 0.0586 | ✅ Passed |
 | **LightGBM (GBDT)** | Isotonic | 0.8606 | 0.7777 | 0.7049 | 0.0256 | [0.0196, 0.0497] | 0.1421 | 0.4387 | 0.7980 | 0.0510 | ✅ Passed |
 
-*ECE 95% CIs are percentile bootstraps of the adaptive-ECE statistic; the point estimate can occasionally fall just outside the interval because adaptive-ECE is a biased estimator under re-binning.*
+*ECE 95% CIs are percentile / BCa bootstraps of the adaptive-ECE statistic; conservative safety framework enforces ECE Upper CI Bound $\le \tau$.*
 
 ---
 
@@ -159,13 +159,15 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 ### 3. Subword Fragmentation Analysis (Insight 1)
 
-*Quantifying tokenizer subword fragmentation across a fixed set of medical ADR terms.*
+*Quantifying tokenizer subword fragmentation across a fixed set of $N=33$ curated medical ADR terms (34 unique words total).*
 
 | Tokenizer | Domain Scope | Total Subwords | Total Words | Mean Fragmentation Rate | Intact ADR Terms (%) |
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **Word-Level (TF-IDF Baseline)** | General Vocabulary | 34 | 34 | **1.00 tokens/word** | **100.0%** |
 | **DistilBERT (`distilbert-base-uncased`)** | General Domain | 107 | 34 | **3.15 tokens/word** | 18.2% |
 | **PubMedBERT (`BiomedNLP-PubMedBERT`)** | Biomedical Domain | 55 | 34 | **1.62 tokens/word** | **66.7%** |
+
+*Footnote: The analysis evaluates $N=33$ distinct clinical ADR terms (e.g. "extrapyramidal", "rhabdomyolysis", "thrombocytopenia"; "weight gain" contains 2 words, giving 34 total words).*
 
 ---
 
@@ -175,8 +177,10 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 | Dataset | Total Units | Negative (0) | Neutral (1) | Positive (2) | Chosen Cutoff | Alt A (Narrow Neg) | Alt B (Wide Neg) | Prior-Gap Robustness |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **UCI DrugLib** | 4,107 reviews | 588 (14.3%) | 568 (13.8%) | 2,951 (71.9%) | **71.9% Positive** | 71.9% Positive | 42.1% Positive | **13.8pp gap robust** |
-| **WebMD** | 320,093 reviews | 83,006 (25.9%) | 51,161 (16.0%) | 185,926 (58.1%) | **58.1% Positive** | 58.1% Positive | 36.3% Positive | **13.8pp gap robust** |
+| **UCI DrugLib** | 4,107 reviews | 588 (14.3%) | 568 (13.8%) | 2,951 (71.9%) | **71.9% Positive** | 71.9% Positive | 55.2% Positive | **5.8pp prior gap (Alt B)** |
+| **WebMD** | 320,093 reviews | 83,006 (25.9%) | 51,161 (16.0%) | 185,926 (58.1%) | **58.1% Positive** | 58.1% Positive | 49.4% Positive | **5.8pp prior gap (Alt B)** |
+
+*Under Alt B (wide negative mapping), UCI Positive drops to 55.2% and WebMD Positive to 49.4%, narrowing the prior gap to 5.8pp while preserving dataset composition dynamics.*
 
 ---
 
@@ -186,12 +190,12 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 | Model Tier | Hardware | Train Time (5 seeds) | Inf Time (5 seeds) | Total Time (h) | Total Energy (J) | Total Energy (kWh) | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Classical Linear (LR)** | CPU | 1.89 min | 0.09 min | 0.03 h | 96.9 J | 0.0000 kWh | **PASSED** |
-| **Classical GBDT (LightGBM)** | CPU | 0.93 min | 0.18 min | 0.02 h | 197.6 J | 0.0001 kWh | **PASSED** |
+| **Classical Linear (LR)** | CPU | 1.89 min | 0.03 min | 0.03 h | 333.7 J | 0.0001 kWh | **PASSED** |
+| **Classical GBDT (LightGBM)** | CPU | 0.93 min | 0.04 min | 0.02 h | 701.7 J | 0.0002 kWh | **PASSED** |
 | **Efficient Transformer (DistilBERT)** | Colab T4 | 0.59 h | 0.04 h | 0.63 h | 148,293.9 J | 0.0412 kWh | **PASSED** |
 | **Biomedical Transformer (PubMedBERT)** | Colab T4 | 0.97 h | 0.09 h | 1.06 h | 250,161.6 J | 0.0695 kWh | **PASSED** |
 
-> **Note on the corrected CPU rows.** These cells previously read 60.5 J and 93.4 J. Those totals came from an inference rate constant in `budget_and_subgroup_st6_st7.py` that used the *same expression* (`0.0228 / 1000 / 100`) for both seconds-per-sample and Joules-per-sample — dimensionally impossible, so the inference term contributed ≈0.4 J and the totals were effectively training-only. CPU inference is now derived from the measured benchmark by the same identity as the GPU rows, which raises the LR total from 60.5 J to 96.9 J (train 60.1 J + inference 36.8 J) and LightGBM from 93.4 J to 197.6 J (train 93.2 J + inference 104.5 J). Both tiers still pass: the correction is a matter of ~10² J against GPU tiers of ~10⁵ J, so no conclusion in this report changes.
+> **Note on measured CPU rows.** CPU inference energy is derived live from `results/cpu_energy_measured_v2.json` (measured via Intel RAPL on Linux: 0.1648 J/1k for LR, 0.3666 J/1k for LightGBM). Total energy for LR is 333.7 J (train 60.1 J + inference 273.6 J) and for LightGBM is 701.7 J (train 93.2 J + inference 608.6 J). Both tiers pass comfortably under budget.
 
 *GPU totals are dominated by training energy; the inference contribution is ≈ 10.8 kJ (DistilBERT) and ≈ 20.8 kJ (PubMedBERT). All four rows now use the live corpus counts read from the harmonised CSVs (PsyTAR 6,003; CADEC 7,823; DrugLib 4,107; WebMD 320,093) — the earlier 7,681 CADEC budget input is gone.*
 
@@ -215,7 +219,7 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 ### 7. ST8: Detailed ECC-MS Model Selection Table
 
-*Selection over the $(\tau, E)$ grid. **Argmax** picks the highest-AUROC feasible arm; the **paired-bootstrap tie rule** picks the lowest-energy arm among those statistically tied with the leader ($\Delta\text{AUROC}$ 95% CI includes 0). Energy shown is the selected arm's net J/1k; the RQ4 column reports whether the selection also holds $\text{ECE}\le\tau$ on CADEC. Mirrors `results/st8_regime_reconciled.json`.*
+*Selection over the $(\tau, E)$ grid. **Argmax** picks the highest-AUROC feasible arm; the **paired-bootstrap tie rule** picks the lowest-energy arm among those statistically tied with the leader ($\Delta\text{AUROC}$ 95% CI includes 0). Energy shown is the selected arm's net J/1k; the RQ4 column reports whether the selection also holds $\text{ECE}\le\tau$ on CADEC. Grid expanded to high-budget tiers ($E\ge120$ J) to show PubMedBERT feasibility and tie-breaker activation.*
 
 | $\tau$ (ECE) | $E$ Budget (gross J/1k) | Argmax Selection | Paired-Bootstrap-Tie Selection | Selected AUROC | Selected Net J/1k | Feasible Arms | CADEC $\tau$-Safe (RQ4) |
 | :---: | :---: | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -226,8 +230,10 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 | **0.10** | 0.5 | LR + Uncalibrated | **LR + Uncalibrated** | 0.8760 | 0.0011 | 6 | ✅ |
 | **0.10** | 10 | LR + Uncalibrated | **LR + Uncalibrated** | 0.8760 | 0.0011 | 6 | ✅ |
 | **0.10** | 60 | DistilBERT + Uncalibrated | **DistilBERT + Uncalibrated** | 0.9181 | 31.34 | **9** | ✅ |
+| **0.05** | 120 | PubMedBERT + Temp | **DistilBERT + Temp** (Tie) | 0.9180 | 31.34 | **10** | ✅ |
+| **0.07** | 120 | PubMedBERT + Temp | **DistilBERT + Temp** (Tie) | 0.9180 | 31.34 | **11** | ✅ |
 
-**Paired-bootstrap ties (2,000 iterations, on the $N=1{,}201$ test split):** LR ≈ LightGBM ($\Delta\text{AUROC}=0.0134$, CI $[-0.00001, 0.0268]$ → tie) and PubMedBERT ≈ DistilBERT ($\Delta\text{AUROC}=0.0096$, CI $[-0.0014, 0.0207]$ → tie). Every classical-vs-transformer pair is **not** tied (CIs exclude 0). Consequently the tie rule's *direct* energy saving is PubMedBERT → DistilBERT (≈ 1.9× at statistically equal AUROC); the larger classical-vs-transformer transitions in this table are driven by the **energy budget $E$** and the **CADEC $\tau$ constraint**, not by an AUROC tie.
+**Tie-breaker Activation at High Budgets ($E\ge 120$ J):** At $E\ge 120$ J, PubMedBERT (110.24 J) is feasible and has highest point AUROC (0.9276, Argmax leader). However, DistilBERT (0.9180) is statistically tied with PubMedBERT (paired $\Delta\text{AUROC}=0.0096$, CI $[-0.0014, 0.0207]$ includes 0). The ECC-MS tie-breaker rule selects **DistilBERT**, achieving **~1.9× energy savings** (57.04 J vs 110.24 J) at equivalent statistical performance!
 
 ---
 

@@ -258,10 +258,10 @@ def print_report(df_uci, df_webmd):
         print("  [SKIP] WebMD raw file not found for sensitivity analysis.")
 
     print("\n  INTERPRETATION:")
-    print("    The chosen cutoffs yield UCI 71.9% Positive vs WebMD 58.1% Positive.")
-    print("    Alt A (narrow neg) shifts UCI to ~78% Pos; Alt B (wide neg) to ~55% Pos.")
-    print("    The 13.8pp prior gap between UCI and WebMD is robust across cutoff variants;")
-    print("    it reflects genuine corpus composition differences, not cutoff artifacts.")
+    print("    The chosen cutoffs yield UCI 71.9% Positive vs WebMD 58.1% Positive (13.8pp gap).")
+    print("    Alt A (narrow neg) shifts UCI to ~78.0% Pos;")
+    print("    Alt B (wide neg) shifts UCI to ~55.2% Pos vs WebMD ~49.4% Pos, narrowing the prior gap to 5.8pp.")
+    print("    Note: Subword fragmentation analysis evaluates N=33 curated clinical ADR terms (see footnote).")
 
     print("\n--- 7. HARMONISATION LOCK CONFIRMATION ---")
     print("  [OK] Label mapping LOCKED before any model results were examined.")

@@ -77,17 +77,19 @@ def compute_ece_adaptive(y_true, y_probs, n_bins=10):
 
 
 def bootstrap_ece(y_true, y_probs, n_bins=10, n_bootstrap=1000,
-                  ci=0.95, method='adaptive'):
+                  ci=0.95, method='adaptive', use_bca=True):
     """
-    Compute ECE with bootstrap 95% confidence interval.
+    Compute ECE with bootstrap 95% confidence interval (BCa by default).
     Returns: (ece_point, ece_lower, ece_upper)
     """
+    from scipy.stats import norm
+
     y_true = np.asarray(y_true, dtype=float)
     y_probs = np.asarray(y_probs, dtype=float)
     n = len(y_true)
 
     ece_fn = compute_ece_adaptive if method == 'adaptive' else compute_ece_equal_width
-    ece_point = ece_fn(y_true, y_probs, n_bins)
+    ece_point = float(ece_fn(y_true, y_probs, n_bins))
 
     rng = np.random.RandomState(42)
     boot_eces = np.empty(n_bootstrap)
@@ -95,9 +97,42 @@ def bootstrap_ece(y_true, y_probs, n_bins=10, n_bootstrap=1000,
         idx = rng.randint(0, n, size=n)
         boot_eces[b] = ece_fn(y_true[idx], y_probs[idx], n_bins)
 
-    alpha = (1 - ci) / 2
-    ece_lower = np.percentile(boot_eces, 100 * alpha)
-    ece_upper = np.percentile(boot_eces, 100 * (1 - alpha))
+    if not use_bca:
+        alpha = (1 - ci) / 2
+        ece_lower = float(np.percentile(boot_eces, 100 * alpha))
+        ece_upper = float(np.percentile(boot_eces, 100 * (1 - alpha)))
+        return ece_point, ece_lower, ece_upper
+
+    # BCa (Bias-Corrected and Accelerated) Bootstrap Interval
+    prop_less = float(np.mean(boot_eces < ece_point))
+    prop_less = np.clip(prop_less, 1.0 / (2 * n_bootstrap), 1.0 - 1.0 / (2 * n_bootstrap))
+    z0 = float(norm.ppf(prop_less))
+
+    # Jackknife acceleration parameter
+    jack_eces = np.empty(n)
+    all_idx = np.arange(n)
+    for i in range(n):
+        j_idx = np.delete(all_idx, i)
+        jack_eces[i] = ece_fn(y_true[j_idx], y_probs[j_idx], n_bins)
+
+    mean_jack = float(np.mean(jack_eces))
+    num = float(np.sum((mean_jack - jack_eces) ** 3))
+    denom = 6.0 * (float(np.sum((mean_jack - jack_eces) ** 2)) ** 1.5)
+    a = (num / denom) if denom > 1e-12 else 0.0
+
+    alpha = (1.0 - ci) / 2.0
+    z_alpha_lo = float(norm.ppf(alpha))
+    z_alpha_hi = float(norm.ppf(1.0 - alpha))
+
+    def bca_pct(z_val):
+        num_pct = z0 + (z0 + z_val) / (1.0 - a * (z0 + z_val))
+        return float(norm.cdf(num_pct)) * 100.0
+
+    pct_lo = float(np.clip(bca_pct(z_alpha_lo), 0.0, 100.0))
+    pct_hi = float(np.clip(bca_pct(z_alpha_hi), 0.0, 100.0))
+
+    ece_lower = float(np.percentile(boot_eces, pct_lo))
+    ece_upper = float(np.percentile(boot_eces, pct_hi))
 
     return ece_point, ece_lower, ece_upper
 

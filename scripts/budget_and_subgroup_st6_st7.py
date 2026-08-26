@@ -171,7 +171,11 @@ def load_cpu_measured(json_path=CPU_JSON):
     from the benchmark, like the GPU."""
     out = {}
     if not os.path.exists(json_path):
-        return out
+        v2_path = os.path.join(RESULTS_DIR, "cpu_energy_measured_v2.json")
+        if os.path.exists(v2_path):
+            json_path = v2_path
+        else:
+            return out
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     meta = data.get("_meta", {}) if isinstance(data.get("_meta"), dict) else {}

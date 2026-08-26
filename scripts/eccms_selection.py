@@ -112,31 +112,34 @@ def pairwise_delta_auroc_matrix(y_true, model_probs, n_bootstrap=2000, seed=42):
 # Feasibility
 # ---------------------------------------------------------------------------
 
-def feasible_arms(configs, tau, E_budget_per_1k, use_gross=False):
-    """Arms clearing BOTH the calibration threshold (ECE <= tau) and the energy
-    budget (energy <= E). Returns the filtered list (order preserved)."""
-    return [c for c in configs
-            if c['ece'] <= tau + 1e-12
-            and get_energy(c, use_gross) <= E_budget_per_1k + 1e-12]
+def feasible_arms(configs, tau, E_budget_per_1k, use_gross=False, use_ece_ci=True):
+    """Arms clearing BOTH the calibration threshold (conservative ECE_upper <= tau if use_ece_ci else ECE <= tau)
+    and the energy budget (energy <= E). Returns the filtered list (order preserved)."""
+    res = []
+    for c in configs:
+        ece_val = c.get('ece_ci_hi', c.get('ece_upper', c['ece'])) if use_ece_ci else c['ece']
+        if ece_val <= tau + 1e-12 and get_energy(c, use_gross) <= E_budget_per_1k + 1e-12:
+            res.append(c)
+    return res
 
 
 # ---------------------------------------------------------------------------
 # Selection rules
 # ---------------------------------------------------------------------------
 
-def eccms_select_argmax(configs, tau, E_budget_per_1k, use_gross=False):
+def eccms_select_argmax(configs, tau, E_budget_per_1k, use_gross=False, use_ece_ci=True):
     """Baseline: among feasible arms, pick the max-AUROC arm."""
-    feas = feasible_arms(configs, tau, E_budget_per_1k, use_gross)
+    feas = feasible_arms(configs, tau, E_budget_per_1k, use_gross, use_ece_ci=use_ece_ci)
     if not feas:
         return None, 0
     return max(feas, key=get_auroc), len(feas)
 
 
 def eccms_select_fixed_margin(configs, tau, E_budget_per_1k, margin=0.02,
-                              use_gross=False):
+                              use_gross=False, use_ece_ci=True):
     """Pre-registered practical-equivalence margin: tie if leader_auroc - auroc
     <= margin; among tied arms pick lowest energy."""
-    feas = feasible_arms(configs, tau, E_budget_per_1k, use_gross)
+    feas = feasible_arms(configs, tau, E_budget_per_1k, use_gross, use_ece_ci=use_ece_ci)
     if not feas:
         return None, 0
     leader = max(get_auroc(c) for c in feas)
@@ -147,7 +150,7 @@ def eccms_select_fixed_margin(configs, tau, E_budget_per_1k, margin=0.02,
 
 def eccms_select_bootstrap_tie(configs, tau, E_budget_per_1k, y_true,
                                model_probs, n_bootstrap=2000, seed=42,
-                               use_gross=False):
+                               use_gross=False, use_ece_ci=True):
     """
     Primary ECC-MS rule with the empirical paired-bootstrap tie test.
 
@@ -158,7 +161,7 @@ def eccms_select_bootstrap_tie(configs, tau, E_budget_per_1k, y_true,
     Returns (selected_config, feasible_count, tie_info) where tie_info is a dict
     with the leader, the tied model set, and the Delta_AUROC CIs vs the leader.
     """
-    feas = feasible_arms(configs, tau, E_budget_per_1k, use_gross)
+    feas = feasible_arms(configs, tau, E_budget_per_1k, use_gross, use_ece_ci=use_ece_ci)
     if not feas:
         return None, 0, {}
 

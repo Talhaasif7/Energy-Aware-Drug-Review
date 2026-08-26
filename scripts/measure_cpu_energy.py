@@ -146,18 +146,23 @@ def measure_idle_power(rapl, duration_s):
 # ---------------------------------------------------------------------------
 # Saturated inference benchmark for one fitted model
 # ---------------------------------------------------------------------------
-def saturated_infer(clf, X_bench, rapl, warmup_s, measure_s):
-    """Drive `clf` to steady state on X_bench, then over the measurement window
-    capture energy (if RAPL), throughput and load power together.
+# ---------------------------------------------------------------------------
+# Saturated inference benchmark for one fitted model (end-to-end throughput)
+# ---------------------------------------------------------------------------
+def saturated_infer(clf, vec, raw_texts_bench, rapl, warmup_s, measure_s):
+    """Drive `vec` + `clf` to steady state on raw_texts_bench (end-to-end vectorization
+    + inference), then over the measurement window capture energy (if RAPL),
+    throughput and load power together.
 
     Returns dict with throughput_sps, and (if RAPL) energy_window_j / load_w.
     """
-    n_batch = X_bench.shape[0]
+    n_batch = len(raw_texts_bench)
 
     # Warm up (fill caches, spin up threads) — not measured.
     t_end = time.perf_counter() + warmup_s
     while time.perf_counter() < t_end:
-        clf.predict_proba(X_bench)
+        X_vec = vec.transform(raw_texts_bench)
+        clf.predict_proba(X_vec)
 
     # Measurement window: energy + throughput captured simultaneously.
     before = _read_domains(rapl.domains) if rapl.ok else None
@@ -165,7 +170,8 @@ def saturated_infer(clf, X_bench, rapl, warmup_s, measure_s):
     n_infer = 0
     # Run in whole-batch units; stop once we pass measure_s.
     while (time.perf_counter() - t0) < measure_s:
-        clf.predict_proba(X_bench)
+        X_vec = vec.transform(raw_texts_bench)
+        clf.predict_proba(X_vec)
         n_infer += n_batch
     t1 = time.perf_counter()
     after = _read_domains(rapl.domains) if rapl.ok else None
@@ -190,7 +196,8 @@ def main():
     ap.add_argument("--warmup-s", type=float, default=2.0)
     ap.add_argument("--measure-s", type=float, default=12.0)
     ap.add_argument("--idle-s", type=float, default=8.0)
-    ap.add_argument("--repeats", type=int, default=3)
+    ap.add_argument("--repeats", type=int, default=5,
+                    help="number of benchmark repeats (default: 5, uses median)")
     ap.add_argument("--bench-rows", type=int, default=50000,
                     help="target rows in the tiled saturation batch")
     ap.add_argument("--seed", type=int, default=42)
@@ -203,7 +210,7 @@ def main():
             pass
 
     log("=" * 88)
-    log("  CPU SATURATED-BATCH ENERGY  —  classical arms (power+throughput+energy)")
+    log("  CPU SATURATED-BATCH ENERGY  —  classical arms (power+end-to-end throughput)")
     log("=" * 88)
 
     rapl = RAPLReader()
@@ -220,17 +227,17 @@ def main():
         log(f"[FATAL] Missing {PSYTAR_CSV}"); return
     train_df, calib_df, test_df = reconstruct_split(PSYTAR_CSV, args.seed)
     vec = TfidfVectorizer(max_features=1000)
-    X_train = vec.fit_transform(list(train_df["text"])).toarray()
+    X_train = vec.fit_transform(list(train_df["text"]))
     y_train = train_df["label"].values
-    X_test = vec.transform(list(test_df["text"])).toarray()
-    log(f"[data] train={X_train.shape} test={X_test.shape} "
+    test_texts = list(test_df["text"])
+    log(f"[data] train={X_train.shape} test={len(test_texts)} texts "
         f"(features={X_train.shape[1]})")
 
-    # Tile the test features into a large steady-state batch.
-    reps = max(1, int(np.ceil(args.bench_rows / max(1, X_test.shape[0]))))
-    X_bench = np.ascontiguousarray(np.tile(X_test, (reps, 1)))
-    log(f"[data] saturation batch = {X_bench.shape[0]} rows "
-        f"({reps}x tiled test set)")
+    # Tile the raw test texts into a large steady-state batch for end-to-end vectorization.
+    reps = max(1, int(np.ceil(args.bench_rows / max(1, len(test_texts)))))
+    raw_texts_bench = test_texts * reps
+    log(f"[data] saturation batch = {len(raw_texts_bench)} text rows "
+        f"({reps}x tiled test set, includes TF-IDF transform)")
 
     models = {
         "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
@@ -258,7 +265,7 @@ def main():
             f"({args.warmup_s:.0f}s warmup + {args.measure_s:.0f}s measure)")
         gross_list, thr_list, load_list = [], [], []
         for r in range(args.repeats):
-            res = saturated_infer(clf, X_bench, rapl, args.warmup_s, args.measure_s)
+            res = saturated_infer(clf, vec, raw_texts_bench, rapl, args.warmup_s, args.measure_s)
             thr = res["throughput_sps"]
             thr_list.append(thr)
             if rapl.ok:
@@ -272,32 +279,35 @@ def main():
             log(f"    repeat {r+1}: throughput={thr:,.0f} s/s | "
                 f"load={load_w:.3f} W | gross={gross:.4f} J/1k")
 
-        gross_mean = float(np.mean(gross_list))
-        thr_mean = float(np.mean(thr_list))
-        load_mean = float(np.mean(load_list))
-        cv = float(np.std(gross_list, ddof=0) / gross_mean * 100.0) if gross_mean else 0.0
-        net_power = max(0.0, load_mean - idle_w)
-        net_gross_ratio = (net_power / load_mean) if load_mean else 0.0
-        net_1k = gross_mean * net_gross_ratio
+        # Record median across >=5 repeats per protocol
+        gross_val = float(np.median(gross_list))
+        thr_val = float(np.median(thr_list))
+        load_val = float(np.median(load_list))
+        cv = float(np.std(gross_list, ddof=0) / gross_val * 100.0) if gross_val else 0.0
+        net_power = max(0.0, load_val - idle_w)
+        net_gross_ratio = (net_power / load_val) if load_val else 0.0
+        net_1k = gross_val * net_gross_ratio
 
         provenance = ("measured_rapl_saturated" if rapl.ok
                       else "measured_throughput_x_ST2_power")
         results[name] = {
-            "inf_j_gross": gross_mean,
+            "inf_j_gross": gross_val,
             "inf_j_net": net_1k,
-            "throughput_sps": thr_mean,
-            "load_w": load_mean,
+            "throughput_sps": thr_val,
+            "load_w": load_val,
             "idle_w": float(idle_w),
             "net_power_w": net_power,
             "energy_cv_pct": cv,
             "n_repeats": args.repeats,
             "measure_window_s": args.measure_s,
-            "method": ("rapl_integrated_saturated" if rapl.ok
-                       else "throughput_only_saturated"),
+            "method": ("rapl_integrated_saturated_end2end" if rapl.ok
+                       else "throughput_only_saturated_end2end"),
+            "includes_tfidf_vectorization": True,
+            "summary_stat": "median",
             "provenance": provenance,
         }
-        log(f"  -> mean gross={gross_mean:.4f} J/1k | net={net_1k:.4f} J/1k | "
-            f"throughput={thr_mean:,.0f} s/s | CV={cv:.2f}%")
+        log(f"  -> median gross={gross_val:.4f} J/1k | net={net_1k:.4f} J/1k | "
+            f"throughput={thr_val:,.0f} s/s | CV={cv:.2f}%")
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
     out_path = os.path.join(RESULTS_DIR, "cpu_energy_measured.json")
@@ -308,7 +318,7 @@ def main():
             "rapl_domains": len(rapl.domains),
             "idle_power_w": float(idle_w),
             "idle_source": "rapl" if rapl.ok else "ST2_constant",
-            "bench_rows": int(X_bench.shape[0]),
+            "bench_rows": len(raw_texts_bench),
             "seed": args.seed,
         },
         **results,

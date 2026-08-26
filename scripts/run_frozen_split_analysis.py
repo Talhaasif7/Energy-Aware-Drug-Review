@@ -103,13 +103,36 @@ CPU_ENERGY_FALLBACK = {
 }
 
 TAU_GRID = [0.03, 0.05, 0.07, 0.10]
-E_GRID = [0.5, 10.0, 60.0]
+E_GRID = [0.5, 10.0, 60.0, 120.0, 150.0, 200.0]
 # Full README-facing grid (for feasible-count reconciliation vs the reviewer).
 RECONCILE_CELLS = [(0.05, 60.0), (0.07, 10.0), (0.07, 60.0),
-                   (0.10, 0.5), (0.10, 10.0), (0.10, 60.0)]
+                   (0.10, 0.5), (0.10, 10.0), (0.10, 60.0),
+                   (0.05, 120.0), (0.07, 120.0), (0.10, 120.0)]
 MARGINS = [0.01, 0.02, 0.03]
 N_BOOTSTRAP = 2000
 BOOT_SEED = 42
+
+MODEL_HYPERPARAMETERS = {
+    "Logistic Regression": {
+        "solver": "lbfgs", "max_iter": 1000, "C": 1.0, "penalty": "l2",
+        "vectorizer": "TfidfVectorizer(max_features=1000)", "random_state": 42
+    },
+    "LightGBM": {
+        "n_estimators": 100, "learning_rate": 0.05, "num_leaves": 31,
+        "vectorizer": "TfidfVectorizer(max_features=1000)", "random_state": 42,
+        "n_jobs": -1
+    },
+    "DistilBERT": {
+        "hf_model": "distilbert-base-uncased", "learning_rate": 2e-5,
+        "batch_size": 64, "epochs": 3, "max_seq_length": 128, "optimizer": "AdamW",
+        "seeds_trained": [42, 123, 456]
+    },
+    "PubMedBERT": {
+        "hf_model": "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract",
+        "learning_rate": 2e-5, "batch_size": 64, "epochs": 3,
+        "max_seq_length": 128, "optimizer": "AdamW", "seeds_trained": [42, 123, 456]
+    }
+}
 
 
 def log(msg=""):
@@ -180,11 +203,16 @@ def load_gpu_energy(json_path):
 
 def load_cpu_energy(json_path):
     out = dict(CPU_ENERGY_FALLBACK)
+    if not os.path.exists(json_path):
+        v2_path = os.path.join(RESULTS_DIR, "cpu_energy_measured_v2.json")
+        if os.path.exists(v2_path):
+            json_path = v2_path
     if os.path.exists(json_path):
         with open(json_path, "r", encoding="utf-8") as f:
             meas = json.load(f)
         for model_name, d in meas.items():
-            out[model_name] = {**d, "provenance": d.get("provenance", "measured_ST3")}
+            if not model_name.startswith("_") and isinstance(d, dict):
+                out[model_name] = {**d, "provenance": d.get("provenance", "measured_ST3")}
         log(f"[energy] Loaded measured CPU energy from {os.path.basename(json_path)}.")
     else:
         log("[energy] No measured CPU energy JSON — using documented ST2/ST3 constants.")
@@ -450,6 +478,7 @@ def main():
             cfg = {"name": name, "model": model, "recal": recal,
                    "auroc": float(m_test["AUROC"]),
                    "ece": float(m_test["ECE_adaptive"]),
+                   "ece_ci_hi": float(m_test["ECE_CI_hi"]),
                    "cadec_ece": float(cadec_ece), "cadec_auroc": cadec_auroc,
                    "inf_j_gross": e.get("inf_j_gross"),
                    "inf_j_net": e.get("inf_j_net")}
@@ -633,6 +662,7 @@ def main():
                                       for k, v in gpu_energy.items()},
         },
         "fitted_temperatures_cpu": {k: float(v) for k, v in fitted_T.items()},
+        "model_hyperparameters": MODEL_HYPERPARAMETERS,
         "energy_by_model": energy_by_model,
         "per_arm_metrics": per_arm,
         "catalogue": configs,

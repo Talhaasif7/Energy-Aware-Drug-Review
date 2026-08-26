@@ -85,6 +85,8 @@ def main():
 
     for npz_path in npz_files:
         basename = os.path.basename(npz_path)
+        if "cpu_arms" in basename:
+            continue
         print(f"\n{'='*60}")
         print(f"  Processing: {basename}")
         print(f"{'='*60}")

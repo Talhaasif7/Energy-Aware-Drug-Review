@@ -61,10 +61,14 @@ class RAPLReader:
 
     ``self.ok`` is False on any host where the counters are not readable, and
     ``self.reason`` says why. Never raises from the constructor.
+
+    ``self.domain_names`` records which sysfs paths were actually summed, so a
+    reviewer can verify no subdomain was accidentally included.
     """
 
     def __init__(self, base: str = POWERCAP_BASE):
         self.domains: list[tuple[str, int]] = []   # (energy_uj path, max_range_uj)
+        self.domain_names: list[str] = []           # sysfs basenames for audit trail
         self.ok = False
         self.reason = "unknown"
 
@@ -101,10 +105,11 @@ class RAPLReader:
             except (OSError, ValueError):
                 maxr = 0               # 0 disables wraparound correction
             self.domains.append((epath, maxr))
+            self.domain_names.append(os.path.basename(p))
 
         if self.domains:
             self.ok = True
-            self.reason = f"{len(self.domains)} readable package domain(s)"
+            self.reason = f"{len(self.domains)} readable package domain(s): {self.domain_names}"
             if denied:
                 self.reason += f"; {len(denied)} domain(s) unreadable, total is partial"
         else:
@@ -193,11 +198,65 @@ def _is_container() -> bool:
         return False
 
 
-def _physical_cores():
+def _physical_cores() -> int | None:
+    """Physical core count (not hyper-threaded logical count)."""
     try:
-        return os.cpu_count()
+        if platform.system() == "Linux":
+            # Count unique (physical id, core id) pairs from /proc/cpuinfo
+            cores = set()
+            phys_id, core_id = None, None
+            with open("/proc/cpuinfo", "r") as fh:
+                for line in fh:
+                    low = line.lower().strip()
+                    if low.startswith("physical id"):
+                        phys_id = low.split(":", 1)[1].strip()
+                    elif low.startswith("core id"):
+                        core_id = low.split(":", 1)[1].strip()
+                    if phys_id is not None and core_id is not None:
+                        cores.add((phys_id, core_id))
+                        phys_id, core_id = None, None
+            if cores:
+                return len(cores)
+    except OSError:
+        pass
+    # Fallback: psutil if available, else os.cpu_count()
+    try:
+        import psutil
+        return psutil.cpu_count(logical=False)
     except Exception:
-        return None
+        pass
+    return os.cpu_count()
+
+
+def _socket_count() -> int | None:
+    """Number of physical CPU sockets from /proc/cpuinfo."""
+    try:
+        if platform.system() == "Linux":
+            ids = set()
+            with open("/proc/cpuinfo", "r") as fh:
+                for line in fh:
+                    if line.lower().strip().startswith("physical id"):
+                        ids.add(line.split(":", 1)[1].strip())
+            if ids:
+                return len(ids)
+    except OSError:
+        pass
+    return None
+
+
+def _rapl_tdp_watts() -> float | None:
+    """Best-effort TDP from RAPL constraint_0 (long-term power limit), if readable."""
+    try:
+        pkgs = sorted(glob.glob(os.path.join(POWERCAP_BASE, "intel-rapl:*")))
+        pkgs = [p for p in pkgs if os.path.basename(p).count(":") == 1]
+        for p in pkgs:
+            cpath = os.path.join(p, "constraint_0_power_limit_uw")
+            if os.path.exists(cpath):
+                with open(cpath, "r") as fh:
+                    return int(fh.read().strip()) / 1e6  # µW → W
+    except (OSError, ValueError):
+        pass
+    return None
 
 
 def probe_environment() -> dict:
@@ -213,11 +272,15 @@ def probe_environment() -> dict:
         "python": platform.python_version(),
         "machine": platform.machine(),
         "cpu_model": _cpu_model(),
-        "logical_cpus": _physical_cores(),
+        "physical_cores": _physical_cores(),
+        "logical_cpus": os.cpu_count(),
+        "socket_count": _socket_count(),
+        "tdp_watts": _rapl_tdp_watts(),
         "is_wsl": _is_wsl(),
         "is_container": _is_container(),
         "rapl_available": rapl.ok,
         "rapl_domains": len(rapl.domains),
+        "rapl_domain_names": rapl.domain_names,
         "rapl_reason": rapl.reason,
         "energy_measurement_class": (
             "measured_rapl" if rapl.ok else "estimated_software_model"),

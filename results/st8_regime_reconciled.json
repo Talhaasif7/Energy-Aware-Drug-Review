@@ -30,6 +30,7 @@
       "Tie AUROC": "0.8627",
       "Tie NetJ/1k": "0.3529",
       "CADEC tau-ok (RQ4)": false,
+      "CADEC Tie-Band": false,
       "m=0.01": "LightG",
       "m=0.02": "LightG",
       "m=0.03": "LightG"
@@ -43,6 +44,7 @@
       "Tie AUROC": "0.9164",
       "Tie NetJ/1k": "31.3356",
       "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
       "m=0.01": "Distil+Isot",
       "m=0.02": "Distil+Isot",
       "m=0.03": "Distil+Isot"
@@ -56,6 +58,7 @@
       "Tie AUROC": "0.8760",
       "Tie NetJ/1k": "0.1557",
       "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
       "m=0.01": "Logist+Temp",
       "m=0.02": "Logist+Temp",
       "m=0.03": "Logist+Temp"
@@ -69,6 +72,7 @@
       "Tie AUROC": "0.9180",
       "Tie NetJ/1k": "31.3356",
       "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
       "m=0.01": "Distil+Temp",
       "m=0.02": "Distil+Temp",
       "m=0.03": "Distil+Temp"
@@ -82,6 +86,7 @@
       "Tie AUROC": "0.8760",
       "Tie NetJ/1k": "0.1557",
       "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
       "m=0.01": "Logist",
       "m=0.02": "Logist",
       "m=0.03": "Logist"
@@ -95,6 +100,7 @@
       "Tie AUROC": "0.8760",
       "Tie NetJ/1k": "0.1557",
       "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
       "m=0.01": "Logist",
       "m=0.02": "Logist",
       "m=0.03": "Logist"
@@ -108,6 +114,7 @@
       "Tie AUROC": "0.9181",
       "Tie NetJ/1k": "31.3356",
       "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
       "m=0.01": "Distil",
       "m=0.02": "Distil",
       "m=0.03": "Distil"
@@ -121,6 +128,7 @@
       "Tie AUROC": "0.9164",
       "Tie NetJ/1k": "31.3356",
       "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
       "m=0.01": "Distil+Isot",
       "m=0.02": "Distil+Isot",
       "m=0.03": "Distil+Isot"
@@ -134,6 +142,7 @@
       "Tie AUROC": "0.9180",
       "Tie NetJ/1k": "31.3356",
       "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
       "m=0.01": "Distil+Temp",
       "m=0.02": "Distil+Temp",
       "m=0.03": "Distil+Temp"
@@ -147,6 +156,35 @@
       "Tie AUROC": "0.9181",
       "Tie NetJ/1k": "31.3356",
       "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
+      "m=0.01": "Distil",
+      "m=0.02": "Distil",
+      "m=0.03": "Distil"
+    },
+    {
+      "tau": 0.1,
+      "E(gross J/1k)": 150.0,
+      "Feasible": 12,
+      "Argmax": "PubMed",
+      "BootstrapTie": "Distil",
+      "Tie AUROC": "0.9181",
+      "Tie NetJ/1k": "31.3356",
+      "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
+      "m=0.01": "Distil",
+      "m=0.02": "Distil",
+      "m=0.03": "Distil"
+    },
+    {
+      "tau": 0.1,
+      "E(gross J/1k)": 200.0,
+      "Feasible": 12,
+      "Argmax": "PubMed",
+      "BootstrapTie": "Distil",
+      "Tie AUROC": "0.9181",
+      "Tie NetJ/1k": "31.3356",
+      "CADEC tau-ok (RQ4)": true,
+      "CADEC Tie-Band": false,
       "m=0.01": "Distil",
       "m=0.02": "Distil",
       "m=0.03": "Distil"
@@ -162,7 +200,9 @@
     "tau=0.1_E=60.0": 9,
     "tau=0.05_E=120.0": 6,
     "tau=0.07_E=120.0": 9,
-    "tau=0.1_E=120.0": 12
+    "tau=0.1_E=120.0": 12,
+    "tau=0.1_E=150.0": 12,
+    "tau=0.1_E=200.0": 12
   },
   "model_energy": {
     "Logistic Regression": {

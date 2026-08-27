@@ -521,6 +521,28 @@ def main():
         log(f"  {r['model_a']:22} - {r['model_b']:22} "
             f"Delta={r['delta_auroc']:+.4f}  CI[{r['ci_lo']:+.4f},{r['ci_hi']:+.4f}]  {verdict}")
 
+    # ---- CADEC paired bootstrap vs leader model ----
+    model_cadec_probs_uncal = {m: np.asarray(model_cadec_p1[m]["Uncalibrated"])
+                               for m in model_cadec_p1}
+    from sklearn.metrics import roc_auc_score
+    cadec_leader_model = max(model_cadec_probs_uncal.keys(), key=lambda m: roc_auc_score(y_cadec_csv, model_cadec_probs_uncal[m]))
+    log(f"\n  [CADEC bootstrap] leader={cadec_leader_model} (AUROC={roc_auc_score(y_cadec_csv, model_cadec_probs_uncal[cadec_leader_model]):.4f})")
+    
+    cadec_tie_with_leader = {}
+    from eccms_selection import paired_delta_auroc
+    for m in model_probs_uncal:
+        if m == cadec_leader_model:
+            cadec_tie_with_leader[m] = True
+            log(f"    {m:22}: TIE (is leader)")
+        else:
+            _, lo, hi = paired_delta_auroc(
+                y_cadec_csv, model_cadec_probs_uncal[cadec_leader_model], model_cadec_probs_uncal[m],
+                n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED)
+            is_tie = (lo <= 0.0 <= hi)
+            cadec_tie_with_leader[m] = bool(is_tie)
+            verdict = "TIE (CI includes 0)" if is_tie else "DISTINGUISHABLE"
+            log(f"    {m:22}: {verdict} vs leader, CI=[{lo:+.4f}, {hi:+.4f}]")
+
     # ---- ECC-MS grid: argmax vs bootstrap-tie vs fixed-margin strip ----
     log("\n" + "-" * 90)
     log("  ECC-MS SELECTION GRID (energy budget in GROSS J/1k, matching the table)")
@@ -538,8 +560,10 @@ def main():
                 configs, tau, E, margin=m, use_gross=True)[0] or {}).get("name")
             for m in MARGINS}
         cadec_ok = None
+        selected_in_cadec_tie_band = None
         if tie_sel is not None:
             cadec_ok = bool(tie_sel["cadec_ece"] <= tau + 1e-12)
+            selected_in_cadec_tie_band = cadec_tie_with_leader[tie_sel["model"]]
         row = {
             "tau": tau, "E_gross_J_per_1k": E,
             "feasible_arms": n_feas,
@@ -550,6 +574,7 @@ def main():
             "bootstrap_tie_selected_gross_J": tie_sel["inf_j_gross"] if tie_sel else None,
             "bootstrap_tie_selected_cadec_ece": tie_sel["cadec_ece"] if tie_sel else None,
             "selected_satisfies_tau_on_CADEC": cadec_ok,
+            "selected_in_cadec_tie_band": selected_in_cadec_tie_band,
             "tie_info": tie_info,
             **margin_sels,
         }
@@ -557,7 +582,7 @@ def main():
         star = " <-- reviewer cell" if (tau, E) in RECONCILE_CELLS else ""
         log(f"  tau<={tau:.2f} E<={E:>5.1f}J | feasible={n_feas:>2} | "
             f"argmax={row['argmax_selected']} | tie={row['bootstrap_tie_selected']} | "
-            f"CADEC tau-ok={cadec_ok}{star}")
+            f"CADEC tau-ok={cadec_ok} | CADEC tie-band={selected_in_cadec_tie_band}{star}")
 
     # ---- feasible-count reconciliation (the reviewer's 8/11 dispute) ----
     log("\n" + "-" * 90)

@@ -528,6 +528,7 @@
       "bootstrap_tie_selected_gross_J": 0.36660614916850626,
       "bootstrap_tie_selected_cadec_ece": 0.0502016841457386,
       "selected_satisfies_tau_on_CADEC": false,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "LightGBM + Uncalibrated",
         "leader_model": "LightGBM",
@@ -565,6 +566,7 @@
       "bootstrap_tie_selected_gross_J": 0.36660614916850626,
       "bootstrap_tie_selected_cadec_ece": 0.0502016841457386,
       "selected_satisfies_tau_on_CADEC": false,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "LightGBM + Uncalibrated",
         "leader_model": "LightGBM",
@@ -602,6 +604,7 @@
       "bootstrap_tie_selected_gross_J": 0.36660614916850626,
       "bootstrap_tie_selected_cadec_ece": 0.0502016841457386,
       "selected_satisfies_tau_on_CADEC": false,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "LightGBM + Uncalibrated",
         "leader_model": "LightGBM",
@@ -640,6 +643,7 @@
       "bootstrap_tie_selected_gross_J": 110.2417587589478,
       "bootstrap_tie_selected_cadec_ece": 0.03421635655319024,
       "selected_satisfies_tau_on_CADEC": false,
+      "selected_in_cadec_tie_band": true,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -685,6 +689,7 @@
       "bootstrap_tie_selected_gross_J": 110.2417587589478,
       "bootstrap_tie_selected_cadec_ece": 0.03421635655319024,
       "selected_satisfies_tau_on_CADEC": false,
+      "selected_in_cadec_tie_band": true,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -730,6 +735,7 @@
       "bootstrap_tie_selected_gross_J": 110.2417587589478,
       "bootstrap_tie_selected_cadec_ece": 0.03421635655319024,
       "selected_satisfies_tau_on_CADEC": false,
+      "selected_in_cadec_tie_band": true,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -776,6 +782,7 @@
       "bootstrap_tie_selected_gross_J": 0.16479584355200425,
       "bootstrap_tie_selected_cadec_ece": 0.033891195832006414,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "Logistic Regression + Isotonic",
         "leader_model": "Logistic Regression",
@@ -823,6 +830,7 @@
       "bootstrap_tie_selected_gross_J": 0.16479584355200425,
       "bootstrap_tie_selected_cadec_ece": 0.033891195832006414,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "Logistic Regression + Isotonic",
         "leader_model": "Logistic Regression",
@@ -871,6 +879,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.04787175794300345,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "DistilBERT + Isotonic",
         "leader_model": "DistilBERT",
@@ -926,6 +935,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.04787175794300345,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -989,6 +999,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.04787175794300345,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -1052,6 +1063,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.04787175794300345,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -1114,6 +1126,7 @@
       "bootstrap_tie_selected_gross_J": 0.16479584355200425,
       "bootstrap_tie_selected_cadec_ece": 0.0673574552172811,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "Logistic Regression + TempScale",
         "leader_model": "Logistic Regression",
@@ -1162,6 +1175,7 @@
       "bootstrap_tie_selected_gross_J": 0.16479584355200425,
       "bootstrap_tie_selected_cadec_ece": 0.0673574552172811,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "Logistic Regression + TempScale",
         "leader_model": "Logistic Regression",
@@ -1212,6 +1226,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.04355370925309193,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "DistilBERT + TempScale",
         "leader_model": "DistilBERT",
@@ -1270,6 +1285,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.04355370925309193,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -1336,6 +1352,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.04355370925309193,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -1402,6 +1419,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.04355370925309193,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -1465,6 +1483,7 @@
       "bootstrap_tie_selected_gross_J": 0.16479584355200425,
       "bootstrap_tie_selected_cadec_ece": 0.08388958974984002,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "Logistic Regression + Uncalibrated",
         "leader_model": "Logistic Regression",
@@ -1514,6 +1533,7 @@
       "bootstrap_tie_selected_gross_J": 0.16479584355200425,
       "bootstrap_tie_selected_cadec_ece": 0.08388958974984002,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "Logistic Regression + Uncalibrated",
         "leader_model": "Logistic Regression",
@@ -1566,6 +1586,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.06544652619691636,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "DistilBERT + Uncalibrated",
         "leader_model": "DistilBERT",
@@ -1627,6 +1648,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.06544652619691636,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -1696,6 +1718,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.06544652619691636,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",
@@ -1765,6 +1788,7 @@
       "bootstrap_tie_selected_gross_J": 57.03556249619698,
       "bootstrap_tie_selected_cadec_ece": 0.06544652619691636,
       "selected_satisfies_tau_on_CADEC": true,
+      "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "PubMedBERT + Isotonic",
         "leader_model": "PubMedBERT",

@@ -470,6 +470,7 @@ def perform_st6():
               f"Measured value is {inf_j / legacy_j:,.0f}x larger.")
         return {
             'Model Tier': CPU_TIER_NAME[key], 'Hardware': 'CPU',
+            'Train Passes': f"{train_n:,}", 'Inf Passes': f"{inf_n:,}",
             'Train Time': f"{train_h*60:.2f} min", 'Inf Time': f"{inf_h*60:.2f} min",
             'Total Time (h)': total_h, 'Total Energy (J)': total_j,
             'Total Energy (kWh)': total_j / 3_600_000,
@@ -532,6 +533,7 @@ def perform_st6():
               f"({total_j/3_600_000:.4f} kWh) | energy provenance: {prov}")
         return {
             'Model Tier': TIER_NAME[disp], 'Hardware': 'Colab T4',
+            'Train Passes': f"{train_n:,}", 'Inf Passes': f"{inf_n:,}",
             'Train Time': f"{train_h:.2f} h", 'Inf Time': f"{inf_h:.2f} h",
             'Total Time (h)': total_h, 'Total Energy (J)': total_j,
             'Total Energy (kWh)': total_j / 3_600_000,
@@ -672,6 +674,8 @@ def main():
     fmt6 = pd.DataFrame({
         'Model Tier': df_st6['Model Tier'],
         'Hardware': df_st6['Hardware'],
+        'Train Passes': df_st6['Train Passes'],
+        'Inf Passes': df_st6['Inf Passes'],
         'Train Time': df_st6['Train Time'],
         'Inf Time': df_st6['Inf Time'],
         'Total (h)': df_st6['Total Time (h)'].map(lambda x: _f(x, ".2f")),

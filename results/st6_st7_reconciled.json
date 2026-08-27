@@ -1,7 +1,7 @@
 {
   "_meta": {
     "script": "budget_and_subgroup_st6_st7.py",
-    "generated_utc": "2026-08-26 12:19:53Z",
+    "generated_utc": "2026-08-27 04:20:01Z",
     "note": "ST6 budget extrapolation + ST7 subgroup feasibility. All energy terms are derived from measured benchmarks (results/cpu_energy_measured.json, results/colab_transformer_gpu_results.json); corpus sizes are read from the harmonised CSVs. Nothing here is hand-entered.",
     "subgroup_min_n": 200,
     "inputs_captured": true
@@ -115,6 +115,8 @@
     {
       "Model Tier": "Classical Linear (LR)",
       "Hardware": "CPU",
+      "Train Passes": "30,015",
+      "Inf Passes": "1,660,115",
       "Train Time": "1.89 min",
       "Inf Time": "0.03 min",
       "Total Time (h)": 0.03196293320629234,
@@ -126,6 +128,8 @@
     {
       "Model Tier": "Classical GBDT (LightGBM)",
       "Hardware": "CPU",
+      "Train Passes": "30,015",
+      "Inf Passes": "1,660,115",
       "Train Time": "0.93 min",
       "Inf Time": "0.04 min",
       "Total Time (h)": 0.01623135913780427,
@@ -137,6 +141,8 @@
     {
       "Model Tier": "Efficient Transformer (DistilBERT)",
       "Hardware": "Colab T4",
+      "Train Passes": "540,045",
+      "Inf Passes": "189,115",
       "Train Time": "0.59 h",
       "Inf Time": "0.04 h",
       "Total Time (h)": 0.6307967632380942,
@@ -148,6 +154,8 @@
     {
       "Model Tier": "Biomedical Transformer (PubMedBERT)",
       "Hardware": "Colab T4",
+      "Train Passes": "540,045",
+      "Inf Passes": "189,115",
       "Train Time": "0.97 h",
       "Inf Time": "0.09 h",
       "Total Time (h)": 1.0608885268499624,

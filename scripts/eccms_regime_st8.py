@@ -232,15 +232,20 @@ def main():
     detail_rows = []
     reconcile_cells = [(0.03, 0.5), (0.05, 60.0), (0.07, 10.0), (0.07, 60.0),
                        (0.10, 0.5), (0.10, 10.0), (0.10, 60.0),
-                       (0.05, 120.0), (0.07, 120.0), (0.10, 120.0)]
+                       (0.05, 120.0), (0.07, 120.0), (0.10, 120.0),
+                       (0.10, 150.0), (0.10, 200.0)]
     for tau, E in reconcile_cells:
         argmax_sel, n = select_argmax(catalogue, tau, E, m_auroc)
         tie_sel, _ = select_bootstrap_tie(catalogue, tau, E, tie_lookup, m_auroc)
         margins = {f"m{m}": select_fixed_margin(catalogue, tau, E, m, m_auroc)[0]
                    for m in MARGINS}
         cadec_ok = None
+        cadec_tie = None
+        grid_row = next((r for r in recon.get("eccms_grid", [])
+                         if abs(r["tau"] - tau) < 1e-5 and abs(r["E_gross_J_per_1k"] - E) < 1e-5), {})
         if tie_sel is not None:
             cadec_ok = bool(tie_sel.get('cadec_ece', 9.9) <= tau + 1e-12)
+            cadec_tie = grid_row.get("selected_in_cadec_tie_band")
         detail_rows.append({
             'tau': tau, 'E(gross J/1k)': E, 'Feasible': n,
             'Argmax': short_label(argmax_sel['name']) if argmax_sel else 'None',
@@ -249,6 +254,7 @@ def main():
             'Tie NetJ/1k': (f"{tie_sel['inf_j_net']:.4f}"
                             if tie_sel and tie_sel.get('inf_j_net') is not None else '-'),
             'CADEC tau-ok (RQ4)': cadec_ok,
+            'CADEC Tie-Band': cadec_tie,
             'm=0.01': short_label(margins['m0.01']['name']) if margins['m0.01'] else 'None',
             'm=0.02': short_label(margins['m0.02']['name']) if margins['m0.02'] else 'None',
             'm=0.03': short_label(margins['m0.03']['name']) if margins['m0.03'] else 'None',

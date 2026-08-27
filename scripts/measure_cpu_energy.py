@@ -66,6 +66,7 @@ PSYTAR_CSV = os.path.join(DATA_DIR, "01_primary_adr_detection", "dev_psytar",
 sys.path.insert(0, HERE)
 # Reuse the EXACT split logic used to compute the metrics (no drift).
 from run_frozen_split_analysis import reconstruct_split  # noqa: E402
+from rapl_utils import probe_environment  # noqa: E402
 
 # Documented ST2 package-power constants (used only if RAPL is unavailable).
 ST2_IDLE_W = 6.734
@@ -91,6 +92,7 @@ class RAPLReader:
 
     def __init__(self):
         self.domains = []          # list of (energy_uj_path, max_range_uj)
+        self.domain_names = []     # sysfs basenames for audit trail
         self.ok = False
         base = "/sys/class/powercap"
         try:
@@ -109,6 +111,7 @@ class RAPLReader:
                 except Exception:
                     maxr = 0
                 self.domains.append((epath, maxr))
+                self.domain_names.append(os.path.basename(p))
             self.ok = len(self.domains) > 0
         except Exception:
             self.ok = False
@@ -215,12 +218,24 @@ def main():
 
     rapl = RAPLReader()
     if rapl.ok:
-        log(f"[rapl] Intel RAPL available: {len(rapl.domains)} package domain(s). "
-            f"Energy will be measured live.")
+        log(f"[rapl] Intel RAPL available: {len(rapl.domains)} package domain(s) "
+            f"{rapl.domain_names}. Energy will be measured live.")
+        log(f"       NOTE: Only top-level package domains (intel-rapl:N) are summed.")
+        log(f"       Subzones (core, uncore, dram) are NOT included — they are")
+        log(f"       components of the package total and would double-count.")
     else:
         log("[rapl] Intel RAPL NOT readable on this host (non-Linux or root-only "
             "sysfs). Throughput will be measured live; package power falls back to "
             "documented ST2 constants (clearly tagged in provenance).")
+
+    # ---- host hardware disclosure ----
+    env = probe_environment()
+    log(f"\n[host] CPU model    : {env.get('cpu_model', 'unknown')}")
+    log(f"[host] Physical cores: {env.get('physical_cores', 'unknown')}")
+    log(f"[host] Logical CPUs  : {env.get('logical_cpus', 'unknown')}")
+    log(f"[host] Sockets       : {env.get('socket_count', 'unknown')}")
+    log(f"[host] TDP (RAPL PL1): {env.get('tdp_watts', 'not available')} W")
+    log(f"[host] Platform      : {env.get('platform', 'unknown')}")
 
     # ---- rebuild the exact frozen split + fit the exact models ----
     if not os.path.exists(PSYTAR_CSV):
@@ -316,10 +331,27 @@ def main():
             "generated_by": "measure_cpu_energy.py",
             "rapl_available": bool(rapl.ok),
             "rapl_domains": len(rapl.domains),
+            "rapl_domain_names": rapl.domain_names if rapl.ok else [],
+            "rapl_note": ("Only top-level package domains (intel-rapl:N) are summed. "
+                         "Subzones (core, uncore, dram = intel-rapl:N:M) are components "
+                         "of the package total and are excluded to avoid double-counting."),
             "idle_power_w": float(idle_w),
             "idle_source": "rapl" if rapl.ok else "ST2_constant",
             "bench_rows": len(raw_texts_bench),
             "seed": args.seed,
+            "benchmark_scope": "end_to_end_tfidf_plus_predict",
+            "scope_description": ("Raw text -> TfidfVectorizer.transform -> "
+                                  "clf.predict_proba; measures the full inference "
+                                  "pipeline, not model-only predict on pre-vectorized "
+                                  "features."),
+            "host": {
+                "cpu_model": env.get("cpu_model", "unknown"),
+                "physical_cores": env.get("physical_cores"),
+                "logical_cpus": env.get("logical_cpus"),
+                "socket_count": env.get("socket_count"),
+                "tdp_watts": env.get("tdp_watts"),
+                "platform": env.get("platform", "unknown"),
+            },
         },
         **results,
     }

@@ -262,7 +262,7 @@ def main():
             'Argmax': short_label(argmax_sel['name']) if argmax_sel else 'None',
             'BootstrapTie': short_label(tie_sel['name']) if tie_sel else 'None',
             'Tie AUROC': f"{tie_sel['auroc']:.4f}" if tie_sel else '-',
-            'Tie NetJ/1k': (f"{tie_sel['inf_j_net']:.4f}"
+            'Tie NetJ/1k': (f"{tie_sel['inf_j_net']:.2f}"
                             if tie_sel and tie_sel.get('inf_j_net') is not None else '-'),
             'CADEC tau-ok (RQ4)': cadec_ok,
             'CADEC Tie-Band': cadec_tie,

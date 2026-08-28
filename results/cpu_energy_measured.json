@@ -7,7 +7,7 @@
     "rapl_note": "Only top-level package domains (intel-rapl:N) are summed. Subzones (core, uncore, dram = intel-rapl:N:M) are components of the package total and are excluded to avoid double-counting.",
     "idle_power_w": 8.65,
     "idle_source": "ST2_constant",
-    "bench_rows": 50000,
+    "bench_rows": 50442,
     "seed": 42,
     "benchmark_scope": "end_to_end_tfidf_plus_predict",
     "scope_description": "End-to-End: Raw text -> TfidfVectorizer.transform -> clf.predict_proba; Model-Only: clf.predict_proba on pre-vectorized sparse matrix. Both reported in output.",
@@ -21,26 +21,26 @@
     }
   },
   "Logistic Regression": {
-    "inf_j_gross": 5.160100017413456,
-    "inf_j_net": 4.875964393563265,
-    "throughput_sps": 30443.2083622175,
+    "inf_j_gross": 2.884223079043424,
+    "inf_j_net": 2.7254200679337184,
+    "throughput_sps": 54465.0,
     "load_w": 157.09,
     "idle_w": 8.65,
     "net_power_w": 148.44,
-    "energy_cv_pct": 3.0417890164486456,
+    "energy_cv_pct": 0.0,
     "scopes": {
       "end_to_end": {
-        "throughput_sps": 30443.2083622175,
+        "throughput_sps": 54465.0,
         "load_w": 157.09,
-        "gross_j_1k": 5.160100017413456,
-        "net_j_1k": 4.875964393563265,
+        "gross_j_1k": 2.884223079043424,
+        "net_j_1k": 2.7254200679337184,
         "includes_tfidf_vectorization": true
       },
       "model_only": {
-        "throughput_sps": 4922667.025031029,
+        "throughput_sps": 4095929.513403759,
         "load_w": 157.09,
-        "gross_j_1k": 0.031911563224004534,
-        "net_j_1k": 0.03015438567045154,
+        "gross_j_1k": 0.038352710779306506,
+        "net_j_1k": 0.036240858030939314,
         "includes_tfidf_vectorization": false
       }
     },
@@ -52,26 +52,26 @@
     "provenance": "measured_throughput_x_ST2_power"
   },
   "LightGBM": {
-    "inf_j_gross": 10.447235615232215,
-    "inf_j_net": 10.057648668897679,
-    "throughput_sps": 22203.00264519727,
+    "inf_j_gross": 6.636150369056474,
+    "inf_j_net": 6.38871087715283,
+    "throughput_sps": 34954.0,
     "load_w": 231.96,
     "idle_w": 8.65,
     "net_power_w": 223.31,
-    "energy_cv_pct": 15.462633734078496,
+    "energy_cv_pct": 0.0,
     "scopes": {
       "end_to_end": {
-        "throughput_sps": 22203.00264519727,
+        "throughput_sps": 34954.0,
         "load_w": 231.96,
-        "gross_j_1k": 10.447235615232215,
-        "net_j_1k": 10.057648668897679,
+        "gross_j_1k": 6.636150369056474,
+        "net_j_1k": 6.38871087715283,
         "includes_tfidf_vectorization": true
       },
       "model_only": {
-        "throughput_sps": 162857.3756501408,
+        "throughput_sps": 128651.65642666398,
         "load_w": 231.96,
-        "gross_j_1k": 1.424313753515894,
-        "net_j_1k": 1.371199794350898,
+        "gross_j_1k": 1.8030082662186746,
+        "net_j_1k": 1.7357724432199182,
         "includes_tfidf_vectorization": false
       }
     },

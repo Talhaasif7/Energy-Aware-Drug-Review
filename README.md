@@ -182,12 +182,12 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 *Target: 3-class effectiveness (`0=Negative`, `1=Neutral`, `2=Positive`).*
 
-| Dataset | Total Units | Negative (0) | Neutral (1) | Positive (2) | Chosen Cutoff (71.9% / 58.1%) | Alt A (Strict Positive) | Alt B (Wide Negative) | Prior-Gap Robustness |
+| Dataset | Total Units | Negative (0) | Neutral (1) | Positive (2) | Chosen Cutoff | Alt A (Narrow Neg) | Alt B (Wide Neg) | Prior-Gap Robustness |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **UCI DrugLib** | 4,107 reviews | 588 (14.3%) | 568 (13.8%) | 2,951 (71.9%) | **71.9% Positive** | 42.1% Positive | 42.1% Positive | **5.5pp prior gap (Alt A)** |
-| **drugsCom (50k sample)** | 49,998 reviews | 12,965 (25.9%) | 7,991 (16.0%) | 29,042 (58.1%) | **58.1% Positive** | 36.3% Positive | 36.3% Positive | **5.8pp prior gap (Alt B)** |
+| **UCI DrugLib** | 4,107 reviews | 588 (14.3%) | 568 (13.8%) | 2,951 (71.9%) | **71.9% Positive** | **64.5% Positive** | **42.1% Positive** | **6.4pp prior gap (Alt A)** |
+| **drugsCom (50k sample)** | 49,998 reviews | 12,965 (25.9%) | 7,991 (16.0%) | 29,042 (58.1%) | **58.1% Positive** | **51.2% Positive** | **36.3% Positive** | **5.8pp prior gap (Alt B)** |
 
-*Under Alt A (strict positive) and Alt B (wide negative), UCI Positive drops to 42.1% and secondary task Positive to 36.3%, narrowing the prior gap to 5.5–5.8pp while preserving dataset composition dynamics.*
+*Under Alt A (narrow negative) and Alt B (wide negative), UCI Positive shifts to 64.5% / 42.1% and secondary task Positive to 51.2% / 36.3%, narrowing the prior gap to 5.8–6.4pp while preserving dataset composition dynamics.*
 
 ---
 
@@ -232,15 +232,15 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 | $\tau$ (ECE) | $E$ Budget (gross J/1k) | Argmax Selection | Paired-Bootstrap-Tie Selection | Selected AUROC | Selected Net J/1k | Feasible Arms | CADEC $\tau$-Safe (RQ4) | OOD Tie-Gate Pass |
 | :---: | :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
 | **0.03** | 0.5 | *None (Infeasible)* | *None (Infeasible)* | --- | --- | **0** | ❌ | ❌ |
-| **0.05** | 60 | DistilBERT + Isotonic | **DistilBERT + Isotonic** | 0.9164 | 31.34 | 5 | ✅ | ❌ |
-| **0.07** | 10 | LR + TempScale | **LR + TempScale** | 0.8760 | 4.88 | 2 | ✅ | ❌ |
+| **0.05** | 60 | DistilBERT + Isotonic | **DistilBERT + Isotonic** | 0.9164 | 31.34 | 4 | ✅ | ❌ |
+| **0.07** | 10 | LR + TempScale | **LR + TempScale** | 0.8880 | **2.73** | 2 | ✅ | ❌ |
 | **0.07** | 60 | DistilBERT + TempScale | **DistilBERT + TempScale** | 0.9180 | 31.34 | 7 | ✅ | ❌ |
 | **0.10** | 0.5 | *None (Infeasible)* | *None (Infeasible)* | --- | --- | **0** | ❌ | ❌ |
-| **0.10** | 10 | LR + Uncalibrated | **LR + Uncalibrated** | 0.8760 | 4.88 | 3 | ✅ | ❌ |
-| **0.10** | 60 | DistilBERT + Uncalibrated | **DistilBERT + Uncalibrated** | 0.9181 | 31.34 | **9** | ✅ | ❌ |
-| **0.05** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Isotonic** | 0.9277 | 60.47 | 6 | ✅ | ✅ |
-| **0.07** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Isotonic** | 0.9277 | 60.47 | **9** | ✅ | ✅ |
-| **0.10** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Isotonic** | 0.9277 | 60.47 | **12** | ✅ | ✅ |
+| **0.10** | 10 | LR + TempScale | **LR + TempScale** | 0.8880 | **2.73** | 2 | ✅ | ❌ |
+| **0.10** | 60 | DistilBERT + Uncalibrated | **DistilBERT + Uncalibrated** | 0.9181 | 31.34 | **8** | ✅ | ❌ |
+| **0.05** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Isotonic** | 0.9277 | **60.47** | 5 | ✅ | ✅ |
+| **0.07** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Isotonic** | 0.9277 | **60.47** | **9** | ✅ | ✅ |
+| **0.10** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Isotonic** | 0.9277 | **60.47** | **11** | ✅ | ✅ |
 
 #### Multi-Seed Metric Stability (Seeds 42, 123, 456)
 *Multi-seed aggregated baseline (3 seeds: 42, 123, 456; test N=1,201; CADEC N=7,823; canonical TF-IDF ngrams (1,2), max_features=2500).*

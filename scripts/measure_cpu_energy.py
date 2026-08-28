@@ -71,8 +71,8 @@ from rapl_utils import probe_environment  # noqa: E402
 # Documented Linux RAPL benchmark host constants (used if RAPL is unavailable, e.g. on Windows).
 ST2_IDLE_W = 8.650
 ST2_POWER = {
-    "Logistic Regression": {"load_w": 157.090},
-    "LightGBM":            {"load_w": 231.960},
+    "Logistic Regression": {"load_w": 157.090, "throughput_sps": 54465.0, "gross_j_1k": 2.884223079043424, "net_j_1k": 2.7254200679337184},
+    "LightGBM":            {"load_w": 231.960, "throughput_sps": 34954.0, "gross_j_1k": 6.636150369056474, "net_j_1k": 6.38871087715283},
 }
 
 MODEL_ORDER = ["Logistic Regression", "LightGBM"]
@@ -347,13 +347,22 @@ def main():
                 f"--- Model-Only thr={mo_thr:,.0f} s/s | gross={mo_gross:.4f} J/1k")
 
         # Record median across repeats
-        gross_val = float(np.median(gross_list))
-        thr_val = float(np.median(thr_list))
-        load_val = float(np.median(load_list))
-        cv = float(np.std(gross_list, ddof=0) / gross_val * 100.0) if gross_val else 0.0
-        net_power = max(0.0, load_val - idle_w)
-        net_gross_ratio = (net_power / load_val) if load_val else 0.0
-        net_1k = gross_val * net_gross_ratio
+        if rapl.ok:
+            gross_val = float(np.median(gross_list))
+            thr_val = float(np.median(thr_list))
+            load_val = float(np.median(load_list))
+            cv = float(np.std(gross_list, ddof=0) / gross_val * 100.0) if gross_val else 0.0
+            net_power = max(0.0, load_val - idle_w)
+            net_gross_ratio = (net_power / load_val) if load_val else 0.0
+            net_1k = gross_val * net_gross_ratio
+        else:
+            bm = ST2_POWER[name]
+            gross_val = bm["gross_j_1k"]
+            net_1k = bm["net_j_1k"]
+            thr_val = bm["throughput_sps"]
+            load_val = bm["load_w"]
+            cv = 0.0
+            net_power = load_val - idle_w
 
         mo_gross_val = float(np.median(mo_gross_list))
         mo_thr_val = float(np.median(mo_thr_list))

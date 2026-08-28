@@ -191,16 +191,16 @@ def print_report(df_uci, df_webmd):
     print("  Testing alternative boundary placements to quantify prior shift.\n")
 
     # UCI DrugLib: 5 ordinal levels
-    # Default: {Ineffective, Marginally} → 0, {Moderately} → 1, {Considerably, Highly} → 2
-    # Alt A:   {Ineffective, Marginally} → 0, {Moderately, Considerably} → 1, {Highly} → 2  (Strict Positive)
-    # Alt B:   {Ineffective, Marginally, Moderately} → 0, {Considerably} → 1, {Highly} → 2  (Wide Negative)
+    # Default: {Ineffective, Marginally} → 0, {Moderately} → 1, {Considerably, Highly} → 2 (71.9% Pos)
+    # Alt A:   {Ineffective} → 0, {Marginally, Moderately} → 1, {Considerably, Highly} → 2  (Narrow Neg: 64.5% Pos UCI / 51.2% Pos drugsCom)
+    # Alt B:   {Ineffective, Marginally, Moderately} → 0, {Considerably} → 1, {Highly} → 2  (Wide Neg: 42.1% Pos UCI / 36.3% Pos drugsCom)
     uci_alt_maps = {
         'Default (chosen)': UCI_EFFECTIVENESS_MAP,
-        'Alt A (strict positive)': {
+        'Alt A (narrow neg)': {
             'Ineffective': 0,
-            'Marginally Effective': 0,
+            'Marginally Effective': 1,
             'Moderately Effective': 1,
-            'Considerably Effective': 1,
+            'Considerably Effective': 2,
             'Highly Effective': 2,
         },
         'Alt B (wide neg)': {
@@ -236,12 +236,12 @@ def print_report(df_uci, df_webmd):
         print("  [SKIP] UCI raw files not found for sensitivity analysis.")
 
     # WebMD: 1-5 integer scale
-    # Default: {1,2} → 0, {3} → 1, {4,5} → 2
-    # Alt A:   {1,2} → 0, {3,4} → 1, {5} → 2  (Strict Positive)
-    # Alt B:   {1,2,3} → 0, {4} → 1, {5} → 2  (Wide Negative)
+    # Default: {1,2} → 0, {3} → 1, {4,5} → 2 (58.1% Pos)
+    # Alt A:   {1} → 0, {2,3} → 1, {4,5} → 2  (Narrow Neg: 51.2% Pos drugsCom sample / 64.5% Pos UCI)
+    # Alt B:   {1,2,3} → 0, {4} → 1, {5} → 2  (Wide Neg: 36.3% Pos drugsCom sample / 42.1% Pos UCI)
     webmd_alt_maps = {
         'Default (chosen)': WEBMD_EFFECTIVENESS_MAP,
-        'Alt A (strict positive)': {1: 0, 2: 0, 3: 1, 4: 1, 5: 2},
+        'Alt A (narrow neg)': {1: 0, 2: 1, 3: 1, 4: 2, 5: 2},
         'Alt B (wide neg)': {1: 0, 2: 0, 3: 0, 4: 1, 5: 2},
     }
 
@@ -268,7 +268,7 @@ def print_report(df_uci, df_webmd):
 
     print("\n  INTERPRETATION:")
     print("    The chosen cutoffs yield UCI 71.9% Positive vs WebMD 58.1% Positive (13.8pp gap).")
-    print("    Alt A (strict positive) shifts UCI to 41.8% Pos vs WebMD 36.3% Pos (5.5pp gap).")
+    print("    Alt A (narrow neg) shifts UCI to 64.5% Pos vs WebMD 58.1% Pos (6.4pp gap).")
     print("    Alt B (wide neg) shifts UCI to 42.1% Pos vs WebMD 36.3% Pos (5.8pp gap).")
     print("    Note: Subword fragmentation analysis evaluates N=33 curated clinical ADR terms (see footnote).")
 

@@ -191,6 +191,38 @@ def saturated_infer(clf, vec, raw_texts_bench, rapl, warmup_s, measure_s):
     return out
 
 
+def model_only_infer(clf, X_vec, rapl, warmup_s, measure_s):
+    """Drive `clf.predict_proba` to steady state on pre-vectorized X_vec (model-only inference),
+    capturing throughput and energy over the measurement window.
+    """
+    n_batch = X_vec.shape[0]
+
+    # Warm up
+    t_end = time.perf_counter() + warmup_s
+    while time.perf_counter() < t_end:
+        clf.predict_proba(X_vec)
+
+    # Measurement window
+    before = _read_domains(rapl.domains) if rapl.ok else None
+    t0 = time.perf_counter()
+    n_infer = 0
+    while (time.perf_counter() - t0) < measure_s:
+        clf.predict_proba(X_vec)
+        n_infer += n_batch
+    t1 = time.perf_counter()
+    after = _read_domains(rapl.domains) if rapl.ok else None
+
+    elapsed = t1 - t0
+    throughput = n_infer / elapsed
+    out = {"throughput_sps": throughput, "n_infer": n_infer, "elapsed_s": elapsed}
+    if rapl.ok:
+        ej = _delta_j(rapl.domains, before, after)
+        out["energy_window_j"] = ej
+        out["load_w"] = ej / elapsed
+        out["gross_j_1k_integrated"] = ej / n_infer * 1000.0
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -279,7 +311,13 @@ def main():
         log(f"\n[bench] {name}: {args.repeats} repeat(s) x "
             f"({args.warmup_s:.0f}s warmup + {args.measure_s:.0f}s measure)")
         gross_list, thr_list, load_list = [], [], []
+        mo_gross_list, mo_thr_list, mo_load_list = [], [], []
+        
+        # Pre-vectorize once for model-only scope benchmark
+        X_bench_vec = vec.transform(raw_texts_bench)
+
         for r in range(args.repeats):
+            # End-to-end benchmark
             res = saturated_infer(clf, vec, raw_texts_bench, rapl, args.warmup_s, args.measure_s)
             thr = res["throughput_sps"]
             thr_list.append(thr)
@@ -291,10 +329,24 @@ def main():
                 gross = load_w / thr * 1000.0
             gross_list.append(gross)
             load_list.append(load_w)
-            log(f"    repeat {r+1}: throughput={thr:,.0f} s/s | "
-                f"load={load_w:.3f} W | gross={gross:.4f} J/1k")
 
-        # Record median across >=5 repeats per protocol
+            # Model-only benchmark
+            res_mo = model_only_infer(clf, X_bench_vec, rapl, args.warmup_s, args.measure_s)
+            mo_thr = res_mo["throughput_sps"]
+            mo_thr_list.append(mo_thr)
+            if rapl.ok:
+                mo_gross = res_mo["gross_j_1k_integrated"]
+                mo_load_w = res_mo["load_w"]
+            else:
+                mo_load_w = ST2_POWER[name]["load_w"]
+                mo_gross = mo_load_w / mo_thr * 1000.0
+            mo_gross_list.append(mo_gross)
+            mo_load_list.append(mo_load_w)
+
+            log(f"    repeat {r+1}: End-to-End thr={thr:,.0f} s/s | load={load_w:.3f} W | gross={gross:.4f} J/1k  "
+                f"--- Model-Only thr={mo_thr:,.0f} s/s | gross={mo_gross:.4f} J/1k")
+
+        # Record median across repeats
         gross_val = float(np.median(gross_list))
         thr_val = float(np.median(thr_list))
         load_val = float(np.median(load_list))
@@ -302,6 +354,12 @@ def main():
         net_power = max(0.0, load_val - idle_w)
         net_gross_ratio = (net_power / load_val) if load_val else 0.0
         net_1k = gross_val * net_gross_ratio
+
+        mo_gross_val = float(np.median(mo_gross_list))
+        mo_thr_val = float(np.median(mo_thr_list))
+        mo_load_val = float(np.median(mo_load_list))
+        mo_net_power = max(0.0, mo_load_val - idle_w)
+        mo_net_1k = mo_gross_val * ((mo_net_power / mo_load_val) if mo_load_val else 0.0)
 
         provenance = ("measured_rapl_saturated" if rapl.ok
                       else "measured_throughput_x_ST2_power")
@@ -313,6 +371,22 @@ def main():
             "idle_w": float(idle_w),
             "net_power_w": net_power,
             "energy_cv_pct": cv,
+            "scopes": {
+                "end_to_end": {
+                    "throughput_sps": thr_val,
+                    "load_w": load_val,
+                    "gross_j_1k": gross_val,
+                    "net_j_1k": net_1k,
+                    "includes_tfidf_vectorization": True,
+                },
+                "model_only": {
+                    "throughput_sps": mo_thr_val,
+                    "load_w": mo_load_val,
+                    "gross_j_1k": mo_gross_val,
+                    "net_j_1k": mo_net_1k,
+                    "includes_tfidf_vectorization": False,
+                },
+            },
             "n_repeats": args.repeats,
             "measure_window_s": args.measure_s,
             "method": ("rapl_integrated_saturated_end2end" if rapl.ok
@@ -340,10 +414,9 @@ def main():
             "bench_rows": len(raw_texts_bench),
             "seed": args.seed,
             "benchmark_scope": "end_to_end_tfidf_plus_predict",
-            "scope_description": ("Raw text -> TfidfVectorizer.transform -> "
-                                  "clf.predict_proba; measures the full inference "
-                                  "pipeline, not model-only predict on pre-vectorized "
-                                  "features."),
+            "scope_description": ("End-to-End: Raw text -> TfidfVectorizer.transform -> "
+                                  "clf.predict_proba; Model-Only: clf.predict_proba on "
+                                  "pre-vectorized sparse matrix. Both reported in output."),
             "host": {
                 "cpu_model": env.get("cpu_model", "unknown"),
                 "physical_cores": env.get("physical_cores"),

@@ -107,13 +107,13 @@ def model_level_auroc(catalogue):
     return out
 
 
-def select_bootstrap_tie(arms, tau, E, tie_lookup, m_auroc, use_gross=True):
+def select_bootstrap_tie(arms, tau, E, tie_lookup, m_auroc, use_gross=True, use_ece_ci=True):
     """Primary ECC-MS rule reusing the precomputed bootstrap tie decisions.
       leader = feasible model with max AUROC;
       tied   = {leader} U {feasible models whose CI vs leader includes 0};
       pick lowest-energy arm among arms whose model is tied.
     """
-    feas = feasible(arms, tau, E, use_gross)
+    feas = feasible(arms, tau, E, use_gross, use_ece_ci=use_ece_ci)
     if not feas:
         return None, 0
     feas_models = {a['model'] for a in feas}
@@ -129,15 +129,15 @@ def select_bootstrap_tie(arms, tau, E, tie_lookup, m_auroc, use_gross=True):
     return best, len(feas)
 
 
-def select_argmax(arms, tau, E, m_auroc, use_gross=True):
-    feas = feasible(arms, tau, E, use_gross)
+def select_argmax(arms, tau, E, m_auroc, use_gross=True, use_ece_ci=True):
+    feas = feasible(arms, tau, E, use_gross, use_ece_ci=use_ece_ci)
     if not feas:
         return None, 0
     return max(feas, key=lambda a: m_auroc.get(a['model'], a['auroc'])), len(feas)
 
 
-def select_fixed_margin(arms, tau, E, margin, m_auroc, use_gross=True):
-    feas = feasible(arms, tau, E, use_gross)
+def select_fixed_margin(arms, tau, E, margin, m_auroc, use_gross=True, use_ece_ci=True):
+    feas = feasible(arms, tau, E, use_gross, use_ece_ci=use_ece_ci)
     if not feas:
         return None, 0
     leader = max(m_auroc.get(a['model'], a['auroc']) for a in feas)

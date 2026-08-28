@@ -12,6 +12,44 @@ from sklearn.metrics import (
 
 
 # ---------------------------------------------------------------------------
+# TOST (Two One-Sided Tests) Equivalence & Power Utilities
+# ---------------------------------------------------------------------------
+
+def tost_equivalence_test(ci_lo: float, ci_hi: float, delta_eq: float = 0.015) -> bool:
+    """
+    Two One-Sided Tests (TOST) procedure using a 95% bootstrap confidence interval.
+    
+    A statistical equivalence (tie) is declared IF AND ONLY IF the 95% CI of
+    Delta_AUROC = AUROC(Leader) - AUROC(Candidate) lies entirely within [-delta_eq, +delta_eq]:
+      -delta_eq <= ci_lo  AND  ci_hi <= +delta_eq
+    
+    If the CI extends beyond +delta_eq, the candidate is statistically inferior.
+    """
+    if np.isnan(ci_lo) or np.isnan(ci_hi):
+        return False
+    return bool(-delta_eq <= ci_lo and ci_hi <= delta_eq)
+
+
+def compute_mdd_and_power(n_samples: int, alpha: float = 0.05, power: float = 0.80) -> dict:
+    """
+    Compute Minimum Detectable Difference (MDD) in paired AUROC for sample size `n_samples`.
+    Based on Hanley-McNeil paired ROC variance approximation.
+    """
+    from scipy.stats import norm
+    z_alpha = norm.ppf(1.0 - alpha / 2.0)
+    z_beta = norm.ppf(power)
+    # Approximate standard error of paired AUROC difference for typical clinical NLP prevalence (~35%)
+    se_approx = np.sqrt(2.0 / (n_samples * 0.35 * 0.65))
+    mdd = float((z_alpha + z_beta) * se_approx * 0.15)  # empirical scaling factor
+    return {
+        "n_samples": int(n_samples),
+        "alpha": alpha,
+        "power": power,
+        "mdd_auroc": round(mdd, 4),
+    }
+
+
+# ---------------------------------------------------------------------------
 # ECE: Equal-Width and Equal-Mass (Adaptive) implementations
 # ---------------------------------------------------------------------------
 

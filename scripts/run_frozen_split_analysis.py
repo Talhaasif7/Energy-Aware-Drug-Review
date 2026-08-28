@@ -528,8 +528,18 @@ def main():
     cadec_leader_model = max(model_cadec_probs_uncal.keys(), key=lambda m: roc_auc_score(y_cadec_csv, model_cadec_probs_uncal[m]))
     log(f"\n  [CADEC bootstrap] leader={cadec_leader_model} (AUROC={roc_auc_score(y_cadec_csv, model_cadec_probs_uncal[cadec_leader_model]):.4f})")
     
-    cadec_tie_with_leader = {}
     from eccms_selection import paired_delta_auroc
+    # Pre-warm bootstrap cache for ALL model pairs (test set + CADEC) to make grid loop instantaneous
+    models_list = list(model_probs_uncal.keys())
+    for i, m1 in enumerate(models_list):
+        for m2 in models_list[i+1:]:
+            paired_delta_auroc(y_test, model_probs_uncal[m1], model_probs_uncal[m2],
+                               n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED)
+            if m1 in model_cadec_probs_uncal and m2 in model_cadec_probs_uncal:
+                paired_delta_auroc(y_cadec_csv, model_cadec_probs_uncal[m1], model_cadec_probs_uncal[m2],
+                                   n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED)
+
+    cadec_tie_with_leader = {}
     for m in model_probs_uncal:
         if m == cadec_leader_model:
             cadec_tie_with_leader[m] = True
@@ -538,10 +548,21 @@ def main():
             _, lo, hi = paired_delta_auroc(
                 y_cadec_csv, model_cadec_probs_uncal[cadec_leader_model], model_cadec_probs_uncal[m],
                 n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED)
-            is_tie = (lo <= 0.0 <= hi)
-            cadec_tie_with_leader[m] = bool(is_tie)
+            is_tie = bool(lo <= 0.0 <= hi)
+            cadec_tie_with_leader[m] = is_tie
             verdict = "TIE (CI includes 0)" if is_tie else "DISTINGUISHABLE"
             log(f"    {m:22}: {verdict} vs leader, CI=[{lo:+.4f}, {hi:+.4f}]")
+
+    # ---- Statistical Power & Minimum Detectable Difference (MDD) ----
+    from metrics_utils import compute_mdd_and_power, tost_equivalence_test
+    p_psytar = compute_mdd_and_power(len(y_test))
+    p_cadec = compute_mdd_and_power(len(y_cadec_csv))
+    log("\n" + "-" * 90)
+    log("  STATISTICAL POWER & MINIMUM DETECTABLE DIFFERENCE (MDD)")
+    log("-" * 90)
+    log(f"  PsyTAR (N={len(y_test)}):  MDD = ±{p_psytar['mdd_auroc']:.4f} AUROC (80% power @ alpha=0.05)")
+    log(f"  CADEC  (N={len(y_cadec_csv)}):  MDD = ±{p_cadec['mdd_auroc']:.4f} AUROC (80% power @ alpha=0.05)")
+    log("  TOST Equivalence Margin: pre-registered delta = 0.015 AUROC")
 
     # ---- ECC-MS grid: argmax vs bootstrap-tie vs fixed-margin strip ----
     log("\n" + "-" * 90)
@@ -550,20 +571,21 @@ def main():
     grid_rows = []
     all_cells = sorted(set(RECONCILE_CELLS) | {(t, e) for t in TAU_GRID for e in E_GRID})
     for tau, E in all_cells:
-        feas = feasible_arms(configs, tau, E, use_gross=True)
-        argmax_sel, n_feas = eccms_select_argmax(configs, tau, E, use_gross=True)
+        feas = feasible_arms(configs, tau, E, use_gross=True, use_ece_ci=True)
+        argmax_sel, n_feas = eccms_select_argmax(configs, tau, E, use_gross=True, use_ece_ci=True)
         tie_sel, _, tie_info = eccms_select_bootstrap_tie(
             configs, tau, E, y_test, model_probs_uncal,
-            n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED, use_gross=True)
+            n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED, use_gross=True, use_ece_ci=True,
+            tost_delta_eq=0.015, y_ood=y_cadec_csv, model_probs_ood=model_cadec_probs_uncal)
         margin_sels = {
             f"margin_{m}": (eccms_select_fixed_margin(
-                configs, tau, E, margin=m, use_gross=True)[0] or {}).get("name")
+                configs, tau, E, margin=m, use_gross=True, use_ece_ci=True)[0] or {}).get("name")
             for m in MARGINS}
         cadec_ok = None
         selected_in_cadec_tie_band = None
         if tie_sel is not None:
             cadec_ok = bool(tie_sel["cadec_ece"] <= tau + 1e-12)
-            selected_in_cadec_tie_band = cadec_tie_with_leader[tie_sel["model"]]
+            selected_in_cadec_tie_band = cadec_tie_with_leader.get(tie_sel["model"], False)
         row = {
             "tau": tau, "E_gross_J_per_1k": E,
             "feasible_arms": n_feas,

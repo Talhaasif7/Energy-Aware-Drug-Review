@@ -1,37 +1,85 @@
 {
   "_meta": {
     "generated_by": "measure_cpu_energy.py",
-    "rapl_available": true,
-    "rapl_domains": 2,
-    "idle_power_w": 8.65023949750118,
-    "idle_source": "rapl",
+    "rapl_available": false,
+    "rapl_domains": 0,
+    "rapl_domain_names": [],
+    "rapl_note": "Only top-level package domains (intel-rapl:N) are summed. Subzones (core, uncore, dram = intel-rapl:N:M) are components of the package total and are excluded to avoid double-counting.",
+    "idle_power_w": 6.734,
+    "idle_source": "ST2_constant",
     "bench_rows": 50000,
-    "seed": 42
+    "seed": 42,
+    "benchmark_scope": "end_to_end_tfidf_plus_predict",
+    "scope_description": "End-to-End: Raw text -> TfidfVectorizer.transform -> clf.predict_proba; Model-Only: clf.predict_proba on pre-vectorized sparse matrix. Both reported in output.",
+    "host": {
+      "cpu_model": "Intel64 Family 6 Model 142 Stepping 12, GenuineIntel",
+      "physical_cores": 4,
+      "logical_cpus": 8,
+      "socket_count": null,
+      "tdp_watts": null,
+      "platform": "Windows-11-10.0.26200-SP0"
+    }
   },
   "Logistic Regression": {
-    "inf_j_gross": 0.16479584355200425,
-    "inf_j_net": 0.15572110479983556,
-    "throughput_sps": 953445.1391460416,
-    "load_w": 157.08700314671876,
-    "idle_w": 8.65023949750118,
-    "net_power_w": 148.43676364921757,
-    "energy_cv_pct": 1.3793846244881873,
+    "inf_j_gross": 0.12984501753636044,
+    "inf_j_net": 0.006205828044017228,
+    "throughput_sps": 54464.93160986814,
+    "load_w": 7.072,
+    "idle_w": 6.734,
+    "net_power_w": 0.3380000000000001,
+    "energy_cv_pct": 5.06257556582684,
+    "scopes": {
+      "end_to_end": {
+        "throughput_sps": 54464.93160986814,
+        "load_w": 7.072,
+        "gross_j_1k": 0.12984501753636044,
+        "net_j_1k": 0.006205828044017228,
+        "includes_tfidf_vectorization": true
+      },
+      "model_only": {
+        "throughput_sps": 6933014.869829503,
+        "load_w": 7.072,
+        "gross_j_1k": 0.0010200468530329166,
+        "net_j_1k": 4.8752239299367346e-05,
+        "includes_tfidf_vectorization": false
+      }
+    },
     "n_repeats": 3,
-    "measure_window_s": 12.0,
-    "method": "rapl_integrated_saturated",
-    "provenance": "measured_rapl_saturated"
+    "measure_window_s": 10.0,
+    "method": "throughput_only_saturated_end2end",
+    "includes_tfidf_vectorization": true,
+    "summary_stat": "median",
+    "provenance": "measured_throughput_x_ST2_power"
   },
   "LightGBM": {
-    "inf_j_gross": 0.36660614916850626,
-    "inf_j_net": 0.3529347037365466,
-    "throughput_sps": 632725.5123468407,
-    "load_w": 231.96018353340006,
-    "idle_w": 8.65023949750118,
-    "net_power_w": 223.30994403589887,
-    "energy_cv_pct": 1.0694486368320568,
+    "inf_j_gross": 0.28437767171938905,
+    "inf_j_net": 0.09172181242780293,
+    "throughput_sps": 34953.517763547694,
+    "load_w": 9.94,
+    "idle_w": 6.734,
+    "net_power_w": 3.2059999999999995,
+    "energy_cv_pct": 7.708165875308611,
+    "scopes": {
+      "end_to_end": {
+        "throughput_sps": 34953.517763547694,
+        "load_w": 9.94,
+        "gross_j_1k": 0.28437767171938905,
+        "net_j_1k": 0.09172181242780293,
+        "includes_tfidf_vectorization": true
+      },
+      "model_only": {
+        "throughput_sps": 182747.2183872034,
+        "load_w": 9.94,
+        "gross_j_1k": 0.05439207276435368,
+        "net_j_1k": 0.017543358680333788,
+        "includes_tfidf_vectorization": false
+      }
+    },
     "n_repeats": 3,
-    "measure_window_s": 12.0,
-    "method": "rapl_integrated_saturated",
-    "provenance": "measured_rapl_saturated"
+    "measure_window_s": 10.0,
+    "method": "throughput_only_saturated_end2end",
+    "includes_tfidf_vectorization": true,
+    "summary_stat": "median",
+    "provenance": "measured_throughput_x_ST2_power"
   }
 }

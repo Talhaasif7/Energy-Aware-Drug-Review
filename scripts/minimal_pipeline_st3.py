@@ -295,11 +295,12 @@ def main():
               f"{'%.2f W avg load' % train_watts if train_watts is not None else 'n/a'}"
               f"  [{tr['energy_source']}]")
 
-        # --- Inference energy (AMORTISED over 100x) ---
+        test_raw_texts = list(test_df['text'])
         def _infer():
             out = None
             for _ in range(INFERENCE_AMORTISATION_LOOPS):
-                out = clf.predict_proba(X_test)
+                X_t = vectorizer.transform(test_raw_texts)
+                out = clf.predict_proba(X_t)
             return out
 
         probs_2d, inf = cc_measure(_infer)

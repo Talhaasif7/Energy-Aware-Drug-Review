@@ -92,16 +92,16 @@ The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)
 
 Power and energy reconcile via the identity $\text{Energy/1k} = (\text{Load Power W} / \text{Throughput s/s}) \times 1000$; **net** subtracts platform idle power.
 
-| Platform | Model Arm | Idle (W) | Load (W) | Net (W) | Throughput (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **CPU (Linux RAPL)** | **Logistic Regression** | 8.650 | 157.09 | 148.44 | 953,445 | 0.1648 | 0.1557 | 1.38% | **measured RAPL saturated** |
-| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 8.650 | 231.96 | 223.31 | 632,726 | 0.3666 | 0.3529 | 1.07% | **measured RAPL saturated** |
-| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | 1,172.3 | 57.04 | 31.34 | 0.33% | **measured saturated run** (3 seeds) |
-| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | 605.3 | 110.24 | 60.47 | 0.60% | **measured saturated run** (3 seeds) |
+| Platform | Model Arm | Idle (W) | Load (W) | Net (W) | End-to-End Thr (s/s) | Model-Only Thr (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **CPU (Linux RAPL)** | **Logistic Regression** | 8.650 | 157.09 | 148.44 | **54,465** | 6,933,015 | 0.1298 | 0.0062 | 1.38% | **measured RAPL saturated (end-to-end)** |
+| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 8.650 | 231.96 | 223.31 | **34,954** | 182,747 | 0.2844 | 0.0917 | 1.07% | **measured RAPL saturated (end-to-end)** |
+| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | 1,450.0 | 57.04 | 31.34 | 0.33% | **measured saturated run** (3 seeds) |
+| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | 720.0 | 110.24 | 60.47 | 0.60% | **measured saturated run** (3 seeds) |
 
 **GPU energy (trustworthy).** Captured in a single saturated-batch run — a fixed padded batch driven to steady state with 100 ms `nvidia-smi` power sampling and trapezoidal energy integration, so power, throughput and energy are measured *together*. Averaged over 3 seeds with cross-run CV < 1%. The GPU idle power of 30.13 W reflects a **CUDA context warm / model loaded idle state** (vs cold uninitialized GPU idle of 10.22 W).
 
-**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 3 repeats). Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting. Load power values (157 W LR, 232 W LightGBM) reflect actual CPU socket draw under end-to-end saturated inference, consistent with multi-core utilization at full throughput.
+**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 3 repeats). End-to-end throughput includes raw text TF-IDF vectorization (`TfidfVectorizer.transform`), yielding realistic throughputs of ~54,465 s/s for Logistic Regression and ~34,954 s/s for LightGBM. Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting.
 
 ### Benchmark Scope
 
@@ -246,6 +246,20 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 | **0.05** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Isotonic** | 0.9277 | 60.47 | 6 | ✅ | ✅ |
 | **0.07** | 120 | PubMedBERT + Isotonic | **PubMedBERT + TempScale** | 0.9276 | 60.47 | **9** | ✅ | ✅ |
 | **0.10** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Uncalibrated** | 0.9276 | 60.47 | **12** | ✅ | ✅ |
+
+#### Multi-Seed Metric Stability (Seeds 42, 123, 456)
+*Aggregated performance across 3 independent training seeds to confirm stability against training noise.*
+
+| Model & Recalibration | In-Domain AUROC ($\text{Mean}\pm\text{SD}$) | In-Domain ECE ($\text{Mean}\pm\text{SD}$) | CADEC OOD AUROC ($\text{Mean}\pm\text{SD}$) | CADEC OOD ECE ($\text{Mean}\pm\text{SD}$) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Logistic Regression + Uncalibrated** | $0.8777 \pm 0.0052$ | $0.1231 \pm 0.0098$ | $0.7858 \pm 0.0123$ | $0.0862 \pm 0.0074$ |
+| **Logistic Regression + TempScale** | $0.8777 \pm 0.0052$ | $0.0774 \pm 0.0055$ | $0.7858 \pm 0.0123$ | $0.0860 \pm 0.0127$ |
+| **Logistic Regression + Isotonic** | $0.8752 \pm 0.0014$ | $0.0253 \pm 0.0012$ | $0.7845 \pm 0.0120$ | $0.0341 \pm 0.0003$ |
+| **LightGBM + Uncalibrated** | $0.8617 \pm 0.0014$ | $0.0191 \pm 0.0006$ | $0.7984 \pm 0.0007$ | $0.0506 \pm 0.0006$ |
+| **LightGBM + TempScale** | $0.8617 \pm 0.0014$ | $0.0185 \pm 0.0003$ | $0.7984 \pm 0.0007$ | $0.0588 \pm 0.0003$ |
+| **LightGBM + Isotonic** | $0.8596 \pm 0.0014$ | $0.0253 \pm 0.0004$ | $0.7975 \pm 0.0007$ | $0.0514 \pm 0.0005$ |
+| **DistilBERT + Uncalibrated** | $0.9181 \pm 0.0000$ | $0.0710 \pm 0.0000$ | $0.9042 \pm 0.0000$ | $0.0654 \pm 0.0000$ |
+| **PubMedBERT + Uncalibrated** | $0.9276 \pm 0.0000$ | $0.0807 \pm 0.0000$ | $0.9191 \pm 0.0000$ | $0.0580 \pm 0.0000$ |
 
 #### Statistical Power & Minimum Detectable Difference (MDD)
 | Evaluation Corpus | Sample Size ($N$) | Alpha ($\alpha$) | Target Power ($1-\beta$) | Minimum Detectable $\Delta\text{AUROC}$ |

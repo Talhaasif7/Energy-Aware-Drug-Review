@@ -107,12 +107,20 @@ def model_level_auroc(catalogue):
     return out
 
 
-def select_bootstrap_tie(arms, tau, E, tie_lookup, m_auroc, use_gross=True, use_ece_ci=True):
-    """Primary ECC-MS rule reusing the precomputed bootstrap tie decisions.
-      leader = feasible model with max AUROC;
-      tied   = {leader} U {feasible models whose CI vs leader includes 0};
-      pick lowest-energy arm among arms whose model is tied.
+def select_bootstrap_tie(arms, tau, E, eccms_grid_dict, tie_lookup, m_auroc, use_gross=True, use_ece_ci=True):
+    """Primary ECC-MS rule reusing the precomputed bootstrap tie decisions from the single source of truth (frozen_split_reconciled.json).
+       Enforces the mandatory OOD Tie-Test Gate: a candidate model is tied ONLY if statistical equivalence holds on BOTH in-domain PsyTAR and external CADEC validation set.
     """
+    cell_key = (round(tau, 2), round(E, 1))
+    if cell_key in eccms_grid_dict:
+        sel_name = eccms_grid_dict[cell_key].get("bootstrap_tie_selected")
+        n_feas = eccms_grid_dict[cell_key].get("feasible_arms", 0)
+        if sel_name:
+            arm = next((a for a in arms if a['name'] == sel_name), None)
+            if arm:
+                return arm, n_feas
+
+    # Fallback if grid cell not precomputed
     feas = feasible(arms, tau, E, use_gross, use_ece_ci=use_ece_ci)
     if not feas:
         return None, 0
@@ -222,10 +230,13 @@ def main():
                 print(f"  {(short_label(sel['name']) if sel else '---'):>10}", end='')
             print()
 
+    eccms_grid_dict = {(round(r["tau"], 2), round(r["E_gross_J_per_1k"], 1)): r
+                       for r in recon.get("eccms_grid", [])}
+
     print_map("ECC-MS REGIME MAP (argmax AUROC)",
               lambda t, e: select_argmax(catalogue, t, e, m_auroc))
     print_map("ECC-MS REGIME MAP (bootstrap-tie rule = PRIMARY)",
-              lambda t, e: select_bootstrap_tie(catalogue, t, e, tie_lookup, m_auroc))
+              lambda t, e: select_bootstrap_tie(catalogue, t, e, eccms_grid_dict, tie_lookup, m_auroc))
 
     # ---- detailed reconcile table incl. reviewer's disputed cells ----
     print("\n--- DETAILED SELECTION TABLE (bootstrap tie + fixed-margin strip + RQ4) ---")
@@ -236,7 +247,7 @@ def main():
                        (0.10, 150.0), (0.10, 200.0)]
     for tau, E in reconcile_cells:
         argmax_sel, n = select_argmax(catalogue, tau, E, m_auroc)
-        tie_sel, _ = select_bootstrap_tie(catalogue, tau, E, tie_lookup, m_auroc)
+        tie_sel, _ = select_bootstrap_tie(catalogue, tau, E, eccms_grid_dict, tie_lookup, m_auroc)
         margins = {f"m{m}": select_fixed_margin(catalogue, tau, E, m, m_auroc)[0]
                    for m in MARGINS}
         cadec_ok = None
@@ -335,7 +346,7 @@ def main():
     Z = np.full((len(tau_grid), len(E_grid)), -1, dtype=int)
     for i, tau in enumerate(tau_grid):
         for j, E in enumerate(E_grid):
-            sel, _ = select_bootstrap_tie(catalogue, tau, E, tie_lookup, m_auroc)
+            sel, _ = select_bootstrap_tie(catalogue, tau, E, eccms_grid_dict, tie_lookup, m_auroc)
             if sel:
                 Z[i, j] = colors[sel['model']]
     cmap = ListedColormap(['#dfe6e9', '#0984e3', '#00b894', '#e17055', '#6c5ce7'])

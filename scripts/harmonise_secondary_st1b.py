@@ -17,6 +17,9 @@ import os
 import sys
 import pandas as pd
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(HERE, ".."))
+
 
 def reconfigure_stdout():
     if hasattr(sys.stdout, 'reconfigure'):
@@ -183,15 +186,15 @@ def print_report(df_uci, df_webmd):
 
     # UCI DrugLib: 5 ordinal levels
     # Default: {Ineffective, Marginally} → 0, {Moderately} → 1, {Considerably, Highly} → 2
-    # Alt A:   {Ineffective} → 0, {Marginally, Moderately} → 1, {Considerably, Highly} → 2
-    # Alt B:   {Ineffective, Marginally, Moderately} → 0, {Considerably} → 1, {Highly} → 2
+    # Alt A:   {Ineffective, Marginally} → 0, {Moderately, Considerably} → 1, {Highly} → 2  (Strict Positive)
+    # Alt B:   {Ineffective, Marginally, Moderately} → 0, {Considerably} → 1, {Highly} → 2  (Wide Negative)
     uci_alt_maps = {
         'Default (chosen)': UCI_EFFECTIVENESS_MAP,
-        'Alt A (narrow neg)': {
+        'Alt A (strict positive)': {
             'Ineffective': 0,
-            'Marginally Effective': 1,
+            'Marginally Effective': 0,
             'Moderately Effective': 1,
-            'Considerably Effective': 2,
+            'Considerably Effective': 1,
             'Highly Effective': 2,
         },
         'Alt B (wide neg)': {
@@ -204,7 +207,7 @@ def print_report(df_uci, df_webmd):
     }
 
     # We need the raw effectiveness column — re-read from the original source
-    base = r"e:\AI Green\data\02_secondary_sentiment_scaling"
+    base = os.path.join(ROOT, "data", "02_secondary_sentiment_scaling")
     uci_train_path = os.path.join(base, "dev_uci_drug_review", "drugLibTrain_cleaned.csv")
     uci_test_path = os.path.join(base, "dev_uci_drug_review", "drugLibTest_cleaned.csv")
     if os.path.exists(uci_train_path) and os.path.exists(uci_test_path):
@@ -228,11 +231,11 @@ def print_report(df_uci, df_webmd):
 
     # WebMD: 1-5 integer scale
     # Default: {1,2} → 0, {3} → 1, {4,5} → 2
-    # Alt A:   {1} → 0, {2,3} → 1, {4,5} → 2
-    # Alt B:   {1,2,3} → 0, {4} → 1, {5} → 2
+    # Alt A:   {1,2} → 0, {3,4} → 1, {5} → 2  (Strict Positive)
+    # Alt B:   {1,2,3} → 0, {4} → 1, {5} → 2  (Wide Negative)
     webmd_alt_maps = {
         'Default (chosen)': WEBMD_EFFECTIVENESS_MAP,
-        'Alt A (narrow neg)': {1: 0, 2: 1, 3: 1, 4: 2, 5: 2},
+        'Alt A (strict positive)': {1: 0, 2: 0, 3: 1, 4: 1, 5: 2},
         'Alt B (wide neg)': {1: 0, 2: 0, 3: 0, 4: 1, 5: 2},
     }
 
@@ -259,8 +262,8 @@ def print_report(df_uci, df_webmd):
 
     print("\n  INTERPRETATION:")
     print("    The chosen cutoffs yield UCI 71.9% Positive vs WebMD 58.1% Positive (13.8pp gap).")
-    print("    Alt A (narrow neg) shifts UCI to ~78.0% Pos;")
-    print("    Alt B (wide neg) shifts UCI to ~55.2% Pos vs WebMD ~49.4% Pos, narrowing the prior gap to 5.8pp.")
+    print("    Alt A (strict positive) shifts UCI to 41.8% Pos vs WebMD 36.3% Pos (5.5pp gap).")
+    print("    Alt B (wide neg) shifts UCI to 42.1% Pos vs WebMD 36.3% Pos (5.8pp gap).")
     print("    Note: Subword fragmentation analysis evaluates N=33 curated clinical ADR terms (see footnote).")
 
     print("\n--- 7. HARMONISATION LOCK CONFIRMATION ---")

@@ -690,8 +690,72 @@ def main():
     )
     log(f"\n[artifact] CPU arm predictions saved: {os.path.basename(cpu_npz)}")
 
+    # ---- multi-seed aggregated performance across seeds [42, 123, 456] ----
+    all_seeds = [42, 123, 456]
+    multi_seed_records = {}
+    for seed in all_seeds:
+        tr_df, cal_df, tst_df = reconstruct_split(PSYTAR_CSV, seed)
+        tr_txt, y_tr = list(tr_df["text"]), tr_df["label"].values
+        cal_txt, y_cal = list(cal_df["text"]), cal_df["label"].values
+        tst_txt, y_tst = list(tst_df["text"]), tst_df["label"].values
+        cls_seed, _ = train_classical_arms(tr_txt, y_tr, cal_txt, y_cal, tst_txt, y_tst, cadec_texts, y_cadec_csv)
+        
+        # Classical arms
+        for model in ("Logistic Regression", "LightGBM"):
+            for recal in RECAL_ORDER:
+                name = f"{model} + {RECAL_SHORT[recal]}"
+                p_tst = np.asarray(cls_seed[model]["test_p1"][recal])
+                p_cad = np.asarray(cls_seed[model]["cadec_p1"][recal])
+                a_tst = float(roc_auc_score(y_tst, p_tst))
+                e_tst = float(compute_ece_adaptive(y_tst, p_tst))
+                a_cad = float(roc_auc_score(y_cadec_csv, p_cad))
+                e_cad = float(compute_ece_adaptive(y_cadec_csv, p_cad))
+                multi_seed_records.setdefault(name, []).append({
+                    "seed": seed, "auroc": a_tst, "ece": e_tst,
+                    "cadec_auroc": a_cad, "cadec_ece": e_cad
+                })
+
+        # Transformer arms
+        for model in ("DistilBERT", "PubMedBERT"):
+            stem = "efficient_transformer" if model == "DistilBERT" else "biomedical_transformer"
+            npz_p = os.path.join(RESULTS_DIR, f"{stem}_seed{seed}_predictions.npz")
+            if os.path.exists(npz_p):
+                npz_s = np.load(npz_p, allow_pickle=True)
+                t_arms = transformer_arms_from_npz(npz_s)
+                y_tst_tf = npz_s["y_test"]
+                y_cad_tf = npz_s["y_cadec"]
+                for recal in RECAL_ORDER:
+                    if recal in t_arms["test_p1"]:
+                        name = f"{model} + {RECAL_SHORT[recal]}"
+                        p_tst = np.asarray(t_arms["test_p1"][recal])
+                        p_cad = np.asarray(t_arms["cadec_p1"][recal])
+                        a_tst = float(roc_auc_score(y_tst_tf, p_tst))
+                        e_tst = float(compute_ece_adaptive(y_tst_tf, p_tst))
+                        a_cad = float(roc_auc_score(y_cad_tf, p_cad))
+                        e_cad = float(compute_ece_adaptive(y_cad_tf, p_cad))
+                        multi_seed_records.setdefault(name, []).append({
+                            "seed": seed, "auroc": a_tst, "ece": e_tst,
+                            "cadec_auroc": a_cad, "cadec_ece": e_cad
+                        })
+
+    multi_seed_summary = {}
+    for name, recs in multi_seed_records.items():
+        aurocs = [r["auroc"] for r in recs]
+        eces = [r["ece"] for r in recs]
+        c_aurocs = [r["cadec_auroc"] for r in recs]
+        c_eces = [r["cadec_ece"] for r in recs]
+        multi_seed_summary[name] = {
+            "n_seeds": len(recs),
+            "seeds": [r["seed"] for r in recs],
+            "auroc_mean": float(np.mean(aurocs)), "auroc_std": float(np.std(aurocs, ddof=0)),
+            "ece_mean": float(np.mean(eces)), "ece_std": float(np.std(eces, ddof=0)),
+            "cadec_auroc_mean": float(np.mean(c_aurocs)), "cadec_auroc_std": float(np.std(c_aurocs, ddof=0)),
+            "cadec_ece_mean": float(np.mean(c_eces)), "cadec_ece_std": float(np.std(c_eces, ddof=0)),
+        }
+
     # ---- write reconciled JSON (single source of truth) ----
     reconciled = {
+        "multi_seed_metrics": multi_seed_summary,
         "provenance": {
             "generated_by": "run_frozen_split_analysis.py",
             "primary_seed": primary_seed,

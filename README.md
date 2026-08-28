@@ -50,7 +50,7 @@ The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)
 │   ├── 01_primary_adr_detection/
 │   │   ├── dev_psytar/                     # PsyTAR Development Corpus (6,003 sentences)
 │   │   └── external_val_cadec/             # CADEC External Validation Corpus (7,823 aligned sentences)
-│   └── 02_secondary_sentiment_scaling/
+│       ├── dev_drugscom_50k.csv            # drugsCom dataset (50,000 stratified subsample)
 │       ├── dev_uci_drug_review/            # UCI DrugLib dataset (4,107 reviews)
 │       └── external_val_webmd/             # WebMD dataset (320,093 reviews)
 ├── reports/                                # Generated figures & visual artifacts
@@ -248,16 +248,16 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 | **0.10** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Uncalibrated** | 0.9276 | 60.47 | **12** | ✅ | ✅ |
 
 #### Multi-Seed Metric Stability (Seeds 42, 123, 456)
-*Aggregated performance across 3 independent training seeds to confirm stability against training noise.*
+*Multi-seed aggregated baseline (3 seeds: 42, 123, 456; test N=1,201; CADEC N=7,823).*
 
 | Model & Recalibration | In-Domain AUROC ($\text{Mean}\pm\text{SD}$) | In-Domain ECE ($\text{Mean}\pm\text{SD}$) | CADEC OOD AUROC ($\text{Mean}\pm\text{SD}$) | CADEC OOD ECE ($\text{Mean}\pm\text{SD}$) |
 | :--- | :---: | :---: | :---: | :---: |
 | **Logistic Regression + Uncalibrated** | $0.8777 \pm 0.0052$ | $0.1231 \pm 0.0098$ | $0.7858 \pm 0.0123$ | $0.0862 \pm 0.0074$ |
 | **Logistic Regression + TempScale** | $0.8777 \pm 0.0052$ | $0.0774 \pm 0.0055$ | $0.7858 \pm 0.0123$ | $0.0860 \pm 0.0127$ |
-| **Logistic Regression + Isotonic** | $0.8752 \pm 0.0014$ | $0.0253 \pm 0.0012$ | $0.7845 \pm 0.0120$ | $0.0341 \pm 0.0003$ |
-| **LightGBM + Uncalibrated** | $0.8617 \pm 0.0014$ | $0.0191 \pm 0.0006$ | $0.7984 \pm 0.0007$ | $0.0506 \pm 0.0006$ |
-| **LightGBM + TempScale** | $0.8617 \pm 0.0014$ | $0.0185 \pm 0.0003$ | $0.7984 \pm 0.0007$ | $0.0588 \pm 0.0003$ |
-| **LightGBM + Isotonic** | $0.8596 \pm 0.0014$ | $0.0253 \pm 0.0004$ | $0.7975 \pm 0.0007$ | $0.0514 \pm 0.0005$ |
+| **Logistic Regression + Isotonic** | $0.8744 \pm 0.0059$ | $0.0490 \pm 0.0171$ | $0.7818 \pm 0.0139$ | $0.0590 \pm 0.0134$ |
+| **LightGBM + Uncalibrated** | $0.7912 \pm 0.0029$ | $0.0605 \pm 0.0068$ | $0.6947 \pm 0.0222$ | $0.0740 \pm 0.0148$ |
+| **LightGBM + TempScale** | $0.7912 \pm 0.0029$ | $0.0539 \pm 0.0040$ | $0.6947 \pm 0.0222$ | $0.0480 \pm 0.0134$ |
+| **LightGBM + Isotonic** | $0.7877 \pm 0.0031$ | $0.0647 \pm 0.0070$ | $0.6912 \pm 0.0209$ | $0.0502 \pm 0.0123$ |
 | **DistilBERT + Uncalibrated** | $0.9269 \pm 0.0069$ | $0.0662 \pm 0.0034$ | $0.9075 \pm 0.0056$ | $0.0664 \pm 0.0054$ |
 | **PubMedBERT + Uncalibrated** | $0.9282 \pm 0.0031$ | $0.0832 \pm 0.0206$ | $0.9172 \pm 0.0044$ | $0.0794 \pm 0.0303$ |
 

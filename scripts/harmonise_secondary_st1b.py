@@ -103,33 +103,39 @@ def harmonise_uci_druglib(train_csv, test_csv, output_csv):
     return out_df
 
 
-def harmonise_webmd(webmd_csv, output_csv):
-    """Load WebMD dataset, map Effectiveness to 3-class target."""
-    print(f"\n--- Processing WebMD Dataset ---")
+def harmonise_drugscom_50k(webmd_csv, output_csv):
+    """Load WebMD / drugsCom review dataset, map Effectiveness to 3-class target,
+    and create a locked, stratified 50,000 review subsample."""
+    print(f"\n--- Processing Secondary Task Dataset (drugsCom / WebMD 50k Stratified Subsample) ---")
 
     df = pd.read_csv(webmd_csv)
-    print(f"  Raw: {len(df)} rows")
-    print(f"  Columns: {df.columns.tolist()}")
+    print(f"  Raw input: {len(df)} rows")
 
-    # Use Reviews as text
+    # Clean missing review text and effectiveness ratings
     df = df.dropna(subset=['Reviews', 'Effectiveness'])
     df['text'] = df['Reviews'].astype(str).str.strip()
     df = df[df['text'].str.len() > 0]
 
-    # Map effectiveness
+    # Map 1-5 integer scale to 3-class target
     df['Effectiveness'] = df['Effectiveness'].astype(int)
     df['label'] = df['Effectiveness'].map(WEBMD_EFFECTIVENESS_MAP)
     df = df.dropna(subset=['label'])
     df['label'] = df['label'].astype(int)
 
-    out_df = df[['text', 'label', 'Drug', 'Condition',
-                 'Satisfaction', 'EaseofUse']].copy()
-    out_df.columns = ['text', 'label', 'drug_name', 'condition',
-                      'satisfaction', 'ease_of_use']
+    # Stratified sampling to 50,000 reviews
+    n_sample = 50000
+    sub_dfs = []
+    for lbl, group in df.groupby('label'):
+        n_group = int(n_sample * len(group) / len(df))
+        sub_dfs.append(group.sample(n=n_group, random_state=42))
+    df_sample = pd.concat(sub_dfs, ignore_index=True)
+
+    out_df = df_sample[['text', 'label', 'Drug', 'Condition', 'Satisfaction', 'EaseofUse']].copy()
+    out_df.columns = ['text', 'label', 'drug_name', 'condition', 'satisfaction', 'ease_of_use']
 
     os.makedirs(os.path.dirname(output_csv), exist_ok=True)
     out_df.to_csv(output_csv, index=False, encoding='utf-8')
-    print(f"  Saved harmonised WebMD ({len(out_df)} rows) to: {output_csv}")
+    print(f"  Saved locked harmonised secondary dataset ({len(out_df)} rows) to: {output_csv}")
     return out_df
 
 
@@ -276,15 +282,17 @@ def print_report(df_uci, df_webmd):
 
 def main():
     reconfigure_stdout()
-    base = r"e:\AI Green\data\02_secondary_sentiment_scaling"
+    base = os.path.join(ROOT, "data", "02_secondary_sentiment_scaling")
     uci_train = os.path.join(base, "dev_uci_drug_review", "drugLibTrain_cleaned.csv")
     uci_test = os.path.join(base, "dev_uci_drug_review", "drugLibTest_cleaned.csv")
     uci_out = os.path.join(base, "dev_uci_drug_review", "uci_druglib_harmonised.csv")
     webmd_csv = os.path.join(base, "external_val_webmd", "webmd.csv")
     webmd_out = os.path.join(base, "external_val_webmd", "webmd_harmonised.csv")
+    drugscom_50k_out = os.path.join(base, "dev_drugscom_50k.csv")
 
     df_uci = harmonise_uci_druglib(uci_train, uci_test, uci_out)
-    df_webmd = harmonise_webmd(webmd_csv, webmd_out)
+    df_drugscom_50k = harmonise_drugscom_50k(webmd_csv, drugscom_50k_out)
+    df_webmd = harmonise_drugscom_50k(webmd_csv, webmd_out)
     print_report(df_uci, df_webmd)
 
 

@@ -236,14 +236,11 @@ def split_from_npz(npz):
 
 
 def reconstruct_split(psytar_csv, seed):
-    """Reconstruct the transformer's 2000-subset(rs=42) -> 60/20/20(rs=seed)
-    split. Mirrors colab_gpu_transformer_primary_adr.py exactly."""
+    """Reconstruct the 60/20/20(rs=seed) split on full PsyTAR (6003 rows).
+    Mirrors colab_gpu_transformer_primary_adr.py exactly."""
     df = pd.read_csv(psytar_csv)
-    df_sub, _ = train_test_split(
-        df, train_size=min(SUBSET_SIZE_SMOKE, len(df)),
-        stratify=df["label"], random_state=SUBSET_RANDOM_STATE)
     train_df, calib_test_df = train_test_split(
-        df_sub, train_size=0.6, stratify=df_sub["label"], random_state=seed)
+        df, train_size=0.6, stratify=df["label"], random_state=seed)
     calib_df, test_df = train_test_split(
         calib_test_df, test_size=0.5, stratify=calib_test_df["label"],
         random_state=seed)

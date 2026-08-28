@@ -1,7 +1,7 @@
 {
   "_meta": {
     "script": "budget_and_subgroup_st6_st7.py",
-    "generated_utc": "2026-08-27 04:20:01Z",
+    "generated_utc": "2026-08-28 17:17:27Z",
     "note": "ST6 budget extrapolation + ST7 subgroup feasibility. All energy terms are derived from measured benchmarks (results/cpu_energy_measured.json, results/colab_transformer_gpu_results.json); corpus sizes are read from the harmonised CSVs. Nothing here is hand-entered.",
     "subgroup_min_n": 200,
     "inputs_captured": true
@@ -11,7 +11,7 @@
       "psytar": 6003,
       "cadec": 7823,
       "uci_druglib": 4107,
-      "webmd": 320093
+      "webmd": 49998
     },
     "corpus_size_provenance": {
       "psytar": "measured_from_harmonised_csv",
@@ -19,66 +19,66 @@
       "uci_druglib": "measured_from_harmonised_csv",
       "webmd": "measured_from_harmonised_csv"
     },
-    "n_secondary_cpu": 324200,
+    "n_secondary_cpu": 54105,
     "n_secondary_transformer_cap": 30000,
     "n_seeds": 5,
     "n_epochs_transformer": 3,
     "cpu_train_rates_st3": {
       "LR": {
-        "sec_per_sample": 0.0037756250000000003,
-        "j_per_sample": 0.0020023750000000002
+        "sec_per_sample": 8.412337498157285e-05,
+        "j_per_sample": 0.001045302825148639
       },
       "GBDT": {
-        "sec_per_sample": 0.0018593750000000001,
-        "j_per_sample": 0.0031030000000000003
+        "sec_per_sample": 0.00014890599999489495,
+        "j_per_sample": 0.003979135253626548
       },
       "source": "results/st3_cpu_energy.json",
-      "provenance": "ST3_JSON_ABSENT; LR_fallback; GBDT_fallback",
+      "provenance": "measured_st3_run",
       "records": {
         "LR": {
-          "s_per_sample": 0.0037756250000000003,
-          "j_per_sample": 0.0020023750000000002,
+          "s_per_sample": 8.412337498157285e-05,
+          "j_per_sample": 0.001045302825148639,
           "n_train": 1600,
-          "train_seconds": 6.041,
-          "train_energy_j": 3.2038,
-          "energy_source": "documented_constant",
-          "rapl_available": null,
-          "cpu_model": null,
-          "provenance": "DOCUMENTED_FALLBACK_not_measured_here"
+          "train_seconds": 0.13459739997051656,
+          "train_energy_j": 1.6724845202378222,
+          "energy_source": "codecarbon_reported",
+          "rapl_available": false,
+          "cpu_model": "Intel64 Family 6 Model 142 Stepping 12, GenuineIntel",
+          "provenance": "measured_st3_run"
         },
         "GBDT": {
-          "s_per_sample": 0.0018593750000000001,
-          "j_per_sample": 0.0031030000000000003,
+          "s_per_sample": 0.00014890599999489495,
+          "j_per_sample": 0.003979135253626548,
           "n_train": 1600,
-          "train_seconds": 2.975,
-          "train_energy_j": 4.9648,
-          "energy_source": "documented_constant",
-          "rapl_available": null,
-          "cpu_model": null,
-          "provenance": "DOCUMENTED_FALLBACK_not_measured_here"
+          "train_seconds": 0.23824959999183193,
+          "train_energy_j": 6.366616405802477,
+          "energy_source": "codecarbon_reported",
+          "rapl_available": false,
+          "cpu_model": "Intel64 Family 6 Model 142 Stepping 12, GenuineIntel",
+          "provenance": "measured_st3_run"
         }
       }
     },
     "cpu_inference_measured": {
       "LR": {
-        "gross_1k": 0.16479584355200425,
-        "net_1k": 0.15572110479983556,
-        "inf_throughput": 953445.1391460416,
-        "load_w": 157.08700314671876,
-        "energy_cv_pct": 1.3793846244881873,
-        "idle_w": 8.65023949750118,
-        "rapl_available": true,
-        "provenance": "measured_rapl_saturated"
+        "gross_1k": 6.292532437782496,
+        "net_1k": 5.946040582242241,
+        "inf_throughput": 24964.51175313431,
+        "load_w": 157.09,
+        "energy_cv_pct": 2.413767062330443,
+        "idle_w": 8.65,
+        "rapl_available": false,
+        "provenance": "measured_throughput_x_ST2_power"
       },
       "GBDT": {
-        "gross_1k": 0.36660614916850626,
-        "net_1k": 0.3529347037365466,
-        "inf_throughput": 632725.5123468407,
-        "load_w": 231.96018353340006,
-        "energy_cv_pct": 1.0694486368320568,
-        "idle_w": 8.65023949750118,
-        "rapl_available": true,
-        "provenance": "measured_rapl_saturated"
+        "gross_1k": 11.371440075897212,
+        "net_1k": 10.947388702140914,
+        "inf_throughput": 20398.47182518774,
+        "load_w": 231.96,
+        "energy_cv_pct": 6.004890062705843,
+        "idle_w": 8.65,
+        "rapl_available": false,
+        "provenance": "measured_throughput_x_ST2_power"
       }
     },
     "gpu_measured": {
@@ -116,27 +116,27 @@
       "Model Tier": "Classical Linear (LR)",
       "Hardware": "CPU",
       "Train Passes": "30,015",
-      "Inf Passes": "1,660,115",
-      "Train Time": "1.89 min",
-      "Inf Time": "0.03 min",
-      "Total Time (h)": 0.03196293320629234,
-      "Total Energy (J)": 333.6813374433355,
-      "Total Energy (kWh)": 9.268926040092654e-05,
+      "Inf Passes": "309,640",
+      "Train Time": "0.04 min",
+      "Inf Time": "0.21 min",
+      "Total Time (h)": 0.004146713839598794,
+      "Total Energy (J)": 1979.7945083318084,
+      "Total Energy (kWh)": 0.0005499429189810579,
       "Status": "PASSED",
-      "provenance": "measured_rapl_saturated"
+      "provenance": "measured_throughput_x_ST2_power"
     },
     {
       "Model Tier": "Classical GBDT (LightGBM)",
       "Hardware": "CPU",
       "Train Passes": "30,015",
-      "Inf Passes": "1,660,115",
-      "Train Time": "0.93 min",
-      "Inf Time": "0.04 min",
-      "Total Time (h)": 0.01623135913780427,
-      "Total Energy (J)": 701.7449123268748,
-      "Total Energy (kWh)": 0.00019492914231302076,
+      "Inf Passes": "309,640",
+      "Train Time": "0.07 min",
+      "Inf Time": "0.25 min",
+      "Total Time (h)": 0.005458050575532264,
+      "Total Energy (J)": 3640.4864497384133,
+      "Total Energy (kWh)": 0.001011246236038448,
       "Status": "PASSED",
-      "provenance": "measured_rapl_saturated"
+      "provenance": "measured_throughput_x_ST2_power"
     },
     {
       "Model Tier": "Efficient Transformer (DistilBERT)",

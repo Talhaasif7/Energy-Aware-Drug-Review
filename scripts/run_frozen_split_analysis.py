@@ -283,7 +283,7 @@ def train_classical_arms(train_texts, y_train, calib_texts, y_calib,
                          test_texts, y_test, cadec_texts, y_cadec):
     """Fit LR + LightGBM on the frozen train split; produce uncal/temp/iso probs
     on PsyTAR test and full CADEC. Returns nested dict of p1 arrays + fitted T."""
-    vec = TfidfVectorizer(max_features=1000)
+    vec = TfidfVectorizer(ngram_range=(1, 2), max_features=2500)
     X_train = vec.fit_transform(train_texts).toarray()
     X_calib = vec.transform(calib_texts).toarray()
     X_test = vec.transform(test_texts).toarray()

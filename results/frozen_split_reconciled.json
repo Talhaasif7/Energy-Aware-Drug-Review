@@ -7,14 +7,14 @@
         123,
         456
       ],
-      "auroc_mean": 0.885455142865334,
-      "auroc_std": 0.006870842662537617,
-      "ece_mean": 0.07457768447989983,
-      "ece_std": 0.00805399885122995,
-      "cadec_auroc_mean": 0.8368434230901997,
-      "cadec_auroc_std": 0.006510724582436246,
-      "cadec_ece_mean": 0.08207425048847221,
-      "cadec_ece_std": 0.0018346268251761596
+      "auroc_mean": 0.8880477925759406,
+      "auroc_std": 0.006780010000721432,
+      "ece_mean": 0.09069537166914714,
+      "ece_std": 0.0050881242267894495,
+      "cadec_auroc_mean": 0.8385858664791227,
+      "cadec_auroc_std": 0.0069473747157181055,
+      "cadec_ece_mean": 0.0938944193372394,
+      "cadec_ece_std": 0.0017680425198976313
     },
     "Logistic Regression + TempScale": {
       "n_seeds": 3,
@@ -23,14 +23,14 @@
         123,
         456
       ],
-      "auroc_mean": 0.885455142865334,
-      "auroc_std": 0.006870842662537617,
-      "ece_mean": 0.044182635461531145,
-      "ece_std": 0.004516958830019686,
-      "cadec_auroc_mean": 0.8368434230901997,
-      "cadec_auroc_std": 0.006510724582436246,
-      "cadec_ece_mean": 0.0748172262974282,
-      "cadec_ece_std": 0.00629973198726657
+      "auroc_mean": 0.8880477925759406,
+      "auroc_std": 0.006780010000721432,
+      "ece_mean": 0.05347467482155941,
+      "ece_std": 0.003029706605747199,
+      "cadec_auroc_mean": 0.8385858664791227,
+      "cadec_auroc_std": 0.0069473747157181055,
+      "cadec_ece_mean": 0.08280139839052932,
+      "cadec_ece_std": 0.008041363769859871
     },
     "Logistic Regression + Isotonic": {
       "n_seeds": 3,
@@ -39,14 +39,14 @@
         123,
         456
       ],
-      "auroc_mean": 0.8835346686085943,
-      "auroc_std": 0.006787630337731529,
-      "ece_mean": 0.03186928188693706,
-      "ece_std": 0.00562610832642421,
-      "cadec_auroc_mean": 0.8349067360710715,
-      "cadec_auroc_std": 0.007265120930916142,
-      "cadec_ece_mean": 0.04282711950074716,
-      "cadec_ece_std": 0.008803558197767163
+      "auroc_mean": 0.8859827728529894,
+      "auroc_std": 0.007078579254392104,
+      "ece_mean": 0.030734065885673994,
+      "ece_std": 0.004343059033368173,
+      "cadec_auroc_mean": 0.8367444415580697,
+      "cadec_auroc_std": 0.0074922671299694375,
+      "cadec_ece_mean": 0.04085344079710892,
+      "cadec_ece_std": 0.004273138798924267
     },
     "LightGBM + Uncalibrated": {
       "n_seeds": 3,
@@ -55,14 +55,14 @@
         123,
         456
       ],
-      "auroc_mean": 0.8650923259402954,
-      "auroc_std": 0.003262893127052427,
-      "ece_mean": 0.03019483822933422,
-      "ece_std": 0.010218404824079949,
-      "cadec_auroc_mean": 0.789704594803446,
-      "cadec_auroc_std": 0.018683327212445516,
-      "cadec_ece_mean": 0.0538788819541691,
-      "cadec_ece_std": 0.009393108345136854
+      "auroc_mean": 0.8652422639126818,
+      "auroc_std": 0.0017460907774293837,
+      "ece_mean": 0.0381980535918423,
+      "ece_std": 0.0021885138639984895,
+      "cadec_auroc_mean": 0.7901855868527745,
+      "cadec_auroc_std": 0.02035325770737348,
+      "cadec_ece_mean": 0.054443979372744165,
+      "cadec_ece_std": 0.01229874472724591
     },
     "LightGBM + TempScale": {
       "n_seeds": 3,
@@ -71,14 +71,14 @@
         123,
         456
       ],
-      "auroc_mean": 0.8650923259402954,
-      "auroc_std": 0.003262893127052427,
-      "ece_mean": 0.02672708551217154,
-      "ece_std": 0.007315511718710145,
-      "cadec_auroc_mean": 0.789704594803446,
-      "cadec_auroc_std": 0.018683327212445516,
-      "cadec_ece_mean": 0.0640344158957738,
-      "cadec_ece_std": 0.012233251618542223
+      "auroc_mean": 0.8652422639126818,
+      "auroc_std": 0.0017460907774293837,
+      "ece_mean": 0.03513995738681827,
+      "ece_std": 0.0013639904721025674,
+      "cadec_auroc_mean": 0.7901855868527745,
+      "cadec_auroc_std": 0.02035325770737348,
+      "cadec_ece_mean": 0.06720790761131135,
+      "cadec_ece_std": 0.013941296093745713
     },
     "LightGBM + Isotonic": {
       "n_seeds": 3,
@@ -87,14 +87,14 @@
         123,
         456
       ],
-      "auroc_mean": 0.8636247123464079,
-      "auroc_std": 0.003439108772762609,
-      "ece_mean": 0.02959392785703813,
-      "ece_std": 0.002896481320132526,
-      "cadec_auroc_mean": 0.7885204302528676,
-      "cadec_auroc_std": 0.01911287174477652,
-      "cadec_ece_mean": 0.05791216951184036,
-      "cadec_ece_std": 0.007928490148499062
+      "auroc_mean": 0.8630188024558058,
+      "auroc_std": 0.0015482590278343119,
+      "ece_mean": 0.031135682862730107,
+      "ece_std": 0.004202251816508269,
+      "cadec_auroc_mean": 0.7871783716200377,
+      "cadec_auroc_std": 0.020422305937937865,
+      "cadec_ece_mean": 0.05835834473301341,
+      "cadec_ece_std": 0.009442178467792512
     },
     "DistilBERT + Uncalibrated": {
       "n_seeds": 3,
@@ -214,8 +214,8 @@
     }
   },
   "fitted_temperatures_cpu": {
-    "Logistic Regression": 0.7162988861842681,
-    "LightGBM": 0.9060147843480577
+    "Logistic Regression": 0.6717862519448422,
+    "LightGBM": 0.9022218724228898
   },
   "model_hyperparameters": {
     "Logistic Regression": {
@@ -355,98 +355,98 @@
   },
   "per_arm_metrics": {
     "Logistic Regression + Uncalibrated": {
-      "auroc": 0.876043470939184,
-      "ece": 0.06375978230071537,
-      "auprc": 0.8125130634975034,
-      "f1_at_tstar": 0.6966887417218544,
+      "auroc": 0.8785664453425712,
+      "ece": 0.08547731445526642,
+      "auprc": 0.8165350828554752,
+      "f1_at_tstar": 0.6854082998661312,
       "ece_ci": [
-        0.041540966438204555,
-        0.07344389203739408
+        0.06697993026482217,
+        0.10378287239290498
       ],
-      "brier": 0.13973080780321598,
-      "nll": 0.43732475436880586,
-      "cadec_ece": 0.08388958974984002,
-      "cadec_auroc": 0.837852832906361,
+      "brier": 0.1406400227652387,
+      "nll": 0.44151215038298236,
+      "cadec_ece": 0.09606866131232257,
+      "cadec_auroc": 0.8388925613900218,
       "energy_gross": 6.292532437782496,
       "energy_net": 5.946040582242241
     },
     "Logistic Regression + TempScale": {
-      "auroc": 0.876043470939184,
-      "ece": 0.04458427630261457,
-      "auprc": 0.8125130634975034,
-      "f1_at_tstar": 0.6966887417218544,
+      "auroc": 0.8785664453425712,
+      "ece": 0.05210865875198683,
+      "auprc": 0.8165350828554752,
+      "f1_at_tstar": 0.6854082998661312,
       "ece_ci": [
-        0.02627063683474941,
-        0.0589784148472212
+        0.030626927193264836,
+        0.06768643780458504
       ],
-      "brier": 0.1374038053394365,
-      "nll": 0.4244313769445351,
-      "cadec_ece": 0.0673574552172811,
-      "cadec_auroc": 0.837852832906361,
+      "brier": 0.13709193485268742,
+      "nll": 0.42253247772517366,
+      "cadec_ece": 0.07459504176010784,
+      "cadec_auroc": 0.8388925613900218,
       "energy_gross": 6.292532437782496,
       "energy_net": 5.946040582242241
     },
     "Logistic Regression + Isotonic": {
-      "auroc": 0.874179056004619,
-      "ece": 0.023962738288273916,
-      "auprc": 0.7933386329386769,
-      "f1_at_tstar": 0.7308132875143184,
+      "auroc": 0.8762629907621248,
+      "ece": 0.027482843635309968,
+      "auprc": 0.7951699946634022,
+      "f1_at_tstar": 0.7030456852791879,
       "ece_ci": [
-        0.010722759066878172,
-        0.03207474188511666
+        0.015299852922722831,
+        0.03376057892076181
       ],
-      "brier": 0.13609510819492507,
-      "nll": 0.4201712295147843,
-      "cadec_ece": 0.033891195832006414,
-      "cadec_auroc": 0.8361884154999729,
+      "brier": 0.1350737887744792,
+      "nll": 0.4710002092742638,
+      "cadec_ece": 0.038269038669567296,
+      "cadec_auroc": 0.8365800120664542,
       "energy_gross": 6.292532437782496,
       "energy_net": 5.946040582242241
     },
     "LightGBM + Uncalibrated": {
-      "auroc": 0.8626602795419553,
-      "ece": 0.019362288157810863,
-      "auprc": 0.8011223638254489,
-      "f1_at_tstar": 0.6813471502590673,
+      "auroc": 0.8629264097382602,
+      "ece": 0.03522691581332102,
+      "auprc": 0.7998074667097963,
+      "f1_at_tstar": 0.6874189364461738,
       "ece_ci": [
-        0.011757617900546732,
-        0.018239520727777982
+        0.01890426045964376,
+        0.04726158523709524
       ],
-      "brier": 0.1414047910370165,
-      "nll": 0.4368895612216817,
-      "cadec_ece": 0.0502016841457386,
-      "cadec_auroc": 0.798915145512004,
+      "brier": 0.1408408759323323,
+      "nll": 0.4380562023131126,
+      "cadec_ece": 0.04700448711620815,
+      "cadec_auroc": 0.7987951849638182,
       "energy_gross": 11.371440075897212,
       "energy_net": 10.947388702140914
     },
     "LightGBM + TempScale": {
-      "auroc": 0.8626602795419553,
-      "ece": 0.018749536749659956,
-      "auprc": 0.8011223638254489,
-      "f1_at_tstar": 0.6813471502590673,
+      "auroc": 0.8629264097382602,
+      "ece": 0.03395698574917018,
+      "auprc": 0.7998074667097963,
+      "f1_at_tstar": 0.6874189364461738,
       "ece_ci": [
-        0.011008849159067977,
-        0.018963682139667946
+        0.01644970564873682,
+        0.04666433197979026
       ],
-      "brier": 0.14133714090819705,
-      "nll": 0.4358721078887395,
-      "cadec_ece": 0.05857202039610342,
-      "cadec_auroc": 0.798915145512004,
+      "brier": 0.14072565197899567,
+      "nll": 0.43716672692792274,
+      "cadec_ece": 0.05794380862303564,
+      "cadec_auroc": 0.7987951849638182,
       "energy_gross": 11.371440075897212,
       "energy_net": 10.947388702140914
     },
     "LightGBM + Isotonic": {
-      "auroc": 0.8606079195535028,
-      "ece": 0.025563480849658225,
-      "auprc": 0.7776686392398825,
-      "f1_at_tstar": 0.7048780487804878,
+      "auroc": 0.861016887990762,
+      "ece": 0.03702539085590931,
+      "auprc": 0.7776083711551378,
+      "f1_at_tstar": 0.6959798994974874,
       "ece_ci": [
-        0.013250415645486959,
-        0.034137388934117927
+        0.023799903039939223,
+        0.057011683346937014
       ],
-      "brier": 0.14206064297390297,
-      "nll": 0.43869075104437316,
-      "cadec_ece": 0.05099721984922343,
-      "cadec_auroc": 0.7980398347867286,
+      "brier": 0.1420418512298004,
+      "nll": 0.4941233363075833,
+      "cadec_ece": 0.055098312695077624,
+      "cadec_auroc": 0.7971537177562028,
       "energy_gross": 11.371440075897212,
       "energy_net": 10.947388702140914
     },
@@ -552,11 +552,11 @@
       "name": "Logistic Regression + Uncalibrated",
       "model": "Logistic Regression",
       "recal": "Uncalibrated",
-      "auroc": 0.876043470939184,
-      "ece": 0.06375978230071537,
-      "ece_ci_hi": 0.07344389203739408,
-      "cadec_ece": 0.08388958974984002,
-      "cadec_auroc": 0.837852832906361,
+      "auroc": 0.8785664453425712,
+      "ece": 0.08547731445526642,
+      "ece_ci_hi": 0.10378287239290498,
+      "cadec_ece": 0.09606866131232257,
+      "cadec_auroc": 0.8388925613900218,
       "inf_j_gross": 6.292532437782496,
       "inf_j_net": 5.946040582242241
     },
@@ -564,11 +564,11 @@
       "name": "Logistic Regression + TempScale",
       "model": "Logistic Regression",
       "recal": "Temperature Scaling",
-      "auroc": 0.876043470939184,
-      "ece": 0.04458427630261457,
-      "ece_ci_hi": 0.0589784148472212,
-      "cadec_ece": 0.0673574552172811,
-      "cadec_auroc": 0.837852832906361,
+      "auroc": 0.8785664453425712,
+      "ece": 0.05210865875198683,
+      "ece_ci_hi": 0.06768643780458504,
+      "cadec_ece": 0.07459504176010784,
+      "cadec_auroc": 0.8388925613900218,
       "inf_j_gross": 6.292532437782496,
       "inf_j_net": 5.946040582242241
     },
@@ -576,11 +576,11 @@
       "name": "Logistic Regression + Isotonic",
       "model": "Logistic Regression",
       "recal": "Isotonic Regression",
-      "auroc": 0.874179056004619,
-      "ece": 0.023962738288273916,
-      "ece_ci_hi": 0.03207474188511666,
-      "cadec_ece": 0.033891195832006414,
-      "cadec_auroc": 0.8361884154999729,
+      "auroc": 0.8762629907621248,
+      "ece": 0.027482843635309968,
+      "ece_ci_hi": 0.03376057892076181,
+      "cadec_ece": 0.038269038669567296,
+      "cadec_auroc": 0.8365800120664542,
       "inf_j_gross": 6.292532437782496,
       "inf_j_net": 5.946040582242241
     },
@@ -588,11 +588,11 @@
       "name": "LightGBM + Uncalibrated",
       "model": "LightGBM",
       "recal": "Uncalibrated",
-      "auroc": 0.8626602795419553,
-      "ece": 0.019362288157810863,
-      "ece_ci_hi": 0.018239520727777982,
-      "cadec_ece": 0.0502016841457386,
-      "cadec_auroc": 0.798915145512004,
+      "auroc": 0.8629264097382602,
+      "ece": 0.03522691581332102,
+      "ece_ci_hi": 0.04726158523709524,
+      "cadec_ece": 0.04700448711620815,
+      "cadec_auroc": 0.7987951849638182,
       "inf_j_gross": 11.371440075897212,
       "inf_j_net": 10.947388702140914
     },
@@ -600,11 +600,11 @@
       "name": "LightGBM + TempScale",
       "model": "LightGBM",
       "recal": "Temperature Scaling",
-      "auroc": 0.8626602795419553,
-      "ece": 0.018749536749659956,
-      "ece_ci_hi": 0.018963682139667946,
-      "cadec_ece": 0.05857202039610342,
-      "cadec_auroc": 0.798915145512004,
+      "auroc": 0.8629264097382602,
+      "ece": 0.03395698574917018,
+      "ece_ci_hi": 0.04666433197979026,
+      "cadec_ece": 0.05794380862303564,
+      "cadec_auroc": 0.7987951849638182,
       "inf_j_gross": 11.371440075897212,
       "inf_j_net": 10.947388702140914
     },
@@ -612,11 +612,11 @@
       "name": "LightGBM + Isotonic",
       "model": "LightGBM",
       "recal": "Isotonic Regression",
-      "auroc": 0.8606079195535028,
-      "ece": 0.025563480849658225,
-      "ece_ci_hi": 0.034137388934117927,
-      "cadec_ece": 0.05099721984922343,
-      "cadec_auroc": 0.7980398347867286,
+      "auroc": 0.861016887990762,
+      "ece": 0.03702539085590931,
+      "ece_ci_hi": 0.057011683346937014,
+      "cadec_ece": 0.055098312695077624,
+      "cadec_auroc": 0.7971537177562028,
       "inf_j_gross": 11.371440075897212,
       "inf_j_net": 10.947388702140914
     },
@@ -697,41 +697,41 @@
     {
       "model_a": "Logistic Regression",
       "model_b": "LightGBM",
-      "delta_auroc": 0.013383191397228655,
-      "ci_lo": 2.6420039373445433e-05,
-      "ci_hi": 0.02672768214547035,
+      "delta_auroc": 0.015640035604311042,
+      "ci_lo": 0.0026436332138233378,
+      "ci_hi": 0.029434449327356595,
       "statistical_tie": false
     },
     {
       "model_a": "Logistic Regression",
       "model_b": "PubMedBERT",
-      "delta_auroc": -0.05159317263279428,
-      "ci_lo": -0.06876893025313147,
-      "ci_hi": -0.034621954502512084,
+      "delta_auroc": -0.04907019822940706,
+      "ci_lo": -0.06592297183215433,
+      "ci_hi": -0.032788603094972876,
       "statistical_tie": false
     },
     {
       "model_a": "Logistic Regression",
       "model_b": "DistilBERT",
-      "delta_auroc": -0.042009478444957615,
-      "ci_lo": -0.05909049600556886,
-      "ci_hi": -0.025193081721649687,
+      "delta_auroc": -0.03948650404157039,
+      "ci_lo": -0.05597468253815148,
+      "ci_hi": -0.022824010903846306,
       "statistical_tie": false
     },
     {
       "model_a": "LightGBM",
       "model_b": "PubMedBERT",
-      "delta_auroc": -0.06497636403002294,
-      "ci_lo": -0.08285560099801899,
-      "ci_hi": -0.0469320709753232,
+      "delta_auroc": -0.0647102338337181,
+      "ci_lo": -0.08327688780887224,
+      "ci_hi": -0.045946037357451674,
       "statistical_tie": false
     },
     {
       "model_a": "LightGBM",
       "model_b": "DistilBERT",
-      "delta_auroc": -0.05539266984218627,
-      "ci_lo": -0.07427975409683059,
-      "ci_hi": -0.036798566836192155,
+      "delta_auroc": -0.055126539645881434,
+      "ci_lo": -0.07369273744927884,
+      "ci_hi": -0.03689968064131494,
       "statistical_tie": false
     },
     {
@@ -781,50 +781,25 @@
     {
       "tau": 0.03,
       "E_gross_J_per_1k": 60.0,
-      "feasible_arms": 2,
-      "feasible_arm_names": [
-        "LightGBM + Uncalibrated",
-        "LightGBM + TempScale"
-      ],
-      "argmax_selected": "LightGBM + Uncalibrated",
-      "bootstrap_tie_selected": "LightGBM + Uncalibrated",
-      "bootstrap_tie_selected_auroc": 0.8626602795419553,
-      "bootstrap_tie_selected_gross_J": 11.371440075897212,
-      "bootstrap_tie_selected_cadec_ece": 0.0502016841457386,
-      "selected_satisfies_tau_on_CADEC": false,
-      "selected_in_cadec_tie_band": false,
-      "tie_info": {
-        "leader": "LightGBM + Uncalibrated",
-        "leader_model": "LightGBM",
-        "tied_models": [
-          "LightGBM"
-        ],
-        "delta_auroc_vs_leader": {
-          "LightGBM": {
-            "delta_auroc": 0.0,
-            "ci_lo": 0.0,
-            "ci_hi": 0.0,
-            "statistical_tie": true,
-            "tost_tie": true,
-            "ood_tie": true,
-            "is_leader": true
-          }
-        },
-        "selected": "LightGBM + Uncalibrated",
-        "selected_energy_gross": 11.371440075897212,
-        "selected_energy_net": 10.947388702140914
-      },
-      "margin_0.01": "LightGBM + Uncalibrated",
-      "margin_0.02": "LightGBM + Uncalibrated",
-      "margin_0.03": "LightGBM + Uncalibrated"
+      "feasible_arms": 0,
+      "feasible_arm_names": [],
+      "argmax_selected": null,
+      "bootstrap_tie_selected": null,
+      "bootstrap_tie_selected_auroc": null,
+      "bootstrap_tie_selected_gross_J": null,
+      "bootstrap_tie_selected_cadec_ece": null,
+      "selected_satisfies_tau_on_CADEC": null,
+      "selected_in_cadec_tie_band": null,
+      "tie_info": {},
+      "margin_0.01": null,
+      "margin_0.02": null,
+      "margin_0.03": null
     },
     {
       "tau": 0.03,
       "E_gross_J_per_1k": 120.0,
-      "feasible_arms": 3,
+      "feasible_arms": 1,
       "feasible_arm_names": [
-        "LightGBM + Uncalibrated",
-        "LightGBM + TempScale",
         "PubMedBERT + Isotonic"
       ],
       "argmax_selected": "PubMedBERT + Isotonic",
@@ -841,15 +816,6 @@
           "PubMedBERT"
         ],
         "delta_auroc_vs_leader": {
-          "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
-            "statistical_tie": false,
-            "ood_tie": false,
-            "final_tie": false,
-            "is_leader": false
-          },
           "PubMedBERT": {
             "delta_auroc": 0.0,
             "ci_lo": 0.0,
@@ -871,10 +837,8 @@
     {
       "tau": 0.03,
       "E_gross_J_per_1k": 150.0,
-      "feasible_arms": 3,
+      "feasible_arms": 1,
       "feasible_arm_names": [
-        "LightGBM + Uncalibrated",
-        "LightGBM + TempScale",
         "PubMedBERT + Isotonic"
       ],
       "argmax_selected": "PubMedBERT + Isotonic",
@@ -891,15 +855,6 @@
           "PubMedBERT"
         ],
         "delta_auroc_vs_leader": {
-          "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
-            "statistical_tie": false,
-            "ood_tie": false,
-            "final_tie": false,
-            "is_leader": false
-          },
           "PubMedBERT": {
             "delta_auroc": 0.0,
             "ci_lo": 0.0,
@@ -921,10 +876,8 @@
     {
       "tau": 0.03,
       "E_gross_J_per_1k": 200.0,
-      "feasible_arms": 3,
+      "feasible_arms": 1,
       "feasible_arm_names": [
-        "LightGBM + Uncalibrated",
-        "LightGBM + TempScale",
         "PubMedBERT + Isotonic"
       ],
       "argmax_selected": "PubMedBERT + Isotonic",
@@ -941,15 +894,6 @@
           "PubMedBERT"
         ],
         "delta_auroc_vs_leader": {
-          "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
-            "statistical_tie": false,
-            "ood_tie": false,
-            "final_tie": false,
-            "is_leader": false
-          },
           "PubMedBERT": {
             "delta_auroc": 0.0,
             "ci_lo": 0.0,
@@ -994,9 +938,9 @@
       ],
       "argmax_selected": "Logistic Regression + Isotonic",
       "bootstrap_tie_selected": "Logistic Regression + Isotonic",
-      "bootstrap_tie_selected_auroc": 0.874179056004619,
+      "bootstrap_tie_selected_auroc": 0.8762629907621248,
       "bootstrap_tie_selected_gross_J": 6.292532437782496,
-      "bootstrap_tie_selected_cadec_ece": 0.033891195832006414,
+      "bootstrap_tie_selected_cadec_ece": 0.038269038669567296,
       "selected_satisfies_tau_on_CADEC": true,
       "selected_in_cadec_tie_band": false,
       "tie_info": {
@@ -1027,12 +971,11 @@
     {
       "tau": 0.05,
       "E_gross_J_per_1k": 60.0,
-      "feasible_arms": 5,
+      "feasible_arms": 4,
       "feasible_arm_names": [
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
         "LightGBM + TempScale",
-        "LightGBM + Isotonic",
         "DistilBERT + Isotonic"
       ],
       "argmax_selected": "DistilBERT + Isotonic",
@@ -1050,18 +993,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.042009478444957615,
-            "ci_lo": 0.025193081721649652,
-            "ci_hi": 0.05909049600556885,
+            "delta_auroc": 0.03948650404157039,
+            "ci_lo": 0.022824010903846302,
+            "ci_hi": 0.05597468253815147,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.05539266984218627,
-            "ci_lo": 0.03679856683619215,
-            "ci_hi": 0.07427975409683057,
+            "delta_auroc": 0.055126539645881434,
+            "ci_lo": 0.036899680641314936,
+            "ci_hi": 0.07369273744927884,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1088,12 +1031,11 @@
     {
       "tau": 0.05,
       "E_gross_J_per_1k": 120.0,
-      "feasible_arms": 6,
+      "feasible_arms": 5,
       "feasible_arm_names": [
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
         "LightGBM + TempScale",
-        "LightGBM + Isotonic",
         "PubMedBERT + Isotonic",
         "DistilBERT + Isotonic"
       ],
@@ -1112,18 +1054,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.05159317263279428,
-            "ci_lo": 0.03462195450251208,
-            "ci_hi": 0.06876893025313145,
+            "delta_auroc": 0.04907019822940706,
+            "ci_lo": 0.032788603094972855,
+            "ci_hi": 0.06592297183215433,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
+            "delta_auroc": 0.0647102338337181,
+            "ci_lo": 0.045946037357451674,
+            "ci_hi": 0.08327688780887224,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1159,12 +1101,11 @@
     {
       "tau": 0.05,
       "E_gross_J_per_1k": 150.0,
-      "feasible_arms": 6,
+      "feasible_arms": 5,
       "feasible_arm_names": [
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
         "LightGBM + TempScale",
-        "LightGBM + Isotonic",
         "PubMedBERT + Isotonic",
         "DistilBERT + Isotonic"
       ],
@@ -1183,18 +1124,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.05159317263279428,
-            "ci_lo": 0.03462195450251208,
-            "ci_hi": 0.06876893025313145,
+            "delta_auroc": 0.04907019822940706,
+            "ci_lo": 0.032788603094972855,
+            "ci_hi": 0.06592297183215433,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
+            "delta_auroc": 0.0647102338337181,
+            "ci_lo": 0.045946037357451674,
+            "ci_hi": 0.08327688780887224,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1230,12 +1171,11 @@
     {
       "tau": 0.05,
       "E_gross_J_per_1k": 200.0,
-      "feasible_arms": 6,
+      "feasible_arms": 5,
       "feasible_arm_names": [
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
         "LightGBM + TempScale",
-        "LightGBM + Isotonic",
         "PubMedBERT + Isotonic",
         "DistilBERT + Isotonic"
       ],
@@ -1254,18 +1194,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.05159317263279428,
-            "ci_lo": 0.03462195450251208,
-            "ci_hi": 0.06876893025313145,
+            "delta_auroc": 0.04907019822940706,
+            "ci_lo": 0.032788603094972855,
+            "ci_hi": 0.06592297183215433,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
+            "delta_auroc": 0.0647102338337181,
+            "ci_lo": 0.045946037357451674,
+            "ci_hi": 0.08327688780887224,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1325,10 +1265,10 @@
       ],
       "argmax_selected": "Logistic Regression + TempScale",
       "bootstrap_tie_selected": "Logistic Regression + TempScale",
-      "bootstrap_tie_selected_auroc": 0.876043470939184,
+      "bootstrap_tie_selected_auroc": 0.8785664453425712,
       "bootstrap_tie_selected_gross_J": 6.292532437782496,
-      "bootstrap_tie_selected_cadec_ece": 0.0673574552172811,
-      "selected_satisfies_tau_on_CADEC": true,
+      "bootstrap_tie_selected_cadec_ece": 0.07459504176010784,
+      "selected_satisfies_tau_on_CADEC": false,
       "selected_in_cadec_tie_band": false,
       "tie_info": {
         "leader": "Logistic Regression + TempScale",
@@ -1383,18 +1323,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.042009478444957615,
-            "ci_lo": 0.025193081721649652,
-            "ci_hi": 0.05909049600556885,
+            "delta_auroc": 0.03948650404157039,
+            "ci_lo": 0.022824010903846302,
+            "ci_hi": 0.05597468253815147,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.05539266984218627,
-            "ci_lo": 0.03679856683619215,
-            "ci_hi": 0.07427975409683057,
+            "delta_auroc": 0.055126539645881434,
+            "ci_lo": 0.036899680641314936,
+            "ci_hi": 0.07369273744927884,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1448,18 +1388,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.05159317263279428,
-            "ci_lo": 0.03462195450251208,
-            "ci_hi": 0.06876893025313145,
+            "delta_auroc": 0.04907019822940706,
+            "ci_lo": 0.032788603094972855,
+            "ci_hi": 0.06592297183215433,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
+            "delta_auroc": 0.0647102338337181,
+            "ci_lo": 0.045946037357451674,
+            "ci_hi": 0.08327688780887224,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1522,18 +1462,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.05159317263279428,
-            "ci_lo": 0.03462195450251208,
-            "ci_hi": 0.06876893025313145,
+            "delta_auroc": 0.04907019822940706,
+            "ci_lo": 0.032788603094972855,
+            "ci_hi": 0.06592297183215433,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
+            "delta_auroc": 0.0647102338337181,
+            "ci_lo": 0.045946037357451674,
+            "ci_hi": 0.08327688780887224,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1596,18 +1536,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.05159317263279428,
-            "ci_lo": 0.03462195450251208,
-            "ci_hi": 0.06876893025313145,
+            "delta_auroc": 0.04907019822940706,
+            "ci_lo": 0.032788603094972855,
+            "ci_hi": 0.06592297183215433,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
+            "delta_auroc": 0.0647102338337181,
+            "ci_lo": 0.045946037357451674,
+            "ci_hi": 0.08327688780887224,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1660,21 +1600,20 @@
     {
       "tau": 0.1,
       "E_gross_J_per_1k": 10.0,
-      "feasible_arms": 3,
+      "feasible_arms": 2,
       "feasible_arm_names": [
-        "Logistic Regression + Uncalibrated",
         "Logistic Regression + TempScale",
         "Logistic Regression + Isotonic"
       ],
-      "argmax_selected": "Logistic Regression + Uncalibrated",
-      "bootstrap_tie_selected": "Logistic Regression + Uncalibrated",
-      "bootstrap_tie_selected_auroc": 0.876043470939184,
+      "argmax_selected": "Logistic Regression + TempScale",
+      "bootstrap_tie_selected": "Logistic Regression + TempScale",
+      "bootstrap_tie_selected_auroc": 0.8785664453425712,
       "bootstrap_tie_selected_gross_J": 6.292532437782496,
-      "bootstrap_tie_selected_cadec_ece": 0.08388958974984002,
+      "bootstrap_tie_selected_cadec_ece": 0.07459504176010784,
       "selected_satisfies_tau_on_CADEC": true,
       "selected_in_cadec_tie_band": false,
       "tie_info": {
-        "leader": "Logistic Regression + Uncalibrated",
+        "leader": "Logistic Regression + TempScale",
         "leader_model": "Logistic Regression",
         "tied_models": [
           "Logistic Regression"
@@ -1690,20 +1629,19 @@
             "is_leader": true
           }
         },
-        "selected": "Logistic Regression + Uncalibrated",
+        "selected": "Logistic Regression + TempScale",
         "selected_energy_gross": 6.292532437782496,
         "selected_energy_net": 5.946040582242241
       },
-      "margin_0.01": "Logistic Regression + Uncalibrated",
-      "margin_0.02": "Logistic Regression + Uncalibrated",
-      "margin_0.03": "Logistic Regression + Uncalibrated"
+      "margin_0.01": "Logistic Regression + TempScale",
+      "margin_0.02": "Logistic Regression + TempScale",
+      "margin_0.03": "Logistic Regression + TempScale"
     },
     {
       "tau": 0.1,
       "E_gross_J_per_1k": 60.0,
-      "feasible_arms": 9,
+      "feasible_arms": 8,
       "feasible_arm_names": [
-        "Logistic Regression + Uncalibrated",
         "Logistic Regression + TempScale",
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
@@ -1728,18 +1666,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.042009478444957615,
-            "ci_lo": 0.025193081721649652,
-            "ci_hi": 0.05909049600556885,
+            "delta_auroc": 0.03948650404157039,
+            "ci_lo": 0.022824010903846302,
+            "ci_hi": 0.05597468253815147,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.05539266984218627,
-            "ci_lo": 0.03679856683619215,
-            "ci_hi": 0.07427975409683057,
+            "delta_auroc": 0.055126539645881434,
+            "ci_lo": 0.036899680641314936,
+            "ci_hi": 0.07369273744927884,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1766,9 +1704,8 @@
     {
       "tau": 0.1,
       "E_gross_J_per_1k": 120.0,
-      "feasible_arms": 12,
+      "feasible_arms": 11,
       "feasible_arm_names": [
-        "Logistic Regression + Uncalibrated",
         "Logistic Regression + TempScale",
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
@@ -1796,18 +1733,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.05159317263279428,
-            "ci_lo": 0.03462195450251208,
-            "ci_hi": 0.06876893025313145,
+            "delta_auroc": 0.04907019822940706,
+            "ci_lo": 0.032788603094972855,
+            "ci_hi": 0.06592297183215433,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
+            "delta_auroc": 0.0647102338337181,
+            "ci_lo": 0.045946037357451674,
+            "ci_hi": 0.08327688780887224,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1843,9 +1780,8 @@
     {
       "tau": 0.1,
       "E_gross_J_per_1k": 150.0,
-      "feasible_arms": 12,
+      "feasible_arms": 11,
       "feasible_arm_names": [
-        "Logistic Regression + Uncalibrated",
         "Logistic Regression + TempScale",
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
@@ -1873,18 +1809,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.05159317263279428,
-            "ci_lo": 0.03462195450251208,
-            "ci_hi": 0.06876893025313145,
+            "delta_auroc": 0.04907019822940706,
+            "ci_lo": 0.032788603094972855,
+            "ci_hi": 0.06592297183215433,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
+            "delta_auroc": 0.0647102338337181,
+            "ci_lo": 0.045946037357451674,
+            "ci_hi": 0.08327688780887224,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1920,9 +1856,8 @@
     {
       "tau": 0.1,
       "E_gross_J_per_1k": 200.0,
-      "feasible_arms": 12,
+      "feasible_arms": 11,
       "feasible_arm_names": [
-        "Logistic Regression + Uncalibrated",
         "Logistic Regression + TempScale",
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
@@ -1950,18 +1885,18 @@
         ],
         "delta_auroc_vs_leader": {
           "Logistic Regression": {
-            "delta_auroc": 0.05159317263279428,
-            "ci_lo": 0.03462195450251208,
-            "ci_hi": 0.06876893025313145,
+            "delta_auroc": 0.04907019822940706,
+            "ci_lo": 0.032788603094972855,
+            "ci_hi": 0.06592297183215433,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
             "is_leader": false
           },
           "LightGBM": {
-            "delta_auroc": 0.06497636403002294,
-            "ci_lo": 0.0469320709753232,
-            "ci_hi": 0.08285560099801895,
+            "delta_auroc": 0.0647102338337181,
+            "ci_lo": 0.045946037357451674,
+            "ci_hi": 0.08327688780887224,
             "statistical_tie": false,
             "ood_tie": false,
             "final_tie": false,
@@ -1999,12 +1934,11 @@
     {
       "tau": 0.05,
       "E_gross_J_per_1k": 60.0,
-      "feasible": 5,
+      "feasible": 4,
       "arms": [
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
         "LightGBM + TempScale",
-        "LightGBM + Isotonic",
         "DistilBERT + Isotonic"
       ]
     },
@@ -2040,9 +1974,8 @@
     {
       "tau": 0.1,
       "E_gross_J_per_1k": 10.0,
-      "feasible": 3,
+      "feasible": 2,
       "arms": [
-        "Logistic Regression + Uncalibrated",
         "Logistic Regression + TempScale",
         "Logistic Regression + Isotonic"
       ]
@@ -2050,9 +1983,8 @@
     {
       "tau": 0.1,
       "E_gross_J_per_1k": 60.0,
-      "feasible": 9,
+      "feasible": 8,
       "arms": [
-        "Logistic Regression + Uncalibrated",
         "Logistic Regression + TempScale",
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
@@ -2066,12 +1998,11 @@
     {
       "tau": 0.05,
       "E_gross_J_per_1k": 120.0,
-      "feasible": 6,
+      "feasible": 5,
       "arms": [
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",
         "LightGBM + TempScale",
-        "LightGBM + Isotonic",
         "PubMedBERT + Isotonic",
         "DistilBERT + Isotonic"
       ]
@@ -2095,9 +2026,8 @@
     {
       "tau": 0.1,
       "E_gross_J_per_1k": 120.0,
-      "feasible": 12,
+      "feasible": 11,
       "arms": [
-        "Logistic Regression + Uncalibrated",
         "Logistic Regression + TempScale",
         "Logistic Regression + Isotonic",
         "LightGBM + Uncalibrated",

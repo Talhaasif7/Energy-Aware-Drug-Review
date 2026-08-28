@@ -243,16 +243,16 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 | **0.10** | 120 | PubMedBERT + Isotonic | **PubMedBERT + Isotonic** | 0.9277 | 60.47 | **12** | ✅ | ✅ |
 
 #### Multi-Seed Metric Stability (Seeds 42, 123, 456)
-*Multi-seed aggregated baseline (3 seeds: 42, 123, 456; test N=1,201; CADEC N=7,823).*
+*Multi-seed aggregated baseline (3 seeds: 42, 123, 456; test N=1,201; CADEC N=7,823; canonical TF-IDF ngrams (1,2), max_features=2500).*
 
 | Model & Recalibration | In-Domain AUROC ($\text{Mean}\pm\text{SD}$) | In-Domain ECE ($\text{Mean}\pm\text{SD}$) | CADEC OOD AUROC ($\text{Mean}\pm\text{SD}$) | CADEC OOD ECE ($\text{Mean}\pm\text{SD}$) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Logistic Regression + Uncalibrated** | $0.8777 \pm 0.0052$ | $0.1231 \pm 0.0098$ | $0.7858 \pm 0.0123$ | $0.0862 \pm 0.0074$ |
-| **Logistic Regression + TempScale** | $0.8777 \pm 0.0052$ | $0.0774 \pm 0.0055$ | $0.7858 \pm 0.0123$ | $0.0860 \pm 0.0127$ |
-| **Logistic Regression + Isotonic** | $0.8744 \pm 0.0059$ | $0.0490 \pm 0.0171$ | $0.7818 \pm 0.0139$ | $0.0590 \pm 0.0134$ |
-| **LightGBM + Uncalibrated** | $0.7912 \pm 0.0029$ | $0.0605 \pm 0.0068$ | $0.6947 \pm 0.0222$ | $0.0740 \pm 0.0148$ |
-| **LightGBM + TempScale** | $0.7912 \pm 0.0029$ | $0.0539 \pm 0.0040$ | $0.6947 \pm 0.0222$ | $0.0480 \pm 0.0134$ |
-| **LightGBM + Isotonic** | $0.7877 \pm 0.0031$ | $0.0647 \pm 0.0070$ | $0.6912 \pm 0.0209$ | $0.0502 \pm 0.0123$ |
+| **Logistic Regression + Uncalibrated** | $0.8880 \pm 0.0068$ | $0.0907 \pm 0.0051$ | $0.8386 \pm 0.0069$ | $0.0939 \pm 0.0018$ |
+| **Logistic Regression + TempScale** | $0.8880 \pm 0.0068$ | $0.0535 \pm 0.0030$ | $0.8386 \pm 0.0069$ | $0.0828 \pm 0.0080$ |
+| **Logistic Regression + Isotonic** | $0.8860 \pm 0.0071$ | $0.0307 \pm 0.0043$ | $0.8367 \pm 0.0075$ | $0.0409 \pm 0.0043$ |
+| **LightGBM + Uncalibrated** | $0.8652 \pm 0.0017$ | $0.0382 \pm 0.0022$ | $0.7902 \pm 0.0204$ | $0.0544 \pm 0.0123$ |
+| **LightGBM + TempScale** | $0.8652 \pm 0.0017$ | $0.0351 \pm 0.0014$ | $0.7902 \pm 0.0204$ | $0.0672 \pm 0.0139$ |
+| **LightGBM + Isotonic** | $0.8630 \pm 0.0015$ | $0.0311 \pm 0.0042$ | $0.7872 \pm 0.0204$ | $0.0584 \pm 0.0094$ |
 | **DistilBERT + Uncalibrated** | $0.9269 \pm 0.0069$ | $0.0662 \pm 0.0034$ | $0.9075 \pm 0.0056$ | $0.0664 \pm 0.0054$ |
 | **PubMedBERT + Uncalibrated** | $0.9282 \pm 0.0031$ | $0.0832 \pm 0.0206$ | $0.9172 \pm 0.0044$ | $0.0794 \pm 0.0303$ |
 

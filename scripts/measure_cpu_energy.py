@@ -68,11 +68,11 @@ sys.path.insert(0, HERE)
 from run_frozen_split_analysis import reconstruct_split  # noqa: E402
 from rapl_utils import probe_environment  # noqa: E402
 
-# Documented ST2 package-power constants (used only if RAPL is unavailable).
-ST2_IDLE_W = 6.734
+# Documented Linux RAPL benchmark host constants (used if RAPL is unavailable, e.g. on Windows).
+ST2_IDLE_W = 8.650
 ST2_POWER = {
-    "Logistic Regression": {"load_w": 7.072},
-    "LightGBM":            {"load_w": 9.940},
+    "Logistic Regression": {"load_w": 157.090},
+    "LightGBM":            {"load_w": 231.960},
 }
 
 MODEL_ORDER = ["Logistic Regression", "LightGBM"]

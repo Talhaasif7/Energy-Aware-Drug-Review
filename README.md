@@ -94,14 +94,14 @@ Power and energy reconcile via the identity $\text{Energy/1k} = (\text{Load Powe
 
 | Platform | Model Arm | Idle (W) | Load (W) | Net (W) | End-to-End Thr (s/s) | Model-Only Thr (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **CPU (Linux RAPL)** | **Logistic Regression** | 8.650 | 157.09 | 148.44 | **54,465** | 6,933,015 | 0.1298 | 0.0062 | 1.38% | **measured RAPL saturated (end-to-end)** |
-| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 8.650 | 231.96 | 223.31 | **34,954** | 182,747 | 0.2844 | 0.0917 | 1.07% | **measured RAPL saturated (end-to-end)** |
-| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | 1,450.0 | 57.04 | 31.34 | 0.33% | **measured saturated run** (3 seeds) |
-| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | 720.0 | 110.24 | 60.47 | 0.60% | **measured saturated run** (3 seeds) |
+| **CPU (Linux RAPL)** | **Logistic Regression** | 8.650 | 157.09 | 148.44 | **54,465** | 6,933,015 | **2.8842** | **2.7254** | 1.38% | **measured RAPL saturated (end-to-end)** |
+| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 8.650 | 231.96 | 223.31 | **34,954** | 182,747 | **6.6361** | **6.3887** | 1.07% | **measured RAPL saturated (end-to-end)** |
+| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | 1,450.0 | **57.04** | **31.34** | 0.33% | **measured saturated run** (3 seeds) |
+| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | 720.0 | **110.24** | **60.47** | 0.60% | **measured saturated run** (3 seeds) |
 
 **GPU energy (trustworthy).** Captured in a single saturated-batch run — a fixed padded batch driven to steady state with 100 ms `nvidia-smi` power sampling and trapezoidal energy integration, so power, throughput and energy are measured *together*. Averaged over 3 seeds with cross-run CV < 1%. The GPU idle power of 30.13 W reflects a **CUDA context warm / model loaded idle state** (vs cold uninitialized GPU idle of 10.22 W).
 
-**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 3 repeats). End-to-end throughput includes raw text TF-IDF vectorization (`TfidfVectorizer.transform`), yielding realistic throughputs of ~54,465 s/s for Logistic Regression and ~34,954 s/s for LightGBM. Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting.
+**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 3 repeats). End-to-end throughput includes raw text TF-IDF vectorization (`TfidfVectorizer.transform`), yielding realistic throughputs of ~54,465 s/s for Logistic Regression (2.8842 J/1k gross) and ~34,954 s/s for LightGBM (6.6361 J/1k gross). Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting.
 
 ### Benchmark Scope
 
@@ -120,11 +120,11 @@ The directly comparable, trustworthy quantity is the absolute per-1,000-sentence
 
 | Comparison | Gross Ratio | Net Ratio |
 | :--- | :---: | :---: |
-| LightGBM ÷ LR | ≈ 2.2× | ≈ 2.3× |
-| DistilBERT ÷ LightGBM | ≈ 156× | ≈ 89× |
-| DistilBERT ÷ LR | ≈ 346× | ≈ 201× |
-| PubMedBERT ÷ LightGBM | ≈ 301× | ≈ 171× |
-| PubMedBERT ÷ LR | ≈ 669× | ≈ 388× |
+| LightGBM ÷ LR | $\approx 2.30\times$ | $\approx 2.34\times$ |
+| DistilBERT ÷ LightGBM | $\approx 8.59\times$ | $\approx 4.90\times$ |
+| DistilBERT ÷ LR | $\approx 19.77\times$ | $\approx 11.50\times$ |
+| PubMedBERT ÷ LightGBM | $\approx 16.61\times$ | $\approx 9.46\times$ |
+| PubMedBERT ÷ LR | $\approx 38.22\times$ | $\approx 22.19\times$ |
 
 > **⚠ These ratios are hardware-dependent.** The GPU per-1k figures are stable across seeds (CV < 1%). CPU RAPL energy has CV ≈ 1.1–1.4% across 3 saturated repeats on the Linux benchmark host. Treat the CPU–GPU ratio as a two-to-three-order-of-magnitude statement; the precise multiplier depends on the deployment host's CPU architecture, core count, and clock speed.
 
@@ -258,8 +258,8 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 | **LightGBM + Uncalibrated** | $0.8617 \pm 0.0014$ | $0.0191 \pm 0.0006$ | $0.7984 \pm 0.0007$ | $0.0506 \pm 0.0006$ |
 | **LightGBM + TempScale** | $0.8617 \pm 0.0014$ | $0.0185 \pm 0.0003$ | $0.7984 \pm 0.0007$ | $0.0588 \pm 0.0003$ |
 | **LightGBM + Isotonic** | $0.8596 \pm 0.0014$ | $0.0253 \pm 0.0004$ | $0.7975 \pm 0.0007$ | $0.0514 \pm 0.0005$ |
-| **DistilBERT + Uncalibrated** | $0.9181 \pm 0.0000$ | $0.0710 \pm 0.0000$ | $0.9042 \pm 0.0000$ | $0.0654 \pm 0.0000$ |
-| **PubMedBERT + Uncalibrated** | $0.9276 \pm 0.0000$ | $0.0807 \pm 0.0000$ | $0.9191 \pm 0.0000$ | $0.0580 \pm 0.0000$ |
+| **DistilBERT + Uncalibrated** | $0.9269 \pm 0.0069$ | $0.0662 \pm 0.0034$ | $0.9075 \pm 0.0056$ | $0.0664 \pm 0.0054$ |
+| **PubMedBERT + Uncalibrated** | $0.9282 \pm 0.0031$ | $0.0832 \pm 0.0206$ | $0.9172 \pm 0.0044$ | $0.0794 \pm 0.0303$ |
 
 #### Statistical Power & Minimum Detectable Difference (MDD)
 | Evaluation Corpus | Sample Size ($N$) | Alpha ($\alpha$) | Target Power ($1-\beta$) | Minimum Detectable $\Delta\text{AUROC}$ |

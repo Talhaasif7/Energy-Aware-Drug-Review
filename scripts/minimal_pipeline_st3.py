@@ -67,8 +67,8 @@ PSYTAR_CSV = os.path.join(DATA_DIR, "01_primary_adr_detection", "dev_psytar",
                           "psytar_harmonised.csv")
 OUT_JSON = os.path.join(RESULTS_DIR, "st3_cpu_energy.json")
 
-# ST2 documented package idle power, for the gross-vs-net note only.
-ST2_IDLE_W = 6.734
+# Documented Linux RAPL benchmark host idle power.
+ST2_IDLE_W = 8.650
 
 
 def make_tracker():

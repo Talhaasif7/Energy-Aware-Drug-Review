@@ -24,16 +24,16 @@
     {
       "tau": 0.03,
       "E(gross J/1k)": 0.5,
-      "Feasible": 2,
-      "Argmax": "LightG",
-      "BootstrapTie": "LightG",
-      "Tie AUROC": "0.8627",
-      "Tie NetJ/1k": "0.0917",
-      "CADEC tau-ok (RQ4)": false,
-      "CADEC Tie-Band": false,
-      "m=0.01": "LightG",
-      "m=0.02": "LightG",
-      "m=0.03": "LightG"
+      "Feasible": 0,
+      "Argmax": "None",
+      "BootstrapTie": "None",
+      "Tie AUROC": "-",
+      "Tie NetJ/1k": "-",
+      "CADEC tau-ok (RQ4)": null,
+      "CADEC Tie-Band": null,
+      "m=0.01": "None",
+      "m=0.02": "None",
+      "m=0.03": "None"
     },
     {
       "tau": 0.05,
@@ -52,11 +52,11 @@
     {
       "tau": 0.07,
       "E(gross J/1k)": 10.0,
-      "Feasible": 5,
+      "Feasible": 2,
       "Argmax": "Logist+Temp",
       "BootstrapTie": "Logist+Temp",
       "Tie AUROC": "0.8760",
-      "Tie NetJ/1k": "0.0062",
+      "Tie NetJ/1k": "4.8760",
       "CADEC tau-ok (RQ4)": true,
       "CADEC Tie-Band": false,
       "m=0.01": "Logist+Temp",
@@ -80,25 +80,25 @@
     {
       "tau": 0.1,
       "E(gross J/1k)": 0.5,
-      "Feasible": 6,
-      "Argmax": "Logist",
-      "BootstrapTie": "Logist",
-      "Tie AUROC": "0.8760",
-      "Tie NetJ/1k": "0.0062",
-      "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
-      "m=0.01": "Logist",
-      "m=0.02": "Logist",
-      "m=0.03": "Logist"
+      "Feasible": 0,
+      "Argmax": "None",
+      "BootstrapTie": "None",
+      "Tie AUROC": "-",
+      "Tie NetJ/1k": "-",
+      "CADEC tau-ok (RQ4)": null,
+      "CADEC Tie-Band": null,
+      "m=0.01": "None",
+      "m=0.02": "None",
+      "m=0.03": "None"
     },
     {
       "tau": 0.1,
       "E(gross J/1k)": 10.0,
-      "Feasible": 6,
+      "Feasible": 3,
       "Argmax": "Logist",
       "BootstrapTie": "Logist",
       "Tie AUROC": "0.8760",
-      "Tie NetJ/1k": "0.0062",
+      "Tie NetJ/1k": "4.8760",
       "CADEC tau-ok (RQ4)": true,
       "CADEC Tie-Band": false,
       "m=0.01": "Logist",
@@ -191,12 +191,12 @@
     }
   ],
   "feasible_counts": {
-    "tau=0.03_E=0.5": 2,
+    "tau=0.03_E=0.5": 0,
     "tau=0.05_E=60.0": 5,
-    "tau=0.07_E=10.0": 5,
+    "tau=0.07_E=10.0": 2,
     "tau=0.07_E=60.0": 7,
-    "tau=0.1_E=0.5": 6,
-    "tau=0.1_E=10.0": 6,
+    "tau=0.1_E=0.5": 0,
+    "tau=0.1_E=10.0": 3,
     "tau=0.1_E=60.0": 9,
     "tau=0.05_E=120.0": 6,
     "tau=0.07_E=120.0": 9,
@@ -206,12 +206,12 @@
   },
   "model_energy": {
     "Logistic Regression": {
-      "net": 0.006205828044017228,
-      "gross": 0.12984501753636044
+      "net": 4.875964393563265,
+      "gross": 5.160100017413456
     },
     "LightGBM": {
-      "net": 0.09172181242780293,
-      "gross": 0.28437767171938905
+      "net": 10.057648668897679,
+      "gross": 10.447235615232215
     },
     "DistilBERT": {
       "net": 31.335613656246846,

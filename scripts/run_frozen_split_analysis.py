@@ -715,28 +715,28 @@ def main():
                     "cadec_auroc": a_cad, "cadec_ece": e_cad
                 })
 
-        # Transformer arms
-        for model in ("DistilBERT", "PubMedBERT"):
-            stem = "efficient_transformer" if model == "DistilBERT" else "biomedical_transformer"
-            npz_p = os.path.join(RESULTS_DIR, f"{stem}_seed{seed}_predictions.npz")
-            if os.path.exists(npz_p):
-                npz_s = np.load(npz_p, allow_pickle=True)
-                t_arms = transformer_arms_from_npz(npz_s)
-                y_tst_tf = npz_s["y_test"]
-                y_cad_tf = npz_s["y_cadec"]
-                for recal in RECAL_ORDER:
-                    if recal in t_arms["test_p1"]:
-                        name = f"{model} + {RECAL_SHORT[recal]}"
-                        p_tst = np.asarray(t_arms["test_p1"][recal])
-                        p_cad = np.asarray(t_arms["cadec_p1"][recal])
-                        a_tst = float(roc_auc_score(y_tst_tf, p_tst))
-                        e_tst = float(compute_ece_adaptive(y_tst_tf, p_tst))
-                        a_cad = float(roc_auc_score(y_cad_tf, p_cad))
-                        e_cad = float(compute_ece_adaptive(y_cad_tf, p_cad))
-                        multi_seed_records.setdefault(name, []).append({
-                            "seed": seed, "auroc": a_tst, "ece": e_tst,
-                            "cadec_auroc": a_cad, "cadec_ece": e_cad
-                        })
+        # Transformer arms (from colab_transformer_gpu_results.json for genuine 3-seed evaluation)
+        gpu_json_path = os.path.join(RESULTS_DIR, "colab_transformer_gpu_results.json")
+        if os.path.exists(gpu_json_path):
+            with open(gpu_json_path, "r", encoding="utf-8") as f:
+                gpu_res = json.load(f).get("results", {})
+            for model, display in (("Efficient Transformer", "DistilBERT"), ("Biomedical Transformer", "PubMedBERT")):
+                entries = [e for e in gpu_res.get(model, []) if e.get("seed") == seed]
+                if entries:
+                    eval_map = entries[0].get("eval_results", {})
+                    for recal in RECAL_ORDER:
+                        rec_info = eval_map.get(recal, {})
+                        if rec_info:
+                            name = f"{display} + {RECAL_SHORT[recal]}"
+                            p_m = rec_info.get("psytar", {})
+                            c_m = rec_info.get("cadec", {})
+                            multi_seed_records.setdefault(name, []).append({
+                                "seed": seed,
+                                "auroc": float(p_m.get("AUROC", 0.0)),
+                                "ece": float(p_m.get("ECE_adaptive", 0.0)),
+                                "cadec_auroc": float(c_m.get("AUROC", 0.0)),
+                                "cadec_ece": float(c_m.get("ECE_adaptive", 0.0)),
+                            })
 
     multi_seed_summary = {}
     for name, recs in multi_seed_records.items():

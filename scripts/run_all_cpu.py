@@ -162,11 +162,17 @@ def main():
     else:
         run_step("budget_and_subgroup_st6_st7.py", critical=False)
 
+    # ---- Step 5: Render README (CRITICAL) ----
+    if not run_step("render_readme.py", critical=True):
+        log("\n[FATAL] README rendering failed.")
+        sys.exit(1)
+
     # ---- final summary ----
     banner("DONE — artifacts to send back")
     produced = [
         "frozen_split_reconciled.json",
         "st8_regime_reconciled.json",
+        "st6_st7_reconciled.json",
         "cpu_energy_measured.json",
         "colab_transformer_gpu_results.json",
         "cpu_arms_seed42_predictions.npz",

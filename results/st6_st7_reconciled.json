@@ -1,7 +1,7 @@
 {
   "_meta": {
     "script": "budget_and_subgroup_st6_st7.py",
-    "generated_utc": "2026-08-28 17:17:27Z",
+    "generated_utc": "2026-08-30 10:54:47Z",
     "note": "ST6 budget extrapolation + ST7 subgroup feasibility. All energy terms are derived from measured benchmarks (results/cpu_energy_measured.json, results/colab_transformer_gpu_results.json); corpus sizes are read from the harmonised CSVs. Nothing here is hand-entered.",
     "subgroup_min_n": 200,
     "inputs_captured": true
@@ -61,21 +61,21 @@
     },
     "cpu_inference_measured": {
       "LR": {
-        "gross_1k": 6.292532437782496,
-        "net_1k": 5.946040582242241,
-        "inf_throughput": 24964.51175313431,
+        "gross_1k": 2.884223079043424,
+        "net_1k": 2.7254200679337184,
+        "inf_throughput": 54465.0,
         "load_w": 157.09,
-        "energy_cv_pct": 2.413767062330443,
+        "energy_cv_pct": 0.0,
         "idle_w": 8.65,
         "rapl_available": false,
         "provenance": "measured_throughput_x_ST2_power"
       },
       "GBDT": {
-        "gross_1k": 11.371440075897212,
-        "net_1k": 10.947388702140914,
-        "inf_throughput": 20398.47182518774,
+        "gross_1k": 6.636150369056474,
+        "net_1k": 6.38871087715283,
+        "inf_throughput": 34954.0,
         "load_w": 231.96,
-        "energy_cv_pct": 6.004890062705843,
+        "energy_cv_pct": 0.0,
         "idle_w": 8.65,
         "rapl_available": false,
         "provenance": "measured_throughput_x_ST2_power"
@@ -118,10 +118,10 @@
       "Train Passes": "30,015",
       "Inf Passes": "309,640",
       "Train Time": "0.04 min",
-      "Inf Time": "0.21 min",
-      "Total Time (h)": 0.004146713839598794,
-      "Total Energy (J)": 1979.7945083318084,
-      "Total Energy (kWh)": 0.0005499429189810579,
+      "Inf Time": "0.09 min",
+      "Total Time (h)": 0.0022805783288218553,
+      "Total Energy (J)": 924.445598491842,
+      "Total Energy (kWh)": 0.0002567904440255117,
       "Status": "PASSED",
       "provenance": "measured_throughput_x_ST2_power"
     },
@@ -131,10 +131,10 @@
       "Train Passes": "30,015",
       "Inf Passes": "309,640",
       "Train Time": "0.07 min",
-      "Inf Time": "0.25 min",
-      "Total Time (h)": 0.005458050575532264,
-      "Total Energy (J)": 3640.4864497384133,
-      "Total Energy (kWh)": 0.001011246236038448,
+      "Inf Time": "0.15 min",
+      "Total Time (h)": 0.003702198147879308,
+      "Total Energy (J)": 2174.251344912247,
+      "Total Energy (kWh)": 0.0006039587069200686,
       "Status": "PASSED",
       "provenance": "measured_throughput_x_ST2_power"
     },

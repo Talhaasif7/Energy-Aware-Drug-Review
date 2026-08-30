@@ -84,8 +84,17 @@ def main():
     print(f"\nLabel Schema: PsyTAR={psy_labels}, CADEC={cad_labels} → "
           f"{'PARITY OK' if psy_labels == {0,1} and cad_labels == {0,1} else 'MISMATCH'}")
 
-    # TF-IDF fitted on PsyTAR train only
-    vectorizer = TfidfVectorizer(max_features=1000)
+    CONFIG_PATH = os.path.join(ROOT, "configs", "default_config.json")
+    tfidf_cfg = {"ngram_range": (1, 2), "max_features": 2500}
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        cm = cfg.get("primary_adr_detection", {}).get("classical_models", {}).get("tfidf", {})
+        tfidf_cfg = {
+            "ngram_range": tuple(cm.get("ngram_range", [1, 2])),
+            "max_features": cm.get("max_features", 2500),
+        }
+    vectorizer = TfidfVectorizer(**tfidf_cfg)
     X_train = vectorizer.fit_transform(train_df['text']).toarray()
     X_calib = vectorizer.transform(calib_df['text']).toarray()
     X_psy_test = vectorizer.transform(psy_test_df['text']).toarray()

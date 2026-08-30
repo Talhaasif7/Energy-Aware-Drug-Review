@@ -60,20 +60,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
 RESULTS_DIR = os.path.join(ROOT, "results")
 DATA_DIR = os.path.join(ROOT, "data")
+CONFIGS_DIR = os.path.join(ROOT, "configs")
+CONFIG_PATH = os.path.join(CONFIGS_DIR, "default_config.json")
 PSYTAR_CSV = os.path.join(DATA_DIR, "01_primary_adr_detection", "dev_psytar",
                           "psytar_harmonised.csv")
 
 sys.path.insert(0, HERE)
 # Reuse the EXACT split logic used to compute the metrics (no drift).
 from run_frozen_split_analysis import reconstruct_split  # noqa: E402
-from rapl_utils import probe_environment  # noqa: E402
-
-# Documented Linux RAPL benchmark host constants (used if RAPL is unavailable, e.g. on Windows).
-ST2_IDLE_W = 8.650
-ST2_POWER = {
-    "Logistic Regression": {"load_w": 157.090, "throughput_sps": 54465.0, "gross_j_1k": 2.884223079043424, "net_j_1k": 2.7254200679337184},
-    "LightGBM":            {"load_w": 231.960, "throughput_sps": 34954.0, "gross_j_1k": 6.636150369056474, "net_j_1k": 6.38871087715283},
-}
+from rapl_utils import RAPLReader, probe_environment  # noqa: E402
 
 MODEL_ORDER = ["Logistic Regression", "LightGBM"]
 
@@ -82,39 +77,17 @@ def log(msg=""):
     print(msg, flush=True)
 
 
-# ---------------------------------------------------------------------------
-# Intel RAPL package energy reader (Linux only)
-# ---------------------------------------------------------------------------
-class RAPLReader:
-    """Sums energy over all top-level Intel RAPL package domains, with
-    wraparound handling. Unavailable (and .ok == False) on non-Linux hosts or
-    when sysfs is root-only."""
-
-    def __init__(self):
-        self.domains = []          # list of (energy_uj_path, max_range_uj)
-        self.domain_names = []     # sysfs basenames for audit trail
-        self.ok = False
-        base = "/sys/class/powercap"
-        try:
-            pkgs = sorted(glob.glob(os.path.join(base, "intel-rapl:*")))
-            # keep only top-level package domains (intel-rapl:N), not subzones
-            pkgs = [p for p in pkgs
-                    if os.path.basename(p).count(":") == 1]
-            for p in pkgs:
-                epath = os.path.join(p, "energy_uj")
-                mpath = os.path.join(p, "max_energy_range_uj")
-                with open(epath, "r") as fh:
-                    fh.read()  # probe readability -> raises if root-only
-                try:
-                    with open(mpath, "r") as fh:
-                        maxr = int(fh.read().strip())
-                except Exception:
-                    maxr = 0
-                self.domains.append((epath, maxr))
-                self.domain_names.append(os.path.basename(p))
-            self.ok = len(self.domains) > 0
-        except Exception:
-            self.ok = False
+def load_tfidf_config():
+    """Load canonical TF-IDF configuration from configs/default_config.json."""
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        cm = cfg.get("primary_adr_detection", {}).get("classical_models", {}).get("tfidf", {})
+        return {
+            "ngram_range": tuple(cm.get("ngram_range", [1, 2])),
+            "max_features": cm.get("max_features", 2500),
+        }
+    return {"ngram_range": (1, 2), "max_features": 2500}
 
 
 def _read_domains(domains):
@@ -249,16 +222,18 @@ def main():
     log("=" * 88)
 
     rapl = RAPLReader()
-    if rapl.ok:
-        log(f"[rapl] Intel RAPL available: {len(rapl.domains)} package domain(s) "
-            f"{rapl.domain_names}. Energy will be measured live.")
-        log(f"       NOTE: Only top-level package domains (intel-rapl:N) are summed.")
-        log(f"       Subzones (core, uncore, dram) are NOT included — they are")
-        log(f"       components of the package total and would double-count.")
-    else:
-        log("[rapl] Intel RAPL NOT readable on this host (non-Linux or root-only "
-            "sysfs). Throughput will be measured live; package power falls back to "
-            "documented ST2 constants (clearly tagged in provenance).")
+    if not rapl.ok:
+        raise SystemExit(
+            f"\n[FATAL] Intel RAPL is unavailable ({rapl.reason}).\n"
+            "        Refusing to emit energy numbers from a hardcoded constant.\n"
+            "        Run on bare-metal Linux with readable powercap counters (/sys/class/powercap/intel-rapl:*)."
+        )
+
+    log(f"[rapl] Intel RAPL available: {len(rapl.domains)} package domain(s) "
+        f"{rapl.domain_names}. Energy will be measured live.")
+    log(f"       NOTE: Only top-level package domains (intel-rapl:N) are summed.")
+    log(f"       Subzones (core, uncore, dram) are NOT included — they are")
+    log(f"       components of the package total and would double-count.")
 
     # ---- host hardware disclosure ----
     env = probe_environment()
@@ -273,12 +248,13 @@ def main():
     if not os.path.exists(PSYTAR_CSV):
         log(f"[FATAL] Missing {PSYTAR_CSV}"); return
     train_df, calib_df, test_df = reconstruct_split(PSYTAR_CSV, args.seed)
-    vec = TfidfVectorizer(max_features=1000)
+    tfidf_cfg = load_tfidf_config()
+    vec = TfidfVectorizer(**tfidf_cfg)
     X_train = vec.fit_transform(list(train_df["text"]))
     y_train = train_df["label"].values
     test_texts = list(test_df["text"])
     log(f"[data] train={X_train.shape} test={len(test_texts)} texts "
-        f"(features={X_train.shape[1]})")
+        f"(features={X_train.shape[1]}, config={tfidf_cfg})")
 
     # Tile the raw test texts into a large steady-state batch for end-to-end vectorization.
     reps = max(1, int(np.ceil(args.bench_rows / max(1, len(test_texts)))))
@@ -297,12 +273,10 @@ def main():
 
     # ---- idle power (once, shared) ----
     idle_w = measure_idle_power(rapl, args.idle_s)
-    if idle_w is not None:
-        log(f"[idle] package idle power = {idle_w:.3f} W "
-            f"(RAPL, {args.idle_s:.0f}s window)")
-    else:
-        idle_w = ST2_IDLE_W
-        log(f"[idle] using documented ST2 idle power = {idle_w:.3f} W")
+    if idle_w is None:
+        raise SystemExit("[FATAL] Could not measure idle power via RAPL counters.")
+    log(f"[idle] package idle power = {idle_w:.3f} W "
+        f"(RAPL, {args.idle_s:.0f}s window)")
 
     # ---- per-model saturated benchmark, `repeats` times ----
     results = {}
@@ -321,12 +295,8 @@ def main():
             res = saturated_infer(clf, vec, raw_texts_bench, rapl, args.warmup_s, args.measure_s)
             thr = res["throughput_sps"]
             thr_list.append(thr)
-            if rapl.ok:
-                gross = res["gross_j_1k_integrated"]
-                load_w = res["load_w"]
-            else:
-                load_w = ST2_POWER[name]["load_w"]
-                gross = load_w / thr * 1000.0
+            gross = res["gross_j_1k_integrated"]
+            load_w = res["load_w"]
             gross_list.append(gross)
             load_list.append(load_w)
 
@@ -334,12 +304,8 @@ def main():
             res_mo = model_only_infer(clf, X_bench_vec, rapl, args.warmup_s, args.measure_s)
             mo_thr = res_mo["throughput_sps"]
             mo_thr_list.append(mo_thr)
-            if rapl.ok:
-                mo_gross = res_mo["gross_j_1k_integrated"]
-                mo_load_w = res_mo["load_w"]
-            else:
-                mo_load_w = ST2_POWER[name]["load_w"]
-                mo_gross = mo_load_w / mo_thr * 1000.0
+            mo_gross = res_mo["gross_j_1k_integrated"]
+            mo_load_w = res_mo["load_w"]
             mo_gross_list.append(mo_gross)
             mo_load_list.append(mo_load_w)
 
@@ -347,22 +313,13 @@ def main():
                 f"--- Model-Only thr={mo_thr:,.0f} s/s | gross={mo_gross:.4f} J/1k")
 
         # Record median across repeats
-        if rapl.ok:
-            gross_val = float(np.median(gross_list))
-            thr_val = float(np.median(thr_list))
-            load_val = float(np.median(load_list))
-            cv = float(np.std(gross_list, ddof=0) / gross_val * 100.0) if gross_val else 0.0
-            net_power = max(0.0, load_val - idle_w)
-            net_gross_ratio = (net_power / load_val) if load_val else 0.0
-            net_1k = gross_val * net_gross_ratio
-        else:
-            bm = ST2_POWER[name]
-            gross_val = bm["gross_j_1k"]
-            net_1k = bm["net_j_1k"]
-            thr_val = bm["throughput_sps"]
-            load_val = bm["load_w"]
-            cv = 0.0
-            net_power = load_val - idle_w
+        gross_val = float(np.median(gross_list))
+        thr_val = float(np.median(thr_list))
+        load_val = float(np.median(load_list))
+        cv = float(np.std(gross_list, ddof=0) / gross_val * 100.0) if gross_val else 0.0
+        net_power = max(0.0, load_val - idle_w)
+        net_gross_ratio = (net_power / load_val) if load_val else 0.0
+        net_1k = gross_val * net_gross_ratio
 
         mo_gross_val = float(np.median(mo_gross_list))
         mo_thr_val = float(np.median(mo_thr_list))
@@ -370,8 +327,6 @@ def main():
         mo_net_power = max(0.0, mo_load_val - idle_w)
         mo_net_1k = mo_gross_val * ((mo_net_power / mo_load_val) if mo_load_val else 0.0)
 
-        provenance = ("measured_rapl_saturated" if rapl.ok
-                      else "measured_throughput_x_ST2_power")
         results[name] = {
             "inf_j_gross": gross_val,
             "inf_j_net": net_1k,
@@ -398,11 +353,10 @@ def main():
             },
             "n_repeats": args.repeats,
             "measure_window_s": args.measure_s,
-            "method": ("rapl_integrated_saturated_end2end" if rapl.ok
-                       else "throughput_only_saturated_end2end"),
+            "method": "rapl_integrated_saturated_end2end",
             "includes_tfidf_vectorization": True,
             "summary_stat": "median",
-            "provenance": provenance,
+            "provenance": "measured_rapl_saturated",
         }
         log(f"  -> median gross={gross_val:.4f} J/1k | net={net_1k:.4f} J/1k | "
             f"throughput={thr_val:,.0f} s/s | CV={cv:.2f}%")
@@ -412,14 +366,14 @@ def main():
     payload = {
         "_meta": {
             "generated_by": "measure_cpu_energy.py",
-            "rapl_available": bool(rapl.ok),
+            "rapl_available": True,
             "rapl_domains": len(rapl.domains),
-            "rapl_domain_names": rapl.domain_names if rapl.ok else [],
+            "rapl_domain_names": rapl.domain_names,
             "rapl_note": ("Only top-level package domains (intel-rapl:N) are summed. "
                          "Subzones (core, uncore, dram = intel-rapl:N:M) are components "
                          "of the package total and are excluded to avoid double-counting."),
             "idle_power_w": float(idle_w),
-            "idle_source": "rapl" if rapl.ok else "ST2_constant",
+            "idle_source": "rapl",
             "bench_rows": len(raw_texts_bench),
             "seed": args.seed,
             "benchmark_scope": "end_to_end_tfidf_plus_predict",
@@ -433,6 +387,10 @@ def main():
                 "socket_count": env.get("socket_count"),
                 "tdp_watts": env.get("tdp_watts"),
                 "platform": env.get("platform", "unknown"),
+                "os": env.get("os"),
+                "os_release": env.get("os_release"),
+                "is_wsl": env.get("is_wsl"),
+                "is_container": env.get("is_container"),
             },
         },
         **results,
@@ -440,8 +398,7 @@ def main():
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
     log(f"\n[artifact] wrote {out_path}")
-    log("Provenance: " + ("live RAPL energy" if rapl.ok
-        else "live throughput x documented ST2 power"))
+    log("Provenance: live RAPL energy (measured_rapl_saturated)")
     log("=" * 88)
 
 

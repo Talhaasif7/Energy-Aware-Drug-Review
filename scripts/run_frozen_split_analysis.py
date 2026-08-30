@@ -112,14 +112,35 @@ MARGINS = [0.01, 0.02, 0.03]
 N_BOOTSTRAP = 2000
 BOOT_SEED = 42
 
+CONFIGS_DIR = os.path.join(ROOT, "configs")
+CONFIG_PATH = os.path.join(CONFIGS_DIR, "default_config.json")
+
+
+def load_tfidf_config():
+    """Load canonical TF-IDF configuration from configs/default_config.json."""
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        cm = cfg.get("primary_adr_detection", {}).get("classical_models", {}).get("tfidf", {})
+        return {
+            "ngram_range": tuple(cm.get("ngram_range", [1, 2])),
+            "max_features": cm.get("max_features", 2500),
+        }
+    return {"ngram_range": (1, 2), "max_features": 2500}
+
+
+_TFIDF_CFG = load_tfidf_config()
+
 MODEL_HYPERPARAMETERS = {
     "Logistic Regression": {
         "solver": "lbfgs", "max_iter": 1000, "C": 1.0, "penalty": "l2",
-        "vectorizer": "TfidfVectorizer(max_features=1000)", "random_state": 42
+        "vectorizer": f"TfidfVectorizer(ngram_range={_TFIDF_CFG['ngram_range']}, max_features={_TFIDF_CFG['max_features']})",
+        "random_state": 42
     },
     "LightGBM": {
         "n_estimators": 100, "learning_rate": 0.05, "num_leaves": 31,
-        "vectorizer": "TfidfVectorizer(max_features=1000)", "random_state": 42,
+        "vectorizer": f"TfidfVectorizer(ngram_range={_TFIDF_CFG['ngram_range']}, max_features={_TFIDF_CFG['max_features']})",
+        "random_state": 42,
         "n_jobs": -1
     },
     "DistilBERT": {
@@ -203,10 +224,6 @@ def load_gpu_energy(json_path):
 
 def load_cpu_energy(json_path):
     out = dict(CPU_ENERGY_FALLBACK)
-    if not os.path.exists(json_path):
-        v2_path = os.path.join(RESULTS_DIR, "cpu_energy_measured_v2.json")
-        if os.path.exists(v2_path):
-            json_path = v2_path
     if os.path.exists(json_path):
         with open(json_path, "r", encoding="utf-8") as f:
             meas = json.load(f)
@@ -283,7 +300,8 @@ def train_classical_arms(train_texts, y_train, calib_texts, y_calib,
                          test_texts, y_test, cadec_texts, y_cadec):
     """Fit LR + LightGBM on the frozen train split; produce uncal/temp/iso probs
     on PsyTAR test and full CADEC. Returns nested dict of p1 arrays + fitted T."""
-    vec = TfidfVectorizer(ngram_range=(1, 2), max_features=2500)
+    tfidf_cfg = load_tfidf_config()
+    vec = TfidfVectorizer(**tfidf_cfg)
     X_train = vec.fit_transform(train_texts).toarray()
     X_calib = vec.transform(calib_texts).toarray()
     X_test = vec.transform(test_texts).toarray()

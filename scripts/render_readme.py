@@ -173,18 +173,32 @@ def generate_readme():
     lines.append("└── requirements.txt                        # Python dependencies")
     lines.append("```\n")
 
+    # Dynamic CPU values from cpu_energy
+    cpu_idle = cpu_energy.get("Logistic Regression", {}).get("idle_w", cpu_energy.get("_meta", {}).get("idle_power_w", 14.005))
+    lr_load = cpu_energy.get("Logistic Regression", {}).get("load_w", 64.16)
+    lr_net_w = cpu_energy.get("Logistic Regression", {}).get("net_power_w", 50.16)
+    lr_thr = cpu_energy.get("Logistic Regression", {}).get("throughput_sps", 78151.3)
+    lr_mo_thr = cpu_energy.get("Logistic Regression", {}).get("scopes", {}).get("model_only", {}).get("throughput_sps", 28722972.0)
+    lr_cv = cpu_energy.get("Logistic Regression", {}).get("energy_cv_pct", 4.57)
+
+    gbdt_load = cpu_energy.get("LightGBM", {}).get("load_w", 82.78)
+    gbdt_net_w = cpu_energy.get("LightGBM", {}).get("net_power_w", 68.77)
+    gbdt_thr = cpu_energy.get("LightGBM", {}).get("throughput_sps", 71845.0)
+    gbdt_mo_thr = cpu_energy.get("LightGBM", {}).get("scopes", {}).get("model_only", {}).get("throughput_sps", 771962.8)
+    gbdt_cv = cpu_energy.get("LightGBM", {}).get("energy_cv_pct", 14.23)
+
     lines.append("---\n")
     lines.append("## ⚡ Unified Hardware Power & Energy Accounting\n")
     lines.append(r"Power and energy reconcile via the identity $\text{Energy/1k} = (\text{Load Power W} / \text{Throughput s/s}) \times 1000$; **net** subtracts platform idle power." + "\n")
     lines.append("| Platform | Model Arm | Idle (W) | Load (W) | Net (W) | End-to-End Thr (s/s) | Model-Only Thr (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |")
     lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |")
-    lines.append(f"| **CPU (Linux RAPL)** | **Logistic Regression** | 8.650 | 157.09 | 148.44 | **54,465** | 6,933,015 | **{lr_gross:.4f}** | **{lr_net:.4f}** | 1.38% | **measured RAPL saturated (end-to-end)** |")
-    lines.append(f"| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 8.650 | 231.96 | 223.31 | **34,954** | 182,747 | **{gbdt_gross:.4f}** | **{gbdt_net:.4f}** | 1.07% | **measured RAPL saturated (end-to-end)** |")
+    lines.append(f"| **CPU (Linux RAPL)** | **Logistic Regression** | {cpu_idle:.3f} | {lr_load:.2f} | {lr_net_w:.2f} | **{lr_thr:,.0f}** | {lr_mo_thr:,.0f} | **{lr_gross:.4f}** | **{lr_net:.4f}** | {lr_cv:.2f}% | **measured RAPL saturated (end-to-end)** |")
+    lines.append(f"| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | {cpu_idle:.3f} | {gbdt_load:.2f} | {gbdt_net_w:.2f} | **{gbdt_thr:,.0f}** | {gbdt_mo_thr:,.0f} | **{gbdt_gross:.4f}** | **{gbdt_net:.4f}** | {gbdt_cv:.2f}% | **measured RAPL saturated (end-to-end)** |")
     lines.append(f"| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | 1,450.0 | **{distil_gross:.2f}** | **{distil_net:.2f}** | 0.33% | **measured saturated run** (3 seeds) |")
     lines.append(f"| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | 720.0 | **{pubmed_gross:.2f}** | **{pubmed_net:.2f}** | 0.60% | **measured saturated run** (3 seeds) |\n")
 
     lines.append("**GPU energy (trustworthy).** Captured in a single saturated-batch run — a fixed padded batch driven to steady state with 100 ms `nvidia-smi` power sampling and trapezoidal energy integration, so power, throughput and energy are measured *together*. Averaged over 3 seeds with cross-run CV < 1%. The GPU idle power of 30.13 W reflects a **CUDA context warm / model loaded idle state** (vs cold uninitialized GPU idle of 10.22 W).\n")
-    lines.append("**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 3 repeats). End-to-end throughput includes raw text TF-IDF vectorization (`TfidfVectorizer.transform`), yielding realistic throughputs of ~54,465 s/s for Logistic Regression (2.8842 J/1k gross) and ~34,954 s/s for LightGBM (6.6361 J/1k gross). Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting.\n")
+    lines.append(f"**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 5 repeats on {cpu_energy.get('_meta', {}).get('host', {}).get('cpu_model', 'Intel Core i5-8500 @ 3.00GHz')}). End-to-end throughput includes raw text TF-IDF vectorization (`TfidfVectorizer.transform`), yielding realistic throughputs of ~{lr_thr:,.0f} s/s for Logistic Regression ({lr_gross:.4f} J/1k gross) and ~{gbdt_thr:,.0f} s/s for LightGBM ({gbdt_gross:.4f} J/1k gross). Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting.\n")
 
     lines.append("### Benchmark Scope\n")
     lines.append("Both CPU and GPU benchmarks measure **end-to-end inference** — the complete pipeline from raw text to probability output:\n")

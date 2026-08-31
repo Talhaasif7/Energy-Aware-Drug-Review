@@ -12,8 +12,8 @@
     "cadec_csv_sha16": "87f88871fa9b07c7",
     "druglib_csv_sha16": "960d3f25de715bdb",
     "cpu_energy_provenance": {
-      "Logistic Regression": "measured_throughput_x_ST2_power",
-      "LightGBM": "measured_throughput_x_ST2_power"
+      "Logistic Regression": "measured_rapl_saturated",
+      "LightGBM": "measured_rapl_saturated"
     },
     "gpu_energy_provenance": {
       "DistilBERT": "saturated_run",
@@ -56,7 +56,7 @@
       "Argmax": "Logist+Temp",
       "BootstrapTie": "Logist+Temp",
       "Tie AUROC": "0.8786",
-      "Tie NetJ/1k": "2.73",
+      "Tie NetJ/1k": "0.64",
       "CADEC tau-ok (RQ4)": false,
       "CADEC Tie-Band": false,
       "m=0.01": "Logist+Temp",
@@ -98,7 +98,7 @@
       "Argmax": "Logist+Temp",
       "BootstrapTie": "Logist+Temp",
       "Tie AUROC": "0.8786",
-      "Tie NetJ/1k": "2.73",
+      "Tie NetJ/1k": "0.64",
       "CADEC tau-ok (RQ4)": true,
       "CADEC Tie-Band": false,
       "m=0.01": "Logist+Temp",
@@ -206,12 +206,12 @@
   },
   "model_energy": {
     "Logistic Regression": {
-      "net": 2.7254200679337184,
-      "gross": 2.884223079043424
+      "net": 0.6409544850839412,
+      "gross": 0.819924528223139
     },
     "LightGBM": {
-      "net": 6.38871087715283,
-      "gross": 6.636150369056474
+      "net": 0.9570799741182608,
+      "gross": 1.1519777797602526
     },
     "DistilBERT": {
       "net": 31.335613656246846,

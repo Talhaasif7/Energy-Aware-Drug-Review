@@ -1,7 +1,7 @@
 {
   "_meta": {
     "script": "budget_and_subgroup_st6_st7.py",
-    "generated_utc": "2026-08-30 10:54:47Z",
+    "generated_utc": "2026-08-31 06:45:12Z",
     "note": "ST6 budget extrapolation + ST7 subgroup feasibility. All energy terms are derived from measured benchmarks (results/cpu_energy_measured.json, results/colab_transformer_gpu_results.json); corpus sizes are read from the harmonised CSVs. Nothing here is hand-entered.",
     "subgroup_min_n": 200,
     "inputs_captured": true
@@ -61,24 +61,24 @@
     },
     "cpu_inference_measured": {
       "LR": {
-        "gross_1k": 2.884223079043424,
-        "net_1k": 2.7254200679337184,
-        "inf_throughput": 54465.0,
-        "load_w": 157.09,
-        "energy_cv_pct": 0.0,
-        "idle_w": 8.65,
-        "rapl_available": false,
-        "provenance": "measured_throughput_x_ST2_power"
+        "gross_1k": 0.819924528223139,
+        "net_1k": 0.6409544850839412,
+        "inf_throughput": 78151.3161768934,
+        "load_w": 64.16160183000534,
+        "energy_cv_pct": 4.568711362380763,
+        "idle_w": 14.004953202559935,
+        "rapl_available": true,
+        "provenance": "measured_rapl_saturated"
       },
       "GBDT": {
-        "gross_1k": 6.636150369056474,
-        "net_1k": 6.38871087715283,
-        "inf_throughput": 34954.0,
-        "load_w": 231.96,
-        "energy_cv_pct": 0.0,
-        "idle_w": 8.65,
-        "rapl_available": false,
-        "provenance": "measured_throughput_x_ST2_power"
+        "gross_1k": 1.1519777797602526,
+        "net_1k": 0.9570799741182608,
+        "inf_throughput": 71845.02894226609,
+        "load_w": 82.77874059581106,
+        "energy_cv_pct": 14.231089358273167,
+        "idle_w": 14.004953202559935,
+        "rapl_available": true,
+        "provenance": "measured_rapl_saturated"
       }
     },
     "gpu_measured": {
@@ -118,12 +118,12 @@
       "Train Passes": "30,015",
       "Inf Passes": "309,640",
       "Train Time": "0.04 min",
-      "Inf Time": "0.09 min",
-      "Total Time (h)": 0.0022805783288218553,
-      "Total Energy (J)": 924.445598491842,
-      "Total Energy (kWh)": 0.0002567904440255117,
+      "Inf Time": "0.07 min",
+      "Total Time (h)": 0.0018019501368530223,
+      "Total Energy (J)": 285.2561952158492,
+      "Total Energy (kWh)": 7.923783200440255e-05,
       "Status": "PASSED",
-      "provenance": "measured_throughput_x_ST2_power"
+      "provenance": "measured_rapl_saturated"
     },
     {
       "Model Tier": "Classical GBDT (LightGBM)",
@@ -131,12 +131,12 @@
       "Train Passes": "30,015",
       "Inf Passes": "309,640",
       "Train Time": "0.07 min",
-      "Inf Time": "0.15 min",
-      "Total Time (h)": 0.003702198147879308,
-      "Total Energy (J)": 2174.251344912247,
-      "Total Energy (kWh)": 0.0006039587069200686,
+      "Inf Time": "0.07 min",
+      "Total Time (h)": 0.0024386793120461437,
+      "Total Energy (J)": 476.13214436256544,
+      "Total Energy (kWh)": 0.0001322589289896015,
       "Status": "PASSED",
-      "provenance": "measured_throughput_x_ST2_power"
+      "provenance": "measured_rapl_saturated"
     },
     {
       "Model Tier": "Efficient Transformer (DistilBERT)",

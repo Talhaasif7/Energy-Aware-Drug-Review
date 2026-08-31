@@ -51,6 +51,23 @@ def fmt_ci(lo, hi, decimals=4):
     return f"[{lo:.{decimals}f}, {hi:.{decimals}f}]"
 
 
+def get_ci(a):
+    if not isinstance(a, dict):
+        return None, None
+    if "ece_ci" in a and isinstance(a["ece_ci"], (list, tuple)) and len(a["ece_ci"]) == 2:
+        return a["ece_ci"][0], a["ece_ci"][1]
+    return a.get("ece_ci_lo"), a.get("ece_ci_hi")
+
+
+def get_f1(a):
+    if not isinstance(a, dict):
+        return None
+    for k in ["f1_at_tstar", "f1_t_star", "f1"]:
+        if k in a and a[k] is not None:
+            return a[k]
+    return None
+
+
 def generate_readme():
     frozen = load_json("results/frozen_split_reconciled.json")
     st8 = load_json("results/st8_regime_reconciled.json")
@@ -58,7 +75,14 @@ def generate_readme():
     cpu_energy = load_json("results/cpu_energy_measured.json")
     colab_gpu = load_json("results/colab_transformer_gpu_results.json")
 
-    catalogue = {a["name"]: a for a in frozen.get("catalogue", [])}
+    per_arm = frozen.get("per_arm_metrics", {})
+    catalogue = {}
+    for a in frozen.get("catalogue", []):
+        name = a.get("name")
+        catalogue[name] = {**a, **per_arm.get(name, {})}
+    for name, m in per_arm.items():
+        if name not in catalogue:
+            catalogue[name] = m
     multi_seed = frozen.get("multi_seed_metrics", {})
     st8_sel = st8.get("detailed_selection", [])
     st6_data = st6_st7.get("st6_budget_extrapolation", {})
@@ -216,7 +240,7 @@ def generate_readme():
     lines.append(f"| DistilBERT ÷ LR | $\\approx {r_distil_lr_gross:.2f}\\times$ | $\\approx {r_distil_lr_net:.2f}\\times$ |")
     lines.append(f"| PubMedBERT ÷ LightGBM | $\\approx {r_pubmed_gbdt_gross:.2f}\\times$ | $\\approx {r_pubmed_gbdt_net:.2f}\\times$ |")
     lines.append(f"| PubMedBERT ÷ LR | $\\approx {r_pubmed_lr_gross:.2f}\\times$ | $\\approx {r_pubmed_lr_net:.2f}\\times$ |\n")
-    lines.append(f"> **⚠ These ratios are hardware-dependent.** The GPU per-1k figures are stable across seeds (CV < 1%). CPU energy has CV ≈ 1.1–3.0% across saturated repeats on the benchmark host. Treat the CPU–GPU ratio as an order-of-magnitude statement (~{r_distil_gbdt_gross:.1f}x–{r_pubmed_lr_gross:.1f}x gross, ~{r_distil_gbdt_net:.1f}x–{r_pubmed_lr_net:.1f}x net); the precise multiplier depends on the deployment host's CPU architecture, core count, and clock speed.\n")
+    lines.append(f"> **⚠ These ratios are hardware-dependent.** The GPU per-1k figures are stable across seeds (CV < 1%). CPU energy CV across saturated repeats: LR {lr_cv:.2f}%, LightGBM {gbdt_cv:.2f}%. Treat the CPU–GPU ratio as an order-of-magnitude statement (~{r_distil_gbdt_gross:.1f}x–{r_pubmed_lr_gross:.1f}x gross, ~{r_distil_gbdt_net:.1f}x–{r_pubmed_lr_net:.1f}x net); the precise multiplier depends on the deployment host's CPU architecture, core count, and clock speed.\n")
 
     lines.append("---\n")
     lines.append("## 🧪 Primary Empirical Results (ST1–ST8)\n")
@@ -239,7 +263,7 @@ def generate_readme():
         safe = "✅ Passed" if cad_ece <= 0.07 else "❌ Violated"
         bold_ece = f"**{a.get('ece', 0.0):.4f}**" if a.get("ece", 1.0) < 0.05 else f"{a.get('ece', 0.0):.4f}"
         bold_cad_ece = f"**{cad_ece:.4f}**" if cad_ece < 0.05 else f"{cad_ece:.4f}"
-        lines.append(f"| **{model_disp}** | {recal_disp} | {fmt(a.get('auroc'))} | {fmt(a.get('auprc'))} | {fmt(a.get('f1_t_star'))} | {bold_ece} | {fmt_ci(a.get('ece_ci_lo'), a.get('ece_ci_hi'))} | {fmt(a.get('brier'))} | {fmt(a.get('nll'))} | {fmt(a.get('cadec_auroc'))} | {bold_cad_ece} | {safe} |")
+        lines.append(f"| **{model_disp}** | {recal_disp} | {fmt(a.get('auroc'))} | {fmt(a.get('auprc'))} | {fmt(get_f1(a))} | {bold_ece} | {fmt_ci(*get_ci(a))} | {fmt(a.get('brier'))} | {fmt(a.get('nll'))} | {fmt(a.get('cadec_auroc'))} | {bold_cad_ece} | {safe} |")
 
     lines.append("\n*ECE 95% CIs are percentile / BCa bootstraps of the adaptive-ECE statistic; conservative safety framework enforces ECE Upper CI Bound $\\le \\tau$.*\n")
     lines.append("---\n")
@@ -265,7 +289,7 @@ def generate_readme():
         cad_auroc_disp = f"**{a.get('cadec_auroc', 0.0):.4f}**" if "PubMed" in full_name else f"{a.get('cadec_auroc', 0.0):.4f}"
         bold_ece = f"**{a.get('ece', 0.0):.4f}**" if a.get("ece", 1.0) < 0.03 else f"{a.get('ece', 0.0):.4f}"
         bold_cad_ece = f"**{cad_ece:.4f}**" if cad_ece < 0.05 else f"{cad_ece:.4f}"
-        lines.append(f"| **{model_disp}** | {recal_disp} | {auroc_disp} | {fmt(a.get('auprc'))} | {fmt(a.get('f1_t_star'))} | {bold_ece} | {fmt_ci(a.get('ece_ci_lo'), a.get('ece_ci_hi'))} | {fmt(a.get('brier'))} | {fmt(a.get('nll'))} | {cad_auroc_disp} | {bold_cad_ece} | {safe} | {gross_str} | {thr_str} |")
+        lines.append(f"| **{model_disp}** | {recal_disp} | {auroc_disp} | {fmt(a.get('auprc'))} | {fmt(get_f1(a))} | {bold_ece} | {fmt_ci(*get_ci(a))} | {fmt(a.get('brier'))} | {fmt(a.get('nll'))} | {cad_auroc_disp} | {bold_cad_ece} | {safe} | {gross_str} | {thr_str} |")
 
     lines.append("\nFitted temperature scaling on the transformer logits (from the calibration split): DistilBERT $T=1.35$ (calibration NLL $0.3333\\rightarrow0.3173$), PubMedBERT $T=1.58$ (calibration NLL $0.3694\\rightarrow0.3317$). Both $T>1$ (the transformers are mildly *over*confident), the mirror image of the LR arm.\n")
     lines.append("---\n")
@@ -405,8 +429,8 @@ def generate_readme():
     lines.append("**Bucket A — Colab T4 GPU (run once).** Open `scripts/colab_gpu_transformer_primary_adr.py` on a T4 runtime, upload `psytar_harmonised.csv` and `cadec_harmonised.csv` into the session, and run all cells (`SMOKE_TEST_MODE = False`). This fine-tunes DistilBERT + PubMedBERT and runs the saturated-batch energy benchmark. Download to local `results/`:\n`efficient_transformer_seed42_predictions.npz`, `biomedical_transformer_seed42_predictions.npz`, and `colab_transformer_gpu_results.json` (the `.npz` files embed the split texts so the CPU side reproduces the identical frozen split).\n")
     lines.append("**Bucket C — plain CPU (any OS).** One command runs the whole CPU side in order (CPU energy → frozen-split reconciliation → ST8 regime → ST6/ST7 → README generation):\n")
     lines.append("```bash\npython scripts/run_all_cpu.py\n```\n")
-    lines.append("**Bucket B — Linux (recommended for real CPU energy).** Running Bucket C *on Linux* gives step 1 live Intel RAPL energy (`provenance = measured_rapl_saturated`) instead of the Windows ST2-power fallback, tightening the CPU energy figures and the cross-platform ratios:\n")
-    lines.append("```bash\npython scripts/measure_cpu_energy.py --measure-s 20 --repeats 3\n```\n")
+    lines.append("**Linux RAPL CPU Benchmark.** Running `python scripts/measure_cpu_energy.py --measure-s 20 --repeats 7` on Linux measures live Intel RAPL package energy (`provenance = measured_rapl_saturated`), capturing package-level power and throughput directly:\n")
+    lines.append("```bash\npython scripts/measure_cpu_energy.py --measure-s 20 --repeats 7\n```\n")
     lines.append("Every README number reconciles to `results/frozen_split_reconciled.json` (metrics, CIs, paired Δ tests, energy), `results/st8_regime_reconciled.json` (regime + selection), `results/st6_st7_reconciled.json` (budget + subgroup tables, including every extrapolation input), `results/cpu_energy_measured.json` and `results/colab_transformer_gpu_results.json` (measured power/throughput/energy). Scripts print `PENDING` for any quantity a run has not yet produced — no value is hand-entered.\n")
 
     lines.append("---\n")

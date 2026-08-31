@@ -89,6 +89,18 @@ class RAPLReader:
 
         denied = []
         for p in pkgs:
+            # Check domain name to exclude 'psys' (platform domain) and subzones
+            name_path = os.path.join(p, "name")
+            try:
+                with open(name_path, "r") as fh:
+                    dname = fh.read().strip()
+            except OSError:
+                dname = os.path.basename(p)
+
+            if not dname.startswith("package-"):
+                # 'psys' overlaps/contains the package; 'dram'/'core'/'uncore' are subzones
+                continue
+
             epath = os.path.join(p, "energy_uj")
             try:
                 with open(epath, "r") as fh:
@@ -105,7 +117,7 @@ class RAPLReader:
             except (OSError, ValueError):
                 maxr = 0               # 0 disables wraparound correction
             self.domains.append((epath, maxr))
-            self.domain_names.append(os.path.basename(p))
+            self.domain_names.append(dname)
 
         if self.domains:
             self.ok = True

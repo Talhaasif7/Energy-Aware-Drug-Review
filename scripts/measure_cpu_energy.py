@@ -202,10 +202,11 @@ def model_only_infer(clf, X_vec, rapl, warmup_s, measure_s):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--warmup-s", type=float, default=2.0)
-    ap.add_argument("--measure-s", type=float, default=12.0)
+    ap.add_argument("--measure-s", type=float, default=20.0,
+                    help="measurement window per repeat in seconds (default: 20.0)")
     ap.add_argument("--idle-s", type=float, default=8.0)
-    ap.add_argument("--repeats", type=int, default=5,
-                    help="number of benchmark repeats (default: 5, uses median)")
+    ap.add_argument("--repeats", type=int, default=7,
+                    help="number of benchmark repeats (default: 7, uses median)")
     ap.add_argument("--bench-rows", type=int, default=50000,
                     help="target rows in the tiled saturation batch")
     ap.add_argument("--seed", type=int, default=42)
@@ -360,6 +361,8 @@ def main():
         }
         log(f"  -> median gross={gross_val:.4f} J/1k | net={net_1k:.4f} J/1k | "
             f"throughput={thr_val:,.0f} s/s | CV={cv:.2f}%")
+        if cv > 10.0:
+            log(f"  [WARN] {model_name} energy CV ({cv:.2f}%) exceeds the 10% stability gate.")
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
     out_path = os.path.join(RESULTS_DIR, "cpu_energy_measured.json")

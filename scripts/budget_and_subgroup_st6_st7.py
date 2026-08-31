@@ -35,18 +35,10 @@ CORPUS_CSV = {
                            "psytar_harmonised.csv"),
     "cadec": os.path.join(DATA_DIR, "01_primary_adr_detection",
                           "external_val_cadec", "cadec_harmonised.csv"),
-    "uci_druglib": os.path.join(DATA_DIR, "02_secondary_sentiment_scaling",
-                                "dev_uci_drug_review",
-                                "uci_druglib_harmonised.csv"),
-    "webmd": os.path.join(DATA_DIR, "02_secondary_sentiment_scaling",
-                          "external_val_webmd", "webmd_harmonised.csv"),
+    "drugscom_50k": os.path.join(DATA_DIR, "02_secondary_sentiment_scaling",
+                                 "dev_drugscom_50k.csv"),
 }
-# Last-known documented sizes, used ONLY as a labelled fallback when a corpus CSV
-# is absent. Previously these were hardcoded inline, which let the budget inputs
-# silently drift from the corpora actually evaluated (n_cadec sat at 7,681 while
-# the aligned eval corpus was 7,823). Counts are now READ from the CSVs.
-DOCUMENTED_SIZES = {"psytar": 6003, "cadec": 7823,
-                    "uci_druglib": 4108, "webmd": 320096}
+DOCUMENTED_SIZES = {"psytar": 6003, "cadec": 7823, "drugscom_50k": 49998}
 
 # Last-known TRAINING rates, used ONLY as a labelled fallback when
 # results/st3_cpu_energy.json is absent. These four numbers were transcribed by
@@ -321,11 +313,10 @@ def perform_st6():
     sizes, size_prov = load_corpus_sizes()
     n_psytar = sizes["psytar"]
     n_cadec = sizes["cadec"]
-    n_uci_druglib = sizes["uci_druglib"]   # Actual DrugLib dataset, NOT 215k drugsCom
-    n_webmd = sizes["webmd"]               # WebMD reviews (large secondary corpus)
-    for k in ("psytar", "cadec", "uci_druglib", "webmd"):
-        print(f"    {k:12} = {sizes[k]:>7,}  [{size_prov[k]}]")
-    n_secondary_cpu = n_uci_druglib + n_webmd  # CPU arms process all
+    n_drugscom_50k = sizes.get("drugscom_50k", 49998)
+    for k in ("psytar", "cadec", "drugscom_50k"):
+        print(f"    {k:14} = {sizes[k]:>7,}  [{size_prov[k]}]")
+    n_secondary_cpu = n_drugscom_50k  # CPU arms process secondary dataset
     n_secondary_transformer = 30000  # Transformer subsample cap
     n_seeds = 5
     n_epochs = 3
@@ -399,7 +390,7 @@ def perform_st6():
 
     print("\n--- ST6 EXTRAPOLATION ARITHMETIC ---")
     print(f"  PsyTAR: {n_psytar} sentences | CADEC: {n_cadec} sentences")
-    print(f"  UCI DrugLib: {n_uci_druglib} reviews | WebMD: {n_webmd} reviews")
+    print(f"  drugsCom (50k sample): {n_drugscom_50k} reviews")
     print(f"  Secondary total (CPU): {n_secondary_cpu}")
     print(f"  Secondary cap (Transformer): {n_secondary_transformer}")
     print(f"  Seeds: {n_seeds} | Epochs (Transformer): {n_epochs}")

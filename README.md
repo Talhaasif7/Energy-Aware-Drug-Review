@@ -82,7 +82,6 @@ The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)
 │   ├── budget_and_subgroup_st6_st7.py      # ST6/ST7 budget extrapolation (GPU energy derived from Colab JSON)
 │   ├── render_readme.py                    # ★ Automated README Renderer
 │   └── run_all_cpu.py                      # Orchestrator: runs the whole CPU-side pipeline in order
-├── RUN_ORDER.md                            # Which script runs on Colab T4 / Linux / plain CPU + what to return
 ├── .gitignore                              # Git exclusion rules
 ├── README.md                               # Project documentation & report
 └── requirements.txt                        # Python dependencies
@@ -289,7 +288,7 @@ While the cross-platform energy gap is substantial (~49.5x–134.5x gross, ~32.7
 
 ## ⚙️ Reproduction & Execution Instructions
 
-The pipeline runs in three buckets; `RUN_ORDER.md` documents exactly which script runs on which machine and what to return. **The GPU script uses uploaded datasets (not a git clone), because the source repository is private.**
+The experimental pipeline is structured across GPU fine-tuning and local CPU/RAPL evaluation steps. **The GPU script uses uploaded datasets (not a git clone), because the source repository is private.**
 
 ```bash
 # Install dependencies

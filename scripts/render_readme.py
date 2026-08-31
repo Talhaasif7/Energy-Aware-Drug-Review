@@ -167,7 +167,6 @@ def generate_readme():
     lines.append("│   ├── budget_and_subgroup_st6_st7.py      # ST6/ST7 budget extrapolation (GPU energy derived from Colab JSON)")
     lines.append("│   ├── render_readme.py                    # ★ Automated README Renderer")
     lines.append("│   └── run_all_cpu.py                      # Orchestrator: runs the whole CPU-side pipeline in order")
-    lines.append("├── RUN_ORDER.md                            # Which script runs on Colab T4 / Linux / plain CPU + what to return")
     lines.append("├── .gitignore                              # Git exclusion rules")
     lines.append("├── README.md                               # Project documentation & report")
     lines.append("└── requirements.txt                        # Python dependencies")
@@ -401,7 +400,7 @@ def generate_readme():
 
     lines.append("---\n")
     lines.append("## ⚙️ Reproduction & Execution Instructions\n")
-    lines.append("The pipeline runs in three buckets; `RUN_ORDER.md` documents exactly which script runs on which machine and what to return. **The GPU script uses uploaded datasets (not a git clone), because the source repository is private.**\n")
+    lines.append("The experimental pipeline is structured across GPU fine-tuning and local CPU/RAPL evaluation steps. **The GPU script uses uploaded datasets (not a git clone), because the source repository is private.**\n")
     lines.append("```bash\n# Install dependencies\npip install -r requirements.txt\n```\n")
     lines.append("**Bucket A — Colab T4 GPU (run once).** Open `scripts/colab_gpu_transformer_primary_adr.py` on a T4 runtime, upload `psytar_harmonised.csv` and `cadec_harmonised.csv` into the session, and run all cells (`SMOKE_TEST_MODE = False`). This fine-tunes DistilBERT + PubMedBERT and runs the saturated-batch energy benchmark. Download to local `results/`:\n`efficient_transformer_seed42_predictions.npz`, `biomedical_transformer_seed42_predictions.npz`, and `colab_transformer_gpu_results.json` (the `.npz` files embed the split texts so the CPU side reproduces the identical frozen split).\n")
     lines.append("**Bucket C — plain CPU (any OS).** One command runs the whole CPU side in order (CPU energy → frozen-split reconciliation → ST8 regime → ST6/ST7 → README generation):\n")

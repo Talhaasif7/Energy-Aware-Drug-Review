@@ -89,26 +89,39 @@ def generate_readme():
     st7_data = st6_st7.get("st7_subgroup_audit", {}).get("rows", [])
 
     # Hardware energy values
-    lr_gross = catalogue.get("Logistic Regression + Uncalibrated", {}).get("inf_j_gross", 2.8842)
-    lr_net = catalogue.get("Logistic Regression + Uncalibrated", {}).get("inf_j_net", 2.7254)
-    gbdt_gross = catalogue.get("LightGBM + Uncalibrated", {}).get("inf_j_gross", 6.6361)
-    gbdt_net = catalogue.get("LightGBM + Uncalibrated", {}).get("inf_j_net", 6.3887)
+    lr_gross = catalogue.get("Logistic Regression + Uncalibrated", {}).get("inf_j_gross", 0.4100)
+    lr_net = catalogue.get("Logistic Regression + Uncalibrated", {}).get("inf_j_net", 0.3205)
+    gbdt_gross = catalogue.get("LightGBM + Uncalibrated", {}).get("inf_j_gross", 0.5760)
+    gbdt_net = catalogue.get("LightGBM + Uncalibrated", {}).get("inf_j_net", 0.4785)
     distil_gross = catalogue.get("DistilBERT + Uncalibrated", {}).get("inf_j_gross", 57.0356)
     distil_net = catalogue.get("DistilBERT + Uncalibrated", {}).get("inf_j_net", 31.3356)
     pubmed_gross = catalogue.get("PubMedBERT + Uncalibrated", {}).get("inf_j_gross", 110.2418)
     pubmed_net = catalogue.get("PubMedBERT + Uncalibrated", {}).get("inf_j_net", 60.4707)
 
+    # Dynamic CPU values from cpu_energy
+    cpu_idle = cpu_energy.get("Logistic Regression", {}).get("idle_w", cpu_energy.get("_meta", {}).get("idle_power_w", 7.002))
+    lr_load = cpu_energy.get("Logistic Regression", {}).get("load_w", 32.08)
+    lr_net_w = cpu_energy.get("Logistic Regression", {}).get("net_power_w", 25.08)
+    lr_thr = cpu_energy.get("Logistic Regression", {}).get("throughput_sps", 78151.3)
+    lr_cv = cpu_energy.get("Logistic Regression", {}).get("energy_cv_pct", 4.57)
+    lr_repeats = cpu_energy.get("Logistic Regression", {}).get("n_repeats", 7)
+
+    gbdt_load = cpu_energy.get("LightGBM", {}).get("load_w", 41.39)
+    gbdt_net_w = cpu_energy.get("LightGBM", {}).get("net_power_w", 34.39)
+    gbdt_thr = cpu_energy.get("LightGBM", {}).get("throughput_sps", 71845.0)
+    gbdt_cv = cpu_energy.get("LightGBM", {}).get("energy_cv_pct", 14.23)
+
     # Ratios
-    r_gbdt_lr_gross = gbdt_gross / lr_gross if lr_gross else 2.30
-    r_gbdt_lr_net = gbdt_net / lr_net if lr_net else 2.34
-    r_distil_gbdt_gross = distil_gross / gbdt_gross if gbdt_gross else 8.59
-    r_distil_gbdt_net = distil_net / gbdt_net if gbdt_net else 4.90
-    r_distil_lr_gross = distil_gross / lr_gross if lr_gross else 19.77
-    r_distil_lr_net = distil_net / lr_net if lr_net else 11.50
-    r_pubmed_gbdt_gross = pubmed_gross / gbdt_gross if gbdt_gross else 16.61
-    r_pubmed_gbdt_net = pubmed_net / gbdt_net if gbdt_net else 9.46
-    r_pubmed_lr_gross = pubmed_gross / lr_gross if lr_gross else 38.22
-    r_pubmed_lr_net = pubmed_net / lr_net if lr_net else 22.19
+    r_gbdt_lr_gross = gbdt_gross / lr_gross if lr_gross else 1.40
+    r_gbdt_lr_net = gbdt_net / lr_net if lr_net else 1.49
+    r_distil_gbdt_gross = distil_gross / gbdt_gross if gbdt_gross else 99.02
+    r_distil_gbdt_net = distil_net / gbdt_net if gbdt_net else 65.48
+    r_distil_lr_gross = distil_gross / lr_gross if lr_gross else 139.12
+    r_distil_lr_net = distil_net / lr_net if lr_net else 97.78
+    r_pubmed_gbdt_gross = pubmed_gross / gbdt_gross if gbdt_gross else 191.40
+    r_pubmed_gbdt_net = pubmed_net / gbdt_net if gbdt_net else 126.37
+    r_pubmed_lr_gross = pubmed_gross / lr_gross if lr_gross else 268.91
+    r_pubmed_lr_net = pubmed_net / lr_net if lr_net else 188.69
 
     # Daily Wh at 1M sentences
     pubmed_wh_day = (pubmed_gross * 1000.0) / 3600.0
@@ -123,8 +136,15 @@ def generate_readme():
     lines.append("[![Provenance](https://img.shields.io/badge/Results-Reconciled%20to%20single%20source%20of%20truth-brightgreen.svg)]()\n")
 
     lines.append("This repository contains the complete experimental framework, empirical codebase, and result tables for **\"Green and Trustworthy: Energy-Aware NLP for Patient Drug-Review Safety Signals\"**.\n")
-    lines.append("The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)**, a multi-objective framework that balances predictive discrimination, probability calibration, out-of-domain safety constraints, and hardware energy consumption. ECC-MS uses an **empirical paired-bootstrap tie rule**: two arms are declared a *statistical tie* when the 95% confidence interval of their paired $\\Delta\\text{AUROC}$ includes zero. Among feasible, statistically-tied arms (those clearing the calibration threshold $\\tau$ and the energy budget $E$), ECC-MS selects the **lowest-energy** arm. Margin-based sensitivity ($\\Delta\\text{AUROC}\\le 0.01/0.02/0.03$) is reported alongside the CI rule.\n")
-    lines.append("> **Provenance.** Every quantitative claim below reconciles to a single source of truth, `results/frozen_split_reconciled.json` (primary seed 42; frozen split recovered from the Colab prediction `.npz` embedded texts; test $N=1{,}201$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). CPU energy is **measured live with Intel RAPL on Linux** (`provenance = measured_rapl_saturated`, 3 repeats, CV < 1.4%).\n")
+    prov_str = (
+        "> **Provenance.** Every quantitative claim below reconciles to a single source of truth, "
+        "`results/frozen_split_reconciled.json` (primary seed 42; frozen split recovered from the Colab prediction "
+        "`.npz` embedded texts; test $N=1{,}201$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). "
+        "GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). "
+        "CPU energy is **measured live with Intel RAPL on Linux** (`provenance = measured_rapl_saturated`, "
+        f"{lr_repeats} repeats, LR CV {lr_cv:.2f}%, LightGBM CV {gbdt_cv:.2f}%).\n"
+    )
+    lines.append(prov_str)
 
     lines.append("---\n")
     lines.append("## 📑 Table of Contents")
@@ -161,9 +181,7 @@ def generate_readme():
     lines.append("│   │   ├── dev_psytar/                     # PsyTAR Development Corpus (6,003 sentences)")
     lines.append("│   │   └── external_val_cadec/             # CADEC External Validation Corpus (7,823 aligned sentences)")
     lines.append("│   └── 02_secondary_sentiment_scaling/")
-    lines.append("│       ├── dev_drugscom_50k.csv            # drugsCom dataset (50,000 stratified subsample)")
-    lines.append("│       ├── dev_uci_drug_review/            # UCI DrugLib dataset (4,107 reviews)")
-    lines.append("│       └── external_val_webmd/             # WebMD dataset (320,093 reviews)")
+    lines.append("│       └── dev_drugscom_50k.csv            # drugsCom dataset (50,000 stratified subsample)")
     lines.append("├── reports/                                # Generated figures & visual artifacts")
     lines.append("│   ├── st4_reliability_diagrams.png        # Calibration reliability diagrams")
     lines.append("│   └── st8_regime_map.png                  # ECC-MS regime map & break-even curve")
@@ -196,29 +214,15 @@ def generate_readme():
     lines.append("└── requirements.txt                        # Python dependencies")
     lines.append("```\n")
 
-    # Dynamic CPU values from cpu_energy
-    cpu_idle = cpu_energy.get("Logistic Regression", {}).get("idle_w", cpu_energy.get("_meta", {}).get("idle_power_w", 14.005))
-    lr_load = cpu_energy.get("Logistic Regression", {}).get("load_w", 64.16)
-    lr_net_w = cpu_energy.get("Logistic Regression", {}).get("net_power_w", 50.16)
-    lr_thr = cpu_energy.get("Logistic Regression", {}).get("throughput_sps", 78151.3)
-    lr_mo_thr = cpu_energy.get("Logistic Regression", {}).get("scopes", {}).get("model_only", {}).get("throughput_sps", 28722972.0)
-    lr_cv = cpu_energy.get("Logistic Regression", {}).get("energy_cv_pct", 4.57)
-
-    gbdt_load = cpu_energy.get("LightGBM", {}).get("load_w", 82.78)
-    gbdt_net_w = cpu_energy.get("LightGBM", {}).get("net_power_w", 68.77)
-    gbdt_thr = cpu_energy.get("LightGBM", {}).get("throughput_sps", 71845.0)
-    gbdt_mo_thr = cpu_energy.get("LightGBM", {}).get("scopes", {}).get("model_only", {}).get("throughput_sps", 771962.8)
-    gbdt_cv = cpu_energy.get("LightGBM", {}).get("energy_cv_pct", 14.23)
-
     lines.append("---\n")
     lines.append("## ⚡ Unified Hardware Power & Energy Accounting\n")
     lines.append(r"Power and energy reconcile via the identity $\text{Energy/1k} = (\text{Load Power W} / \text{Throughput s/s}) \times 1000$; **net** subtracts platform idle power." + "\n")
-    lines.append("| Platform | Model Arm | Idle (W) | Load (W) | Net (W) | End-to-End Thr (s/s) | Model-Only Thr (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |")
-    lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |")
-    lines.append(f"| **CPU (Linux RAPL)** | **Logistic Regression** | {cpu_idle:.3f} | {lr_load:.2f} | {lr_net_w:.2f} | **{lr_thr:,.0f}** | {lr_mo_thr:,.0f} | **{lr_gross:.4f}** | **{lr_net:.4f}** | {lr_cv:.2f}% | **measured RAPL saturated (end-to-end)** |")
-    lines.append(f"| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | {cpu_idle:.3f} | {gbdt_load:.2f} | {gbdt_net_w:.2f} | **{gbdt_thr:,.0f}** | {gbdt_mo_thr:,.0f} | **{gbdt_gross:.4f}** | **{gbdt_net:.4f}** | {gbdt_cv:.2f}% | **measured RAPL saturated (end-to-end)** |")
-    lines.append(f"| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | 1,450.0 | **{distil_gross:.2f}** | **{distil_net:.2f}** | 0.33% | **measured saturated run** (3 seeds) |")
-    lines.append(f"| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | 720.0 | **{pubmed_gross:.2f}** | **{pubmed_net:.2f}** | 0.60% | **measured saturated run** (3 seeds) |\n")
+    lines.append("| Platform | Model Arm | Idle (W) | Load (W) | Net (W) | End-to-End Thr (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |")
+    lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |")
+    lines.append(f"| **CPU (Linux RAPL)** | **Logistic Regression** | {cpu_idle:.3f} | {lr_load:.2f} | {lr_net_w:.2f} | **{lr_thr:,.0f}** | **{lr_gross:.4f}** | **{lr_net:.4f}** | {lr_cv:.2f}% | **measured RAPL saturated (end-to-end)** |")
+    lines.append(f"| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | {cpu_idle:.3f} | {gbdt_load:.2f} | {gbdt_net_w:.2f} | **{gbdt_thr:,.0f}** | **{gbdt_gross:.4f}** | **{gbdt_net:.4f}** | {gbdt_cv:.2f}% | **measured RAPL saturated (end-to-end)** |")
+    lines.append(f"| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | **{distil_gross:.2f}** | **{distil_net:.2f}** | 0.33% | **measured saturated run** (3 seeds) |")
+    lines.append(f"| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | **{pubmed_gross:.2f}** | **{pubmed_net:.2f}** | 0.60% | **measured saturated run** (3 seeds) |\n")
 
     lines.append("**GPU energy (trustworthy).** Captured in a single saturated-batch run — a fixed padded batch driven to steady state with 100 ms `nvidia-smi` power sampling and trapezoidal energy integration, so power, throughput and energy are measured *together*. Averaged over 3 seeds with cross-run CV < 1%. The GPU idle power of 30.13 W reflects a **CUDA context warm / model loaded idle state** (vs cold uninitialized GPU idle of 10.22 W).\n")
     lines.append(f"**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 5 repeats on {cpu_energy.get('_meta', {}).get('host', {}).get('cpu_model', 'Intel Core i5-8500 @ 3.00GHz')}). End-to-end throughput includes raw text TF-IDF vectorization (`TfidfVectorizer.transform`), yielding realistic throughputs of ~{lr_thr:,.0f} s/s for Logistic Regression ({lr_gross:.4f} J/1k gross) and ~{gbdt_thr:,.0f} s/s for LightGBM ({gbdt_gross:.4f} J/1k gross). Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting.\n")
@@ -304,12 +308,11 @@ def generate_readme():
     lines.append("---\n")
 
     lines.append("### 4. Secondary Task & Ordinal Cutoff Sensitivity (ST1b)\n")
-    lines.append(r"*Target: 3-class effectiveness (`0=Negative`, `1=Neutral`, `2=Positive`).*" + "\n")
+    lines.append(r"*Target: 3-class effectiveness (`0=Negative`, `1=Neutral`, `2=Positive`). Canonical secondary task is `drugsCom` ($N=49,998$ stratified subsample).*" + "\n")
     lines.append("| Dataset | Total Units | Negative (0) | Neutral (1) | Positive (2) | Chosen Cutoff | Alt A (Narrow Neg) | Alt B (Wide Neg) | Prior-Gap Robustness |")
     lines.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
-    lines.append("| **UCI DrugLib** | 4,107 reviews | 588 (14.3%) | 568 (13.8%) | 2,951 (71.9%) | **71.9% Positive** | **64.5% Positive** | **42.1% Positive** | **6.4pp prior gap (Alt A)** |")
     lines.append("| **drugsCom (50k sample)** | 49,998 reviews | 12,965 (25.9%) | 7,991 (16.0%) | 29,042 (58.1%) | **58.1% Positive** | **51.2% Positive** | **36.3% Positive** | **5.8pp prior gap (Alt B)** |\n")
-    lines.append("*Under Alt A (narrow negative) and Alt B (wide negative), UCI Positive shifts to 64.5% / 42.1% and secondary task Positive to 51.2% / 36.3%, narrowing the prior gap to 5.8–6.4pp while preserving dataset composition dynamics.\n")
+    lines.append("*Under Alt A (narrow negative) and Alt B (wide negative), drugsCom Positive shifts to 51.2% / 36.3%, demonstrating label threshold sensitivity while preserving underlying clinical sentiment dynamics.*\n")
     lines.append("---\n")
 
     lines.append("### 5. ST6: Compute & Energy Budget Extrapolation Table\n")
@@ -318,16 +321,16 @@ def generate_readme():
     lines.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
 
     st6_rows = st6_data.get("rows", [
-        {"tier": "Classical Linear (LR)", "hardware": "CPU", "train_passes": 30015, "inf_passes": 309640, "train_time": "0.04 min", "inf_time": "0.09 min", "total_h": 0.00, "energy_j": 924.4, "energy_kwh": 0.0003, "status": "PASSED"},
-        {"tier": "Classical GBDT (LightGBM)", "hardware": "CPU", "train_passes": 30015, "inf_passes": 309640, "train_time": "0.07 min", "inf_time": "0.15 min", "total_h": 0.00, "energy_j": 2174.3, "energy_kwh": 0.0006, "status": "PASSED"},
+        {"tier": "Classical Linear (LR)", "hardware": "CPU", "train_passes": 30015, "inf_passes": 289105, "train_time": "0.04 min", "inf_time": "0.06 min", "total_h": 0.00, "energy_j": 149.9, "energy_kwh": 0.0000, "status": "PASSED"},
+        {"tier": "Classical GBDT (LightGBM)", "hardware": "CPU", "train_passes": 30015, "inf_passes": 289105, "train_time": "0.07 min", "inf_time": "0.07 min", "total_h": 0.00, "energy_j": 286.0, "energy_kwh": 0.0001, "status": "PASSED"},
         {"tier": "Efficient Transformer (DistilBERT)", "hardware": "Colab T4", "train_passes": 540045, "inf_passes": 189115, "train_time": "0.59 h", "inf_time": "0.04 h", "total_h": 0.63, "energy_j": 148293.9, "energy_kwh": 0.0412, "status": "PASSED"},
         {"tier": "Biomedical Transformer (PubMedBERT)", "hardware": "Colab T4", "train_passes": 540045, "inf_passes": 189115, "train_time": "0.97 h", "inf_time": "0.09 h", "total_h": 1.06, "energy_j": 250161.6, "energy_kwh": 0.0695, "status": "PASSED"},
     ])
     for r in st6_rows:
         lines.append(f"| **{r['tier']}** | {r['hardware']} | {r['train_passes']:,} | {r['inf_passes']:,} | {r['train_time']} | {r['inf_time']} | {r['total_h']:.2f} h | {r['energy_j']:,.1f} J | {r['energy_kwh']:.4f} kWh | **{r['status']}** |")
 
-    lines.append("\n> **Note on measured CPU rows.** CPU inference energy is derived from `results/cpu_energy_measured.json` using the end-to-end saturated throughput (2.8842 J/1k for LR, 6.6361 J/1k for LightGBM). Both classical tiers pass comfortably under budget.\n")
-    lines.append(r"*GPU totals are dominated by training energy; the inference contribution is ≈ 10.8 kJ (DistilBERT) and ≈ 20.8 kJ (PubMedBERT). All four rows now use the live corpus counts read from the harmonised CSVs (PsyTAR 6,003; CADEC 7,823; DrugLib 4,107; WebMD 49,998) — the earlier 7,681 CADEC budget input is gone.*" + "\n")
+    lines.append(f"\n> **Note on measured CPU rows.** CPU inference energy is derived from `results/cpu_energy_measured.json` using the end-to-end saturated throughput ({lr_gross:.4f} J/1k for LR, {gbdt_gross:.4f} J/1k for LightGBM). Both classical tiers pass comfortably under budget.\n")
+    lines.append(r"*GPU totals are dominated by training energy; the inference contribution is ≈ 10.8 kJ (DistilBERT) and ≈ 20.8 kJ (PubMedBERT). All four rows use live corpus counts read from harmonised CSVs (PsyTAR 6,003; CADEC 7,823; drugsCom 50k 49,998).*" + "\n")
     lines.append("---\n")
 
     lines.append("### 6. ST7: Subgroup Fairness & Calibration Audit ($N \\ge 200$)\n")

@@ -8,9 +8,7 @@
 
 This repository contains the complete experimental framework, empirical codebase, and result tables for **"Green and Trustworthy: Energy-Aware NLP for Patient Drug-Review Safety Signals"**.
 
-The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)**, a multi-objective framework that balances predictive discrimination, probability calibration, out-of-domain safety constraints, and hardware energy consumption. ECC-MS uses an **empirical paired-bootstrap tie rule**: two arms are declared a *statistical tie* when the 95% confidence interval of their paired $\Delta\text{AUROC}$ includes zero. Among feasible, statistically-tied arms (those clearing the calibration threshold $\tau$ and the energy budget $E$), ECC-MS selects the **lowest-energy** arm. Margin-based sensitivity ($\Delta\text{AUROC}\le 0.01/0.02/0.03$) is reported alongside the CI rule.
-
-> **Provenance.** Every quantitative claim below reconciles to a single source of truth, `results/frozen_split_reconciled.json` (primary seed 42; frozen split recovered from the Colab prediction `.npz` embedded texts; test $N=1{,}201$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). CPU energy is **measured live with Intel RAPL on Linux** (`provenance = measured_rapl_saturated`, 3 repeats, CV < 1.4%).
+> **Provenance.** Every quantitative claim below reconciles to a single source of truth, `results/frozen_split_reconciled.json` (primary seed 42; frozen split recovered from the Colab prediction `.npz` embedded texts; test $N=1{,}201$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). CPU energy is **measured live with Intel RAPL on Linux** (`provenance = measured_rapl_saturated`, 5 repeats, LR CV 4.57%, LightGBM CV 14.23%).
 
 ---
 
@@ -52,9 +50,7 @@ The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)
 │   │   ├── dev_psytar/                     # PsyTAR Development Corpus (6,003 sentences)
 │   │   └── external_val_cadec/             # CADEC External Validation Corpus (7,823 aligned sentences)
 │   └── 02_secondary_sentiment_scaling/
-│       ├── dev_drugscom_50k.csv            # drugsCom dataset (50,000 stratified subsample)
-│       ├── dev_uci_drug_review/            # UCI DrugLib dataset (4,107 reviews)
-│       └── external_val_webmd/             # WebMD dataset (320,093 reviews)
+│       └── dev_drugscom_50k.csv            # drugsCom dataset (50,000 stratified subsample)
 ├── reports/                                # Generated figures & visual artifacts
 │   ├── st4_reliability_diagrams.png        # Calibration reliability diagrams
 │   └── st8_regime_map.png                  # ECC-MS regime map & break-even curve
@@ -93,12 +89,12 @@ The study introduces **ECC-MS (Energy–Calibration Constrained Model Selection)
 
 Power and energy reconcile via the identity $\text{Energy/1k} = (\text{Load Power W} / \text{Throughput s/s}) \times 1000$; **net** subtracts platform idle power.
 
-| Platform | Model Arm | Idle (W) | Load (W) | Net (W) | End-to-End Thr (s/s) | Model-Only Thr (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **CPU (Linux RAPL)** | **Logistic Regression** | 7.002 | 32.08 | 25.08 | **78,151** | 28,722,972 | **0.4100** | **0.3205** | 4.57% | **measured RAPL saturated (end-to-end)** |
-| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 7.002 | 41.39 | 34.39 | **71,845** | 771,963 | **0.5760** | **0.4785** | 14.23% | **measured RAPL saturated (end-to-end)** |
-| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | 1,450.0 | **57.04** | **31.34** | 0.33% | **measured saturated run** (3 seeds) |
-| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | 720.0 | **110.24** | **60.47** | 0.60% | **measured saturated run** (3 seeds) |
+| Platform | Model Arm | Idle (W) | Load (W) | Net (W) | End-to-End Thr (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **CPU (Linux RAPL)** | **Logistic Regression** | 7.002 | 32.08 | 25.08 | **78,151** | **0.4100** | **0.3205** | 4.57% | **measured RAPL saturated (end-to-end)** |
+| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 7.002 | 41.39 | 34.39 | **71,845** | **0.5760** | **0.4785** | 14.23% | **measured RAPL saturated (end-to-end)** |
+| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | **57.04** | **31.34** | 0.33% | **measured saturated run** (3 seeds) |
+| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | **110.24** | **60.47** | 0.60% | **measured saturated run** (3 seeds) |
 
 **GPU energy (trustworthy).** Captured in a single saturated-batch run — a fixed padded batch driven to steady state with 100 ms `nvidia-smi` power sampling and trapezoidal energy integration, so power, throughput and energy are measured *together*. Averaged over 3 seeds with cross-run CV < 1%. The GPU idle power of 30.13 W reflects a **CUDA context warm / model loaded idle state** (vs cold uninitialized GPU idle of 10.22 W).
 
@@ -181,14 +177,13 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 ### 4. Secondary Task & Ordinal Cutoff Sensitivity (ST1b)
 
-*Target: 3-class effectiveness (`0=Negative`, `1=Neutral`, `2=Positive`).*
+*Target: 3-class effectiveness (`0=Negative`, `1=Neutral`, `2=Positive`). Canonical secondary task is `drugsCom` ($N=49,998$ stratified subsample).*
 
 | Dataset | Total Units | Negative (0) | Neutral (1) | Positive (2) | Chosen Cutoff | Alt A (Narrow Neg) | Alt B (Wide Neg) | Prior-Gap Robustness |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **UCI DrugLib** | 4,107 reviews | 588 (14.3%) | 568 (13.8%) | 2,951 (71.9%) | **71.9% Positive** | **64.5% Positive** | **42.1% Positive** | **6.4pp prior gap (Alt A)** |
 | **drugsCom (50k sample)** | 49,998 reviews | 12,965 (25.9%) | 7,991 (16.0%) | 29,042 (58.1%) | **58.1% Positive** | **51.2% Positive** | **36.3% Positive** | **5.8pp prior gap (Alt B)** |
 
-*Under Alt A (narrow negative) and Alt B (wide negative), UCI Positive shifts to 64.5% / 42.1% and secondary task Positive to 51.2% / 36.3%, narrowing the prior gap to 5.8–6.4pp while preserving dataset composition dynamics.
+*Under Alt A (narrow negative) and Alt B (wide negative), drugsCom Positive shifts to 51.2% / 36.3%, demonstrating label threshold sensitivity while preserving underlying clinical sentiment dynamics.*
 
 ---
 
@@ -198,14 +193,14 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 | Model Tier | Hardware | Train Passes | Inf Passes | Train Time (5 seeds) | Inf Time (5 seeds) | Total Time (h) | Total Energy (J) | Total Energy (kWh) | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Classical Linear (LR)** | CPU | 30,015 | 309,640 | 0.04 min | 0.09 min | 0.00 h | 924.4 J | 0.0003 kWh | **PASSED** |
-| **Classical GBDT (LightGBM)** | CPU | 30,015 | 309,640 | 0.07 min | 0.15 min | 0.00 h | 2,174.3 J | 0.0006 kWh | **PASSED** |
+| **Classical Linear (LR)** | CPU | 30,015 | 289,105 | 0.04 min | 0.06 min | 0.00 h | 149.9 J | 0.0000 kWh | **PASSED** |
+| **Classical GBDT (LightGBM)** | CPU | 30,015 | 289,105 | 0.07 min | 0.07 min | 0.00 h | 286.0 J | 0.0001 kWh | **PASSED** |
 | **Efficient Transformer (DistilBERT)** | Colab T4 | 540,045 | 189,115 | 0.59 h | 0.04 h | 0.63 h | 148,293.9 J | 0.0412 kWh | **PASSED** |
 | **Biomedical Transformer (PubMedBERT)** | Colab T4 | 540,045 | 189,115 | 0.97 h | 0.09 h | 1.06 h | 250,161.6 J | 0.0695 kWh | **PASSED** |
 
-> **Note on measured CPU rows.** CPU inference energy is derived from `results/cpu_energy_measured.json` using the end-to-end saturated throughput (2.8842 J/1k for LR, 6.6361 J/1k for LightGBM). Both classical tiers pass comfortably under budget.
+> **Note on measured CPU rows.** CPU inference energy is derived from `results/cpu_energy_measured.json` using the end-to-end saturated throughput (0.4100 J/1k for LR, 0.5760 J/1k for LightGBM). Both classical tiers pass comfortably under budget.
 
-*GPU totals are dominated by training energy; the inference contribution is ≈ 10.8 kJ (DistilBERT) and ≈ 20.8 kJ (PubMedBERT). All four rows now use the live corpus counts read from the harmonised CSVs (PsyTAR 6,003; CADEC 7,823; DrugLib 4,107; WebMD 49,998) — the earlier 7,681 CADEC budget input is gone.*
+*GPU totals are dominated by training energy; the inference contribution is ≈ 10.8 kJ (DistilBERT) and ≈ 20.8 kJ (PubMedBERT). All four rows use live corpus counts read from harmonised CSVs (PsyTAR 6,003; CADEC 7,823; drugsCom 50k 49,998).*
 
 ---
 

@@ -1,85 +1,92 @@
 {
   "_meta": {
     "generated_by": "measure_cpu_energy.py",
-    "rapl_available": false,
-    "rapl_domains": 0,
-    "rapl_domain_names": [],
+    "rapl_available": true,
+    "rapl_domains": 2,
+    "rapl_domain_names": [
+      "intel-rapl:0",
+      "intel-rapl:1"
+    ],
     "rapl_note": "Only top-level package domains (intel-rapl:N) are summed. Subzones (core, uncore, dram = intel-rapl:N:M) are components of the package total and are excluded to avoid double-counting.",
-    "idle_power_w": 8.65,
-    "idle_source": "ST2_constant",
+    "idle_power_w": 14.004953202559935,
+    "idle_source": "rapl",
     "bench_rows": 50442,
     "seed": 42,
     "benchmark_scope": "end_to_end_tfidf_plus_predict",
     "scope_description": "End-to-End: Raw text -> TfidfVectorizer.transform -> clf.predict_proba; Model-Only: clf.predict_proba on pre-vectorized sparse matrix. Both reported in output.",
     "host": {
-      "cpu_model": "Intel64 Family 6 Model 142 Stepping 12, GenuineIntel",
-      "physical_cores": 4,
-      "logical_cpus": 8,
-      "socket_count": null,
-      "tdp_watts": null,
-      "platform": "Windows-11-10.0.26200-SP0"
+      "cpu_model": "Intel(R) Core(TM) i5-8500 CPU @ 3.00GHz",
+      "physical_cores": 6,
+      "logical_cpus": 6,
+      "socket_count": 1,
+      "tdp_watts": 65.0,
+      "platform": "Linux-7.0.0-30-generic-x86_64-with-glibc2.43",
+      "os": "Linux",
+      "os_release": "7.0.0-30-generic",
+      "is_wsl": false,
+      "is_container": false
     }
   },
   "Logistic Regression": {
-    "inf_j_gross": 2.884223079043424,
-    "inf_j_net": 2.7254200679337184,
-    "throughput_sps": 54465.0,
-    "load_w": 157.09,
-    "idle_w": 8.65,
-    "net_power_w": 148.44,
-    "energy_cv_pct": 0.0,
+    "inf_j_gross": 0.819924528223139,
+    "inf_j_net": 0.6409544850839412,
+    "throughput_sps": 78151.3161768934,
+    "load_w": 64.16160183000534,
+    "idle_w": 14.004953202559935,
+    "net_power_w": 50.156648627445406,
+    "energy_cv_pct": 4.568711362380763,
     "scopes": {
       "end_to_end": {
-        "throughput_sps": 54465.0,
-        "load_w": 157.09,
-        "gross_j_1k": 2.884223079043424,
-        "net_j_1k": 2.7254200679337184,
+        "throughput_sps": 78151.3161768934,
+        "load_w": 64.16160183000534,
+        "gross_j_1k": 0.819924528223139,
+        "net_j_1k": 0.6409544850839412,
         "includes_tfidf_vectorization": true
       },
       "model_only": {
-        "throughput_sps": 4095929.513403759,
-        "load_w": 157.09,
-        "gross_j_1k": 0.038352710779306506,
-        "net_j_1k": 0.036240858030939314,
+        "throughput_sps": 28722972.282145973,
+        "load_w": 62.598975741703065,
+        "gross_j_1k": 0.00217428416845423,
+        "net_j_1k": 0.0016878425347457997,
         "includes_tfidf_vectorization": false
       }
     },
     "n_repeats": 5,
     "measure_window_s": 12.0,
-    "method": "throughput_only_saturated_end2end",
+    "method": "rapl_integrated_saturated_end2end",
     "includes_tfidf_vectorization": true,
     "summary_stat": "median",
-    "provenance": "measured_throughput_x_ST2_power"
+    "provenance": "measured_rapl_saturated"
   },
   "LightGBM": {
-    "inf_j_gross": 6.636150369056474,
-    "inf_j_net": 6.38871087715283,
-    "throughput_sps": 34954.0,
-    "load_w": 231.96,
-    "idle_w": 8.65,
-    "net_power_w": 223.31,
-    "energy_cv_pct": 0.0,
+    "inf_j_gross": 1.1519777797602526,
+    "inf_j_net": 0.9570799741182608,
+    "throughput_sps": 71845.02894226609,
+    "load_w": 82.77874059581106,
+    "idle_w": 14.004953202559935,
+    "net_power_w": 68.77378739325113,
+    "energy_cv_pct": 14.231089358273167,
     "scopes": {
       "end_to_end": {
-        "throughput_sps": 34954.0,
-        "load_w": 231.96,
-        "gross_j_1k": 6.636150369056474,
-        "net_j_1k": 6.38871087715283,
+        "throughput_sps": 71845.02894226609,
+        "load_w": 82.77874059581106,
+        "gross_j_1k": 1.1519777797602526,
+        "net_j_1k": 0.9570799741182608,
         "includes_tfidf_vectorization": true
       },
       "model_only": {
-        "throughput_sps": 128651.65642666398,
-        "load_w": 231.96,
-        "gross_j_1k": 1.8030082662186746,
-        "net_j_1k": 1.7357724432199182,
+        "throughput_sps": 771962.7974117488,
+        "load_w": 216.9178877731977,
+        "gross_j_1k": 0.28098023696330887,
+        "net_j_1k": 0.2628392016161928,
         "includes_tfidf_vectorization": false
       }
     },
     "n_repeats": 5,
     "measure_window_s": 12.0,
-    "method": "throughput_only_saturated_end2end",
+    "method": "rapl_integrated_saturated_end2end",
     "includes_tfidf_vectorization": true,
     "summary_stat": "median",
-    "provenance": "measured_throughput_x_ST2_power"
+    "provenance": "measured_rapl_saturated"
   }
 }

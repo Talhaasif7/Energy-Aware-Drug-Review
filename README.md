@@ -8,7 +8,7 @@
 
 This repository contains the complete experimental framework, empirical codebase, and result tables for **"Green and Trustworthy: Energy-Aware NLP for Patient Drug-Review Safety Signals"**.
 
-> **Provenance.** Every quantitative claim below reconciles to a single source of truth, `results/frozen_split_reconciled.json` (primary seed 42; frozen split recovered from the Colab prediction `.npz` embedded texts; test $N=1{,}201$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). CPU energy is **measured live with Intel RAPL on Linux** (`provenance = measured_rapl_saturated`, 5 repeats, LR CV 4.57%, LightGBM CV 14.23%).
+> **Provenance.** Every quantitative claim below reconciles to a single source of truth, `results/frozen_split_reconciled.json` (primary seed 42; frozen split recovered from the Colab prediction `.npz` embedded texts; test $N=1{,}201$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). CPU energy is **measured live with Intel RAPL on Linux** (`provenance = measured_rapl_saturated`, 7 repeats, LR CV 0.69%, LightGBM CV 0.51%).
 
 ---
 
@@ -91,14 +91,14 @@ Power and energy reconcile via the identity $\text{Energy/1k} = (\text{Load Powe
 
 | Platform | Model Arm | Idle (W) | Load (W) | Net (W) | End-to-End Thr (s/s) | Gross J/1k | Net J/1k | Energy CV | Provenance |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **CPU (Linux RAPL)** | **Logistic Regression** | 7.002 | 32.08 | 25.08 | **78,151** | **0.4100** | **0.3205** | 4.57% | **measured RAPL saturated (end-to-end)** |
-| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 7.002 | 41.39 | 34.39 | **71,845** | **0.5760** | **0.4785** | 14.23% | **measured RAPL saturated (end-to-end)** |
+| **CPU (Linux RAPL)** | **Logistic Regression** | 3.852 | 17.09 | 13.23 | **79,008** | **0.2163** | **0.1675** | 0.69% | **measured RAPL saturated (end-to-end)** |
+| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | 3.852 | 21.44 | 17.59 | **72,301** | **0.2966** | **0.2433** | 0.51% | **measured RAPL saturated (end-to-end)** |
 | **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | **57.04** | **31.34** | 0.33% | **measured saturated run** (3 seeds) |
 | **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | **110.24** | **60.47** | 0.60% | **measured saturated run** (3 seeds) |
 
 **GPU energy (trustworthy).** Captured in a single saturated-batch run — a fixed padded batch driven to steady state with 100 ms `nvidia-smi` power sampling and trapezoidal energy integration, so power, throughput and energy are measured *together*. Averaged over 3 seeds with cross-run CV < 1%. The GPU idle power of 30.13 W reflects a **CUDA context warm / model loaded idle state** (vs cold uninitialized GPU idle of 10.22 W).
 
-**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 5 repeats on Intel(R) Core(TM) i5-8500 CPU @ 3.00GHz). End-to-end throughput includes raw text TF-IDF vectorization (`TfidfVectorizer.transform`), yielding realistic throughputs of ~78,151 s/s for Logistic Regression (0.4100 J/1k gross) and ~71,845 s/s for LightGBM (0.5760 J/1k gross). Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting.
+**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, 5 repeats on Intel Core i5-8500 @ 3.00GHz). End-to-end throughput includes raw text TF-IDF vectorization (`TfidfVectorizer.transform`), yielding realistic throughputs of ~79,008 s/s for Logistic Regression (0.2163 J/1k gross) and ~72,301 s/s for LightGBM (0.2966 J/1k gross). Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting.
 
 ### Benchmark Scope
 
@@ -117,13 +117,13 @@ The directly comparable, trustworthy quantity is the absolute per-1,000-sentence
 
 | Comparison | Gross Ratio | Net Ratio |
 | :--- | :---: | :---: |
-| LightGBM ÷ LR | $\approx 1.40\times$ | $\approx 1.49\times$ |
-| DistilBERT ÷ LightGBM | $\approx 99.02\times$ | $\approx 65.48\times$ |
-| DistilBERT ÷ LR | $\approx 139.12\times$ | $\approx 97.78\times$ |
-| PubMedBERT ÷ LightGBM | $\approx 191.40\times$ | $\approx 126.37\times$ |
-| PubMedBERT ÷ LR | $\approx 268.91\times$ | $\approx 188.69\times$ |
+| LightGBM ÷ LR | $\approx 1.37\times$ | $\approx 1.45\times$ |
+| DistilBERT ÷ LightGBM | $\approx 192.30\times$ | $\approx 128.78\times$ |
+| DistilBERT ÷ LR | $\approx 263.73\times$ | $\approx 187.07\times$ |
+| PubMedBERT ÷ LightGBM | $\approx 371.69\times$ | $\approx 248.52\times$ |
+| PubMedBERT ÷ LR | $\approx 509.76\times$ | $\approx 361.00\times$ |
 
-> **⚠ These ratios are hardware-dependent.** The GPU per-1k figures are stable across seeds (CV < 1%). CPU energy CV across saturated repeats: LR 4.57%, LightGBM 14.23%. Treat the CPU–GPU ratio as an order-of-magnitude statement (~99.0x–268.9x gross, ~65.5x–188.7x net); the precise multiplier depends on the deployment host's CPU architecture, core count, and clock speed.
+> **⚠ These ratios are hardware-dependent.** The GPU per-1k figures are stable across seeds (CV < 1%). CPU energy CV across saturated repeats: LR 0.69%, LightGBM 0.51%. Treat the CPU–GPU ratio as an order-of-magnitude statement (~192.3x–509.8x gross, ~128.8x–361.0x net); the precise multiplier depends on the deployment host's CPU architecture, core count, and clock speed.
 
 ---
 
@@ -198,7 +198,7 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 | **Efficient Transformer (DistilBERT)** | Colab T4 | 540,045 | 189,115 | 0.59 h | 0.04 h | 0.63 h | 148,293.9 J | 0.0412 kWh | **PASSED** |
 | **Biomedical Transformer (PubMedBERT)** | Colab T4 | 540,045 | 189,115 | 0.97 h | 0.09 h | 1.06 h | 250,161.6 J | 0.0695 kWh | **PASSED** |
 
-> **Note on measured CPU rows.** CPU inference energy is derived from `results/cpu_energy_measured.json` using the end-to-end saturated throughput (0.4100 J/1k for LR, 0.5760 J/1k for LightGBM). Both classical tiers pass comfortably under budget.
+> **Note on measured CPU rows.** CPU inference energy is derived from `results/cpu_energy_measured.json` using the end-to-end saturated throughput (0.2163 J/1k for LR, 0.2966 J/1k for LightGBM). Both classical tiers pass comfortably under budget.
 
 *GPU totals are dominated by training energy; the inference contribution is ≈ 10.8 kJ (DistilBERT) and ≈ 20.8 kJ (PubMedBERT). All four rows use live corpus counts read from harmonised CSVs (PsyTAR 6,003; CADEC 7,823; drugsCom 50k 49,998).*
 
@@ -223,10 +223,10 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 | :---: | :---: | :---: | :--- | :--- | :---: | :---: | :---: | :---: |
 | **0.03** | 0.5 | **0** | *None (Infeasible)* | *None (Infeasible)* | - | **-** | ❌ | ❌ |
 | **0.05** | 60.0 | **4** | DistilBERT + Isotonic | **DistilBERT + Isotonic** | 0.9164 | **31.34** | ✅ | ❌ |
-| **0.07** | 10.0 | **5** | LR + TempScale | **LR + TempScale** | 0.8786 | **0.32** | ❌ | ❌ |
+| **0.07** | 10.0 | **5** | LR + TempScale | **LR + TempScale** | 0.8786 | **0.17** | ❌ | ❌ |
 | **0.07** | 60.0 | **7** | DistilBERT + TempScale | **DistilBERT + TempScale** | 0.9180 | **31.34** | ✅ | ❌ |
-| **0.10** | 0.5 | **2** | LR + TempScale | **LR + TempScale** | 0.8786 | **0.32** | ✅ | ❌ |
-| **0.10** | 10.0 | **5** | LR + TempScale | **LR + TempScale** | 0.8786 | **0.32** | ✅ | ❌ |
+| **0.10** | 0.5 | **5** | LR + TempScale | **LR + TempScale** | 0.8786 | **0.17** | ✅ | ❌ |
+| **0.10** | 10.0 | **5** | LR + TempScale | **LR + TempScale** | 0.8786 | **0.17** | ✅ | ❌ |
 | **0.10** | 60.0 | **8** | DistilBERT + Uncalibrated | **DistilBERT + Uncalibrated** | 0.9181 | **31.34** | ✅ | ❌ |
 | **0.05** | 120.0 | **5** | PubMedBERT + Isotonic | **PubMedBERT + Isotonic** | 0.9277 | **60.47** | ✅ | ✅ |
 | **0.07** | 120.0 | **9** | PubMedBERT + TempScale | **PubMedBERT + TempScale** | 0.9276 | **60.47** | ✅ | ✅ |
@@ -269,7 +269,7 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 3. **Out-of-domain calibration is seed-unstable, and instability scales with model capacity (Insight 3).** Multi-seed evaluation reveals that PubMedBERT's CADEC OOD ECE varies by $\pm 0.0303$ across seeds ($0.0794 \pm 0.0303$) — comparable to the entire $\tau=0.07$ budget itself — whereas Isotonic Logistic Regression is stable at $0.0409 \pm 0.0043$. High model capacity does not guarantee calibration robustness out of domain. Point-estimate $\tau$-feasibility is therefore not a safe deployment criterion; the conservative upper-CI gate is required, not optional.
 
-4. **The tie rule and the budget do different jobs (Insight 4).** The paired bootstrap identifies in-domain equivalence on PsyTAR (PubMedBERT ≈ DistilBERT), but the mandatory CADEC OOD Tie-Test Gate prevents sub-optimal substitution out of domain. ECC-MS saves energy primarily through constrained regime selection (selecting calibrated classical CPU arms when energy or calibration budgets bind, yielding an ~99.0x–268.9x gross energy reduction).
+4. **The tie rule and the budget do different jobs (Insight 4).** The paired bootstrap identifies in-domain equivalence on PsyTAR (PubMedBERT ≈ DistilBERT), but the mandatory CADEC OOD Tie-Test Gate prevents sub-optimal substitution out of domain. ECC-MS saves energy primarily through constrained regime selection (selecting calibrated classical CPU arms when energy or calibration budgets bind, yielding an ~192.3x–509.8x gross energy reduction).
 
 ---
 
@@ -277,7 +277,7 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 At **110.24 J/1k**, screening **1 million sentences/day** on PubMedBERT consumes **≈ 30.6 Wh/day** — roughly two smartphone charges. On DistilBERT (57.04 J/1k) the same volume is **≈ 15.8 Wh/day**.
 
-While the cross-platform energy gap is substantial (~99.0x–268.9x gross, ~65.5x–188.7x net), absolute inference energy remains modest at realistic pharmacovigilance volumes. The framework's contribution is **deployment feasibility under constraint** — on-premise clinical edge hardware, procurement limits, throughput-per-watt, and out-of-domain calibration safety — rather than an environmental-impact claim.
+While the cross-platform energy gap is substantial (~192.3x–509.8x gross, ~128.8x–361.0x net), absolute inference energy remains modest at realistic pharmacovigilance volumes. The framework's contribution is **deployment feasibility under constraint** — on-premise clinical edge hardware, procurement limits, throughput-per-watt, and out-of-domain calibration safety — rather than an environmental-impact claim.
 
 ---
 

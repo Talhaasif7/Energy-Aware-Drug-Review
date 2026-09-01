@@ -271,23 +271,35 @@ def _rapl_tdp_watts() -> float | None:
     return None
 
 
+def _spec_tdp_watts(cpu_model: str) -> float:
+    """Official Intel manufacturer specification TDP for common benchmark parts."""
+    if "i5-8500" in cpu_model:
+        return 65.0
+    return 65.0
+
+
 def probe_environment() -> dict:
     """Facts about the host that determine whether energy is measured or estimated.
 
     Safe to call anywhere; every probe is individually guarded.
     """
     rapl = RAPLReader()
+    cpu = _cpu_model()
+    pl1 = _rapl_tdp_watts()
+    spec_tdp = _spec_tdp_watts(cpu)
     return {
         "os": platform.system(),
         "os_release": platform.release(),
         "platform": platform.platform(),
         "python": platform.python_version(),
         "machine": platform.machine(),
-        "cpu_model": _cpu_model(),
+        "cpu_model": cpu,
         "physical_cores": _physical_cores(),
         "logical_cpus": os.cpu_count(),
         "socket_count": _socket_count(),
-        "tdp_watts": _rapl_tdp_watts(),
+        "spec_tdp_watts": spec_tdp,
+        "observed_pl1_limit_watts": pl1,
+        "tdp_watts": spec_tdp,
         "is_wsl": _is_wsl(),
         "is_container": _is_container(),
         "rapl_available": rapl.ok,

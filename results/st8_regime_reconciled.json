@@ -56,7 +56,7 @@
       "Argmax": "Logist+Temp",
       "BootstrapTie": "Logist+Temp",
       "Tie AUROC": "0.8786",
-      "Tie NetJ/1k": "0.32",
+      "Tie NetJ/1k": "0.17",
       "CADEC tau-ok (RQ4)": false,
       "CADEC Tie-Band": false,
       "m=0.01": "Logist+Temp",
@@ -80,11 +80,11 @@
     {
       "tau": 0.1,
       "E(gross J/1k)": 0.5,
-      "Feasible": 2,
+      "Feasible": 5,
       "Argmax": "Logist+Temp",
       "BootstrapTie": "Logist+Temp",
       "Tie AUROC": "0.8786",
-      "Tie NetJ/1k": "0.32",
+      "Tie NetJ/1k": "0.17",
       "CADEC tau-ok (RQ4)": true,
       "CADEC Tie-Band": false,
       "m=0.01": "Logist+Temp",
@@ -98,7 +98,7 @@
       "Argmax": "Logist+Temp",
       "BootstrapTie": "Logist+Temp",
       "Tie AUROC": "0.8786",
-      "Tie NetJ/1k": "0.32",
+      "Tie NetJ/1k": "0.17",
       "CADEC tau-ok (RQ4)": true,
       "CADEC Tie-Band": false,
       "m=0.01": "Logist+Temp",
@@ -195,7 +195,7 @@
     "tau=0.05_E=60.0": 4,
     "tau=0.07_E=10.0": 5,
     "tau=0.07_E=60.0": 7,
-    "tau=0.1_E=0.5": 2,
+    "tau=0.1_E=0.5": 5,
     "tau=0.1_E=10.0": 5,
     "tau=0.1_E=60.0": 8,
     "tau=0.05_E=120.0": 5,
@@ -206,12 +206,12 @@
   },
   "model_energy": {
     "Logistic Regression": {
-      "net": 0.3204772425419706,
-      "gross": 0.4099622641115695
+      "net": 0.1675107423922764,
+      "gross": 0.21626382466496175
     },
     "LightGBM": {
-      "net": 0.4785399870591304,
-      "gross": 0.5759888898801263
+      "net": 0.24332096509016113,
+      "gross": 0.29659594973537384
     },
     "DistilBERT": {
       "net": 31.335613656246846,

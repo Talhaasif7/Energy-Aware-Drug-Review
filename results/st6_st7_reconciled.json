@@ -1,7 +1,7 @@
 {
   "_meta": {
     "script": "budget_and_subgroup_st6_st7.py",
-    "generated_utc": "2026-08-31 08:04:58Z",
+    "generated_utc": "2026-09-01 07:41:32Z",
     "note": "ST6 budget extrapolation + ST7 subgroup feasibility. All energy terms are derived from measured benchmarks (results/cpu_energy_measured.json, results/colab_transformer_gpu_results.json); corpus sizes are read from the harmonised CSVs. Nothing here is hand-entered.",
     "subgroup_min_n": 200,
     "inputs_captured": true
@@ -59,22 +59,22 @@
     },
     "cpu_inference_measured": {
       "LR": {
-        "gross_1k": 0.4099622641115695,
-        "net_1k": 0.3204772425419706,
-        "inf_throughput": 78151.3161768934,
-        "load_w": 32.08080091500267,
-        "energy_cv_pct": 4.568711362380763,
-        "idle_w": 7.002476601279968,
+        "gross_1k": 0.21626382466496175,
+        "net_1k": 0.1675107423922764,
+        "inf_throughput": 79007.53843483615,
+        "load_w": 17.086472439281636,
+        "energy_cv_pct": 0.6908203896753616,
+        "idle_w": 3.851861021475921,
         "rapl_available": true,
         "provenance": "measured_rapl_saturated"
       },
       "GBDT": {
-        "gross_1k": 0.5759888898801263,
-        "net_1k": 0.4785399870591304,
-        "inf_throughput": 71845.02894226609,
-        "load_w": 41.38937029790553,
-        "energy_cv_pct": 14.231089358273167,
-        "idle_w": 7.002476601279968,
+        "gross_1k": 0.29659594973537384,
+        "net_1k": 0.24332096509016113,
+        "inf_throughput": 72301.49472829653,
+        "load_w": 21.44433049622623,
+        "energy_cv_pct": 0.5051510751122055,
+        "idle_w": 3.851861021475921,
         "rapl_available": true,
         "provenance": "measured_rapl_saturated"
       }
@@ -117,9 +117,9 @@
       "Inf Passes": "289,105",
       "Train Time": "0.04 min",
       "Inf Time": "0.06 min",
-      "Total Time (h)": 0.0017289613895649352,
-      "Total Energy (J)": 149.8969046628117,
-      "Total Energy (kWh)": 4.1638029073003245e-05,
+      "Total Time (h)": 0.001717825246857294,
+      "Total Energy (J)": 93.89771732660017,
+      "Total Energy (kWh)": 2.6082699257388936e-05,
       "Status": "PASSED",
       "provenance": "measured_rapl_saturated"
     },
@@ -130,9 +130,9 @@
       "Inf Passes": "289,105",
       "Train Time": "0.07 min",
       "Inf Time": "0.07 min",
-      "Total Time (h)": 0.002359283886215771,
-      "Total Energy (J)": 285.9550126463947,
-      "Total Energy (kWh)": 7.943194795733187e-05,
+      "Total Time (h)": 0.0023522269314596887,
+      "Total Energy (J)": 205.18111668584606,
+      "Total Energy (kWh)": 5.699475463495724e-05,
       "Status": "PASSED",
       "provenance": "measured_rapl_saturated"
     },

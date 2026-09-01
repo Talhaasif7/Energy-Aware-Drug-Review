@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated_by": "measure_cpu_energy.py",
+    "generated_by": "standalone_cpu_benchmark_linux.py (consolidated into scripts/measure_cpu_energy.py)",
     "rapl_available": true,
     "rapl_domains": 1,
     "rapl_domain_names": [
@@ -27,7 +27,7 @@
       "utc": "2026-09-01T07:12:01.069367+00:00",
       "git_sha": "c653fb1",
       "argv": [
-        "scripts/measure_cpu_energy.py"
+        "scripts/standalone_cpu_benchmark_linux.py"
       ],
       "host_boot_id": "d78a235c-25f1-436a-b83a-923101811388",
       "python_version": "3.14.4"

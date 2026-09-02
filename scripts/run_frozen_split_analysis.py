@@ -581,6 +581,34 @@ def main():
                 paired_delta_auroc(y_cadec_csv, model_cadec_probs_uncal[m1], model_cadec_probs_uncal[m2],
                                    n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED)
 
+    cadec_matrix = pairwise_delta_auroc_matrix(
+        y_cadec_csv, model_cadec_probs_uncal, n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED)
+
+    d_psy, lo_psy, hi_psy = paired_delta_auroc(
+        y_test, model_probs_uncal["PubMedBERT"], model_probs_uncal["DistilBERT"],
+        n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED)
+    d_cad, lo_cad, hi_cad = paired_delta_auroc(
+        y_cadec_csv, model_cadec_probs_uncal["PubMedBERT"], model_cadec_probs_uncal["DistilBERT"],
+        n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED)
+
+    tost_summary = {
+        "delta_eq": 0.015,
+        "pubmed_vs_distil_psytar": {
+            "delta_point": round(float(d_psy), 4),
+            "ci_lo": round(float(lo_psy), 4),
+            "ci_hi": round(float(hi_psy), 4),
+            "ci_str": f"[{lo_psy:+.4f}, {hi_psy:+.4f}]",
+            "tost_equivalent": bool(-0.015 <= lo_psy and hi_psy <= 0.015),
+        },
+        "pubmed_vs_distil_cadec": {
+            "delta_point": round(float(d_cad), 4),
+            "ci_lo": round(float(lo_cad), 4),
+            "ci_hi": round(float(hi_cad), 4),
+            "ci_str": f"[{lo_cad:+.4f}, {hi_cad:+.4f}]",
+            "tost_equivalent": bool(-0.015 <= lo_cad and hi_cad <= 0.015),
+        },
+    }
+
     cadec_tie_with_leader = {}
     for m in model_probs_uncal:
         if m == cadec_leader_model:
@@ -821,6 +849,9 @@ def main():
         "per_arm_metrics": per_arm,
         "catalogue": configs,
         "paired_delta_auroc": matrix,
+        "paired_delta_auroc_psytar": matrix,
+        "paired_delta_auroc_cadec": cadec_matrix,
+        "tost_summary": tost_summary,
         "eccms_grid": grid_rows,
         "feasible_reconcile_cells": [
             {"tau": t, "E_gross_J_per_1k": e,

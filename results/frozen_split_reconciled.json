@@ -6779,6 +6779,123 @@
       "statistical_tie": true
     }
   ],
+  "paired_delta_auroc_psytar": [
+    {
+      "model_a": "Logistic Regression",
+      "model_b": "LightGBM",
+      "delta_auroc": 0.004286283891546949,
+      "ci_lo": -0.008599591572674939,
+      "ci_hi": 0.017020616035825345,
+      "statistical_tie": true
+    },
+    {
+      "model_a": "Logistic Regression",
+      "model_b": "PubMedBERT",
+      "delta_auroc": -0.05330174211753158,
+      "ci_lo": -0.06958067869314218,
+      "ci_hi": -0.03818865184024436,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "Logistic Regression",
+      "model_b": "DistilBERT",
+      "delta_auroc": -0.051700711569132696,
+      "ci_lo": -0.06784023457789266,
+      "ci_hi": -0.037211822506006395,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "LightGBM",
+      "model_b": "PubMedBERT",
+      "delta_auroc": -0.05758802600907853,
+      "ci_lo": -0.07467478733429907,
+      "ci_hi": -0.04153562274990575,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "LightGBM",
+      "model_b": "DistilBERT",
+      "delta_auroc": -0.055986995460679645,
+      "ci_lo": -0.07280953485435378,
+      "ci_hi": -0.03956458901860937,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "PubMedBERT",
+      "model_b": "DistilBERT",
+      "delta_auroc": 0.0016010305483988851,
+      "ci_lo": -0.00880391143165562,
+      "ci_hi": 0.011525756038224087,
+      "statistical_tie": true
+    }
+  ],
+  "paired_delta_auroc_cadec": [
+    {
+      "model_a": "Logistic Regression",
+      "model_b": "LightGBM",
+      "delta_auroc": 0.050762988510116736,
+      "ci_lo": 0.044046519712434284,
+      "ci_hi": 0.057728020791221614,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "Logistic Regression",
+      "model_b": "PubMedBERT",
+      "delta_auroc": -0.0948924895826514,
+      "ci_lo": -0.10281463157181403,
+      "ci_hi": -0.08691800176745246,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "Logistic Regression",
+      "model_b": "DistilBERT",
+      "delta_auroc": -0.08610337304562521,
+      "ci_lo": -0.0939909644110692,
+      "ci_hi": -0.07797043953981563,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "LightGBM",
+      "model_b": "PubMedBERT",
+      "delta_auroc": -0.14565547809276813,
+      "ci_lo": -0.15456535700832577,
+      "ci_hi": -0.13639502660220165,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "LightGBM",
+      "model_b": "DistilBERT",
+      "delta_auroc": -0.13686636155574194,
+      "ci_lo": -0.14612556623389583,
+      "ci_hi": -0.127689355072783,
+      "statistical_tie": false
+    },
+    {
+      "model_a": "PubMedBERT",
+      "model_b": "DistilBERT",
+      "delta_auroc": 0.008789116537026187,
+      "ci_lo": 0.0037053494772650297,
+      "ci_hi": 0.013772167435497659,
+      "statistical_tie": false
+    }
+  ],
+  "tost_summary": {
+    "delta_eq": 0.015,
+    "pubmed_vs_distil_psytar": {
+      "delta_point": 0.0016,
+      "ci_lo": -0.0088,
+      "ci_hi": 0.0115,
+      "ci_str": "[-0.0088, +0.0115]",
+      "tost_equivalent": true
+    },
+    "pubmed_vs_distil_cadec": {
+      "delta_point": 0.0088,
+      "ci_lo": 0.0037,
+      "ci_hi": 0.0138,
+      "ci_str": "[+0.0037, +0.0138]",
+      "tost_equivalent": true
+    }
+  },
   "eccms_grid": [
     {
       "tau": 0.03,

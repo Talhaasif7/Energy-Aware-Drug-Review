@@ -265,7 +265,7 @@ def main():
             'Tie NetJ/1k': (f"{tie_sel['inf_j_net']:.2f}"
                             if tie_sel and tie_sel.get('inf_j_net') is not None else '-'),
             'CADEC tau-ok (RQ4)': cadec_ok,
-            'CADEC Tie-Band': cadec_tie,
+            'CADEC TOST-Equivalent': cadec_tie,
             'm=0.01': short_label(margins['m0.01']['name']) if margins['m0.01'] else 'None',
             'm=0.02': short_label(margins['m0.02']['name']) if margins['m0.02'] else 'None',
             'm=0.03': short_label(margins['m0.03']['name']) if margins['m0.03'] else 'None',

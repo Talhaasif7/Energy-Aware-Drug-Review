@@ -430,7 +430,7 @@ def generate_readme():
         auroc = r["Tie AUROC"]
         net_j = r["Tie NetJ/1k"]
         rq4_ok = "✅" if r["CADEC tau-ok (RQ4)"] is True else ("❌" if r["CADEC tau-ok (RQ4)"] is False else "❌")
-        gate_ok = "✅" if (tie != "*None (Infeasible)*" and ("Distil" in tie or "PubMed" in tie)) else ("-" if tie == "*None (Infeasible)*" else "❌")
+        gate_ok = "✅" if r.get("CADEC TOST-Equivalent", r.get("CADEC Tie-Band")) is True else ("-" if tie == "*None (Infeasible)*" else "❌")
 
         tie_disp = f"**{tie}**" if tie != "*None (Infeasible)*" else tie
         lines.append(f"| **{tau_val:.2f}** | {e_val:.1f} | **{feas}** | {argmax} | {tie_disp} | {auroc} | **{net_j}** | {rq4_ok} | {gate_ok} |")
@@ -485,12 +485,20 @@ def generate_readme():
     lr_temp_cadec_ece_m = multi_seed.get("Logistic Regression + TempScale", {}).get("cadec_ece_mean", 0.0834)
     lr_temp_cadec_ece_s = multi_seed.get("Logistic Regression + TempScale", {}).get("cadec_ece_std", 0.0042)
 
+    tost_data = frozen.get("tost_summary", {})
+    psy_tost = tost_data.get("pubmed_vs_distil_psytar", {})
+    cad_tost = tost_data.get("pubmed_vs_distil_cadec", {})
+    psy_delta = psy_tost.get("delta_point", 0.0016)
+    psy_ci_str = psy_tost.get("ci_str", "[-0.0088, +0.0115]")
+    cad_delta = cad_tost.get("delta_point", 0.0088)
+    cad_ci_str = cad_tost.get("ci_str", "[+0.0037, +0.0138]")
+
     lines.append("---\n")
     lines.append("## 💡 Key Empirical Discoveries & Insights\n")
     lines.append(f"1. **Subword fragmentation drives the domain advantage (Insight 1).** PubMedBERT fragments ADR terms at 1.62 tokens/word (66.7% intact) versus DistilBERT's 3.15 tokens/word (18.2% intact), consistent with PubMedBERT's higher ADR discrimination (AUROC {pub_auroc:.4f} vs {dis_auroc:.4f}).\n")
     lines.append(f"2. **Near-zero-energy recalibration fixes linear miscalibration (Insight 2).** For Logistic Regression, isotonic regression cuts adaptive ECE from {lr_uncal_ece:.4f} to **{lr_iso_ece:.4f}** and temperature scaling ($T=0.72$) to {lr_temp_ece:.4f}, while AUROC remains preserved. Because $T=0.72<1$, scaling *sharpens* the probabilities — the LR arm was **under**confident. LightGBM is moderately calibrated out of the box (ECE {gbdt_uncal_ece:.4f}) and improves to **{gbdt_iso_ece:.4f}** under isotonic recalibration.\n")
     lines.append(f"3. **Universal post-hoc recalibration & method divergence (Insight 3).** Isotonic regression successfully restores OOD calibration across all four architectures on CADEC (PubMedBERT ECE {pub_cadec_ece_m:.4f} $\\rightarrow$ **{pub_iso_cadec_ece_m:.4f}**; LR ECE {lr_temp_cadec_ece_m:.4f} $\\rightarrow$ **{lr_iso_cadec_ece_m:.4f}**). Temperature scaling fails on linear models ($T=0.72$, CADEC ECE ${lr_temp_cadec_ece_m:.4f} \\pm {lr_temp_cadec_ece_s:.4f} > \\tau=0.07$) because single-parameter scaling cannot correct non-monotonic calibration errors in high-dimensional sparse TF-IDF spaces.\n")
-    lines.append(f"4. **Statistical equivalence & tie-rule energy saving (Insight 4).** Paired bootstrap tests confirm that PubMedBERT and DistilBERT are statistically equivalent under TOST on both in-domain PsyTAR ($\\Delta = +0.0016$, 95% CI $[-0.0088, +0.0115] \\subseteq [-0.015, +0.015]$) and out-of-domain CADEC ($[+0.0037, +0.0138] \\subseteq [-0.015, +0.015]$). In feasible regimes ($E \\ge 120\\text{{ J}}$), ST8 substitutes DistilBERT for PubMedBERT, delivering a **{r_pubmed_distil_gross:.2f}x energy reduction** ({distil_gross:.2f} J vs {pubmed_gross:.2f} J per 1k) with zero statistically detectable loss in clinical discrimination.\n")
+    lines.append(f"4. **Statistical equivalence & tie-rule energy saving (Insight 4).** Paired bootstrap tests confirm that PubMedBERT and DistilBERT are statistically equivalent under TOST on both in-domain PsyTAR ($\\Delta = {psy_delta:+.4f}$, 95% CI ${psy_ci_str} \\subseteq [-0.015, +0.015]$) and out-of-domain CADEC ($\\Delta = {cad_delta:+.4f}$, 95% CI ${cad_ci_str} \\subseteq [-0.015, +0.015]$). On CADEC, although PubMedBERT is statistically significantly superior to DistilBERT (95% CI excludes zero), the effect size is clinically immaterial (lying strictly within $\\Delta_{{eq}} = 0.015$). In feasible regimes ($E \\ge 120\\text{{ J}}$), ST8 substitutes DistilBERT for PubMedBERT, delivering a **{r_pubmed_distil_gross:.2f}x energy reduction** ({distil_gross:.2f} J vs {pubmed_gross:.2f} J per 1k) with zero clinically meaningful loss in discrimination.\n")
 
     lines.append("---\n")
     lines.append("## 🔬 Cross-Patient Text Idioms & Training Dynamics\n")

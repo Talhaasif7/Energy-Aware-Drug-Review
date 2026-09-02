@@ -30,7 +30,7 @@
       "Tie AUROC": "-",
       "Tie NetJ/1k": "-",
       "CADEC tau-ok (RQ4)": null,
-      "CADEC Tie-Band": null,
+      "CADEC TOST-Equivalent": null,
       "m=0.01": "None",
       "m=0.02": "None",
       "m=0.03": "None"
@@ -44,7 +44,7 @@
       "Tie AUROC": "0.9352",
       "Tie NetJ/1k": "48.09",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": true,
       "m=0.01": "Distil+Temp",
       "m=0.02": "Distil+Temp",
       "m=0.03": "Distil+Temp"
@@ -58,7 +58,7 @@
       "Tie AUROC": "0.8820",
       "Tie NetJ/1k": "0.17",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": false,
       "m=0.01": "Logist+Isot",
       "m=0.02": "Logist+Isot",
       "m=0.03": "Logist+Isot"
@@ -72,7 +72,7 @@
       "Tie AUROC": "0.9353",
       "Tie NetJ/1k": "48.09",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": true,
       "m=0.01": "Distil",
       "m=0.02": "Distil",
       "m=0.03": "Distil"
@@ -86,7 +86,7 @@
       "Tie AUROC": "0.8836",
       "Tie NetJ/1k": "0.17",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": false,
       "m=0.01": "Logist+Temp",
       "m=0.02": "Logist+Temp",
       "m=0.03": "Logist+Temp"
@@ -100,7 +100,7 @@
       "Tie AUROC": "0.8836",
       "Tie NetJ/1k": "0.17",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": false,
       "m=0.01": "Logist+Temp",
       "m=0.02": "Logist+Temp",
       "m=0.03": "Logist+Temp"
@@ -114,7 +114,7 @@
       "Tie AUROC": "0.9353",
       "Tie NetJ/1k": "48.09",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": true,
       "m=0.01": "Distil",
       "m=0.02": "Distil",
       "m=0.03": "Distil"
@@ -128,7 +128,7 @@
       "Tie AUROC": "0.9352",
       "Tie NetJ/1k": "48.09",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": true,
       "m=0.01": "Distil+Temp",
       "m=0.02": "Distil+Temp",
       "m=0.03": "Distil+Temp"
@@ -142,7 +142,7 @@
       "Tie AUROC": "0.9353",
       "Tie NetJ/1k": "48.09",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": true,
       "m=0.01": "Distil",
       "m=0.02": "Distil",
       "m=0.03": "Distil"
@@ -156,7 +156,7 @@
       "Tie AUROC": "0.9353",
       "Tie NetJ/1k": "48.09",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": true,
       "m=0.01": "Distil",
       "m=0.02": "Distil",
       "m=0.03": "Distil"
@@ -170,7 +170,7 @@
       "Tie AUROC": "0.9353",
       "Tie NetJ/1k": "48.09",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": true,
       "m=0.01": "Distil",
       "m=0.02": "Distil",
       "m=0.03": "Distil"
@@ -184,7 +184,7 @@
       "Tie AUROC": "0.9353",
       "Tie NetJ/1k": "48.09",
       "CADEC tau-ok (RQ4)": true,
-      "CADEC Tie-Band": false,
+      "CADEC TOST-Equivalent": true,
       "m=0.01": "Distil",
       "m=0.02": "Distil",
       "m=0.03": "Distil"

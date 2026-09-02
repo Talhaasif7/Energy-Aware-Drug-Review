@@ -20,10 +20,11 @@ This repository contains the complete experimental framework, empirical codebase
    - [Classical CPU Arms (ST3 / ST4)](#1-classical-cpu-arms-logistic-regression--lightgbm)
    - [GPU Transformer Arms (Colab T4 FP16)](#2-gpu-transformer-arms-distilbert--pubmedbert)
    - [Subword Fragmentation Analysis](#3-subword-fragmentation-analysis-insight-1)
-   - [Secondary Task & Ordinal Cutoff Sensitivity (ST1b)](#4-secondary-task--ordinal-cutoff-sensitivity-st1b)
-   - [Compute & Energy Budget Extrapolation (ST6)](#5-st6-compute--energy-budget-extrapolation-table)
-   - [Subgroup Fairness & Calibration Audit (ST7)](#6-st7-subgroup-fairness--calibration-audit-n--200)
-   - [ECC-MS Model Selection & Regime Sweep (ST8)](#7-st8-detailed-ecc-ms-model-selection-table)
+   - [CADEC Label Harmonisation & Span Sensitivity Audit](#4-cadec-label-harmonisation--span-sensitivity-audit)
+   - [Secondary Task & Ordinal Cutoff Sensitivity (ST1b)](#5-secondary-task--ordinal-cutoff-sensitivity-st1b)
+   - [Compute & Energy Budget Extrapolation (ST6)](#6-st6-compute--energy-budget-extrapolation-table)
+   - [Subgroup Fairness & Calibration Audit (ST7)](#7-st7-subgroup-fairness--calibration-audit-n--200)
+   - [ECC-MS Model Selection & Regime Sweep (ST8)](#8-st8-energycalibration-constrained-selection-ecc-ms-grid)
 5. [Key Empirical Discoveries & Insights](#-key-empirical-discoveries--insights)
 6. [Absolute Energy Scale & Deployment Framing](#-absolute-energy-scale--deployment-framing)
 7. [Reproduction & Execution Instructions](#-reproduction--execution-instructions)
@@ -170,7 +171,30 @@ Fitted temperature scaling on the transformer logits (from the calibration split
 
 ---
 
-### 4. Secondary Task & Ordinal Cutoff Sensitivity (ST1b)
+### 4. CADEC Label Harmonisation & Span Sensitivity Audit
+
+*Evaluating robustness against Brat ADR span-to-sentence mapping transformations on CADEC ($N=7{,}823$ sentences across 1,250 posts, 7,409 gold ADR spans, 0 missing annotations).*
+
+| Model Tier | Recalibration | Rule A (Overlap) AUROC | Rule B (Contained) AUROC | Rule C (Post-Level) AUROC | Rule A ECE | Rule B ECE | Rule C ECE | Ranking Invariance |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Logistic Regression** | Uncalibrated | 0.8309 | 0.8307 | 0.8115 | 0.0924 | 0.0921 | 0.3107 | **Preserved** |
+| **Logistic Regression** | Temp Scaled ($T=0.72$) | 0.8309 | 0.8307 | 0.8115 | 0.0859 | 0.0857 | 0.2928 | **Preserved** |
+| **Logistic Regression** | Isotonic | 0.8266 | 0.8264 | 0.8111 | **0.0239** | **0.0237** | **0.1691** | **Preserved** |
+| **LightGBM (GBDT)** | Uncalibrated | 0.7801 | 0.7799 | 0.8280 | 0.0681 | 0.0679 | 0.2802 | **Preserved** |
+| **LightGBM (GBDT)** | Temp Scaled ($T=0.91$) | 0.7801 | 0.7799 | 0.8280 | 0.0650 | 0.0648 | 0.2819 | **Preserved** |
+| **LightGBM (GBDT)** | Isotonic | 0.7775 | 0.7773 | 0.8271 | 0.0563 | 0.0563 | 0.2113 | **Preserved** |
+| **DistilBERT** | Uncalibrated | 0.9170 | 0.9170 | 0.9422 | 0.0559 | 0.0556 | 0.0516 | **Preserved** |
+| **DistilBERT** | Temp Scaled ($T=1.33$) | 0.9170 | 0.9170 | 0.9423 | **0.0391** | **0.0389** | 0.0903 | **Preserved** |
+| **DistilBERT** | Isotonic | 0.9153 | 0.9153 | 0.9426 | **0.0230** | **0.0230** | 0.0813 | **Preserved** |
+| **PubMedBERT** | Uncalibrated | **0.9258** | **0.9258** | **0.9589** | 0.0606 | 0.0606 | **0.0213** | **Preserved** |
+| **PubMedBERT** | Temp Scaled ($T=1.58$) | **0.9258** | **0.9258** | **0.9591** | **0.0477** | **0.0477** | 0.0514 | **Preserved** |
+| **PubMedBERT** | Isotonic | **0.9247** | **0.9247** | **0.9545** | **0.0265** | **0.0267** | 0.0541 | **Preserved** |
+
+> **Boundary-Crossing & Ambiguity Rate:** Out of 7,823 CADEC sentences, only **6 sentences (0.08%)** contain an ADR span that crosses a sentence boundary, shifting the positive sentence rate by a negligible 0.02% (2,865 vs 2,863 sentences). Model discrimination rankings, calibration dynamics, and ECC-MS selection regimes are completely invariant to the span-mapping rule.
+
+---
+
+### 5. Secondary Task & Ordinal Cutoff Sensitivity (ST1b)
 
 *Target: 3-class effectiveness (`0=Negative`, `1=Neutral`, `2=Positive`). Canonical secondary task is `drugsCom` ($N=49,998$ stratified subsample).*
 

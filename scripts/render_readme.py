@@ -99,29 +99,47 @@ def generate_readme():
     pubmed_net = catalogue.get("PubMedBERT + Uncalibrated", {}).get("inf_j_net", 60.4707)
 
     # Dynamic CPU values from cpu_energy
-    cpu_idle = cpu_energy.get("Logistic Regression", {}).get("idle_w", cpu_energy.get("_meta", {}).get("idle_power_w", 7.002))
-    lr_load = cpu_energy.get("Logistic Regression", {}).get("load_w", 32.08)
-    lr_net_w = cpu_energy.get("Logistic Regression", {}).get("net_power_w", 25.08)
-    lr_thr = cpu_energy.get("Logistic Regression", {}).get("throughput_sps", 78151.3)
-    lr_cv = cpu_energy.get("Logistic Regression", {}).get("energy_cv_pct", 4.57)
+    cpu_idle = cpu_energy.get("Logistic Regression", {}).get("idle_w", cpu_energy.get("_meta", {}).get("idle_power_w", 3.852))
+    lr_load = cpu_energy.get("Logistic Regression", {}).get("load_w", 17.09)
+    lr_net_w = cpu_energy.get("Logistic Regression", {}).get("net_power_w", 13.23)
+    lr_thr = cpu_energy.get("Logistic Regression", {}).get("throughput_sps", 79007.5)
+    lr_cv = cpu_energy.get("Logistic Regression", {}).get("energy_cv_pct", 0.69)
     lr_repeats = cpu_energy.get("Logistic Regression", {}).get("n_repeats", 7)
 
-    gbdt_load = cpu_energy.get("LightGBM", {}).get("load_w", 41.39)
-    gbdt_net_w = cpu_energy.get("LightGBM", {}).get("net_power_w", 34.39)
-    gbdt_thr = cpu_energy.get("LightGBM", {}).get("throughput_sps", 71845.0)
-    gbdt_cv = cpu_energy.get("LightGBM", {}).get("energy_cv_pct", 14.23)
+    gbdt_load = cpu_energy.get("LightGBM", {}).get("load_w", 21.44)
+    gbdt_net_w = cpu_energy.get("LightGBM", {}).get("net_power_w", 17.59)
+    gbdt_thr = cpu_energy.get("LightGBM", {}).get("throughput_sps", 72301.5)
+    gbdt_cv = cpu_energy.get("LightGBM", {}).get("energy_cv_pct", 0.51)
+
+    # Dynamic GPU values from colab_gpu
+    gpu_idle = float(colab_gpu.get("gpu_idle_watts", 9.5548))
+    distil_seeds = colab_gpu.get("results", {}).get("Efficient Transformer", [])
+    if distil_seeds:
+        distil_load = float(np.mean([r["saturated_load_watts"] for r in distil_seeds]))
+        distil_thr = float(np.mean([r["saturated_throughput_sps"] for r in distil_seeds]))
+        distil_cv = float(np.mean([r.get("saturated_energy_cv_pct", 0.33) for r in distil_seeds]))
+    else:
+        distil_load, distil_thr, distil_cv = 67.06, 1198.1, 0.33
+
+    pubmed_seeds = colab_gpu.get("results", {}).get("Biomedical Transformer", [])
+    if pubmed_seeds:
+        pubmed_load = float(np.mean([r["saturated_load_watts"] for r in pubmed_seeds]))
+        pubmed_thr = float(np.mean([r["saturated_throughput_sps"] for r in pubmed_seeds]))
+        pubmed_cv = float(np.mean([r.get("saturated_energy_cv_pct", 0.60) for r in pubmed_seeds]))
+    else:
+        pubmed_load, pubmed_thr, pubmed_cv = 66.72, 602.0, 0.60
 
     # Ratios
-    r_gbdt_lr_gross = gbdt_gross / lr_gross if lr_gross else 1.40
-    r_gbdt_lr_net = gbdt_net / lr_net if lr_net else 1.49
-    r_distil_gbdt_gross = distil_gross / gbdt_gross if gbdt_gross else 99.02
-    r_distil_gbdt_net = distil_net / gbdt_net if gbdt_net else 65.48
-    r_distil_lr_gross = distil_gross / lr_gross if lr_gross else 139.12
-    r_distil_lr_net = distil_net / lr_net if lr_net else 97.78
-    r_pubmed_gbdt_gross = pubmed_gross / gbdt_gross if gbdt_gross else 191.40
-    r_pubmed_gbdt_net = pubmed_net / gbdt_net if gbdt_net else 126.37
-    r_pubmed_lr_gross = pubmed_gross / lr_gross if lr_gross else 268.91
-    r_pubmed_lr_net = pubmed_net / lr_net if lr_net else 188.69
+    r_gbdt_lr_gross = gbdt_gross / lr_gross if lr_gross else 1.37
+    r_gbdt_lr_net = gbdt_net / lr_net if lr_net else 1.45
+    r_distil_gbdt_gross = distil_gross / gbdt_gross if gbdt_gross else 189.08
+    r_distil_gbdt_net = distil_net / gbdt_net if gbdt_net else 197.63
+    r_distil_lr_gross = distil_gross / lr_gross if lr_gross else 259.31
+    r_distil_lr_net = distil_net / lr_net if lr_net else 287.07
+    r_pubmed_gbdt_gross = pubmed_gross / gbdt_gross if gbdt_gross else 373.70
+    r_pubmed_gbdt_net = pubmed_net / gbdt_net if gbdt_net else 390.29
+    r_pubmed_lr_gross = pubmed_gross / lr_gross if lr_gross else 512.51
+    r_pubmed_lr_net = pubmed_net / lr_net if lr_net else 566.92
 
     # Daily Wh at 1M sentences
     pubmed_wh_day = (pubmed_gross * 1000.0) / 3600.0
@@ -138,8 +156,8 @@ def generate_readme():
     lines.append("This repository contains the complete experimental framework, empirical codebase, and result tables for **\"Green and Trustworthy: Energy-Aware NLP for Patient Drug-Review Safety Signals\"**.\n")
     prov_str = (
         "> **Provenance.** Every quantitative claim below reconciles to a single source of truth, "
-        "`results/frozen_split_reconciled.json` (primary seed 42; frozen split recovered from the Colab prediction "
-        "`.npz` embedded texts; test $N=1{,}201$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). "
+        "`results/frozen_split_reconciled.json` (primary seed 42; review-level grouped split recovered from the Colab prediction "
+        "`.npz` embedded texts; test $N=1{,}189$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). "
         "GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). "
         "CPU energy is **measured live with Intel RAPL on Linux** (`provenance = measured_rapl_saturated`, "
         f"{lr_repeats} repeats, LR CV {lr_cv:.2f}%, LightGBM CV {gbdt_cv:.2f}%).\n"
@@ -169,7 +187,7 @@ def generate_readme():
     lines.append("* **RQ1 (Predictive–Energy Pareto Front):** How do classical CPU arms (Linear, GBDT) compare to Transformer arms (Efficient, Biomedical) in the trade-off between ADR discrimination (AUROC, AUPRC) and energy consumption (Joules)?")
     lines.append("* **RQ2 (Calibration & Post-Hoc Recalibration):** Can near-zero-energy post-hoc recalibration (Temperature Scaling, Isotonic Regression) reduce ECE without degrading discrimination? (The fitted LR temperature $T=0.7163<1$ *sharpens* probabilities, i.e. the linear arm is **under**confident — so the correct framing is miscalibration, not overconfidence.)")
     lines.append("* **RQ3 (Cross-Corpus Transfer & Covariate Shift):** How well do source-fitted recalibrators transfer out-of-domain under distribution shift (PsyTAR $\\rightarrow$ CADEC zero-shot)?")
-    lines.append("* **RQ4 (Out-of-Domain Safety):** Which arms sustain safe calibration ($\\text{ECE}\\le\\tau$) on the unseen external target (CADEC)? *(Result: post-hoc recalibration — not model capacity — is what secures OOD safety; the least OOD-safe headline arm is uncalibrated Logistic Regression, not the transformers.)*")
+    lines.append("* **RQ4 (Out-of-Domain Probability Reliability):** Which arms sustain reliable probability calibration ($\\text{ECE}\\le\\tau$) under distribution shift to the unseen external target (CADEC)? *(Result: post-hoc recalibration — not model capacity — is what secures out-of-domain calibration reliability; calibration is a necessary prerequisite for reliable triage, though not a substitute for clinical validation.)*")
     lines.append("* **RQ5 (ECC-MS Framework Selection):** Under what inference-volume and energy-budget constraints ($E$) does the framework transition between lightweight classical models and high-capacity transformers?\n")
 
     lines.append("---\n")
@@ -178,41 +196,30 @@ def generate_readme():
     lines.append("├── configs/                                # Experimental hyperparameter configs")
     lines.append("├── data/                                   # Datasets (Harmonised & Raw)")
     lines.append("│   ├── 01_primary_adr_detection/")
-    lines.append("│   │   ├── dev_psytar/                     # PsyTAR Development Corpus (6,003 sentences)")
-    lines.append("│   │   └── external_val_cadec/             # CADEC External Validation Corpus (7,823 aligned sentences)")
+    lines.append("│   │   ├── dev_psytar/                     # Primary training/in-domain dataset (PsyTAR)")
+    lines.append("│   │   │   └── psytar_harmonised.csv       # Harmonised PsyTAR (review_id, text, label, N=6,003)")
+    lines.append("│   │   └── external_val_cadec/             # External zero-shot validation (CADEC)")
+    lines.append("│   │       └── cadec_harmonised.csv        # Harmonised CADEC (N=7,823)")
     lines.append("│   └── 02_secondary_sentiment_scaling/")
-    lines.append("│       └── dev_drugscom_50k.csv            # drugsCom dataset (50,000 stratified subsample)")
-    lines.append("├── reports/                                # Generated figures & visual artifacts")
-    lines.append("│   ├── st4_reliability_diagrams.png        # Calibration reliability diagrams")
-    lines.append("│   └── st8_regime_map.png                  # ECC-MS regime map & break-even curve")
-    lines.append("├── results/                                # Output tables, JSONs, and prediction artifacts")
-    lines.append("│   ├── frozen_split_reconciled.json        # ★ SINGLE SOURCE OF TRUTH (all metrics, CIs, paired Δ tests)")
-    lines.append("│   ├── st8_regime_reconciled.json          # ST8 regime + selection tables")
-    lines.append("│   ├── st6_st7_reconciled.json             # ST6 budget + ST7 subgroup tables, with all extrapolation inputs")
+    lines.append("│       ├── dev_drugscom_50k.csv            # Secondary scaling corpus (50k stratified sample, N=49,998)")
+    lines.append("│       └── external_val_webmd/             # External WebMD evaluation corpus")
+    lines.append("│           └── webmd_harmonised.csv        # Harmonised WebMD reviews (N=3,148)")
+    lines.append("├── reports/                                # Generated figures & evaluation charts")
+    lines.append("├── results/                                # Single source of truth JSON artifacts")
     lines.append("│   ├── cpu_energy_measured.json            # CPU energy + provenance tag (Linux RAPL measured)")
-    lines.append("│   ├── colab_transformer_gpu_results.json  # Colab T4 saturated-run energy (multi-seed)")
-    lines.append("│   ├── cpu_arms_seed42_predictions.npz     # LR / LightGBM prediction arrays")
-    lines.append("│   └── *_transformer_seed*_predictions.npz # DistilBERT / PubMedBERT prediction arrays (embed split texts)")
-    lines.append("├── scripts/                                # Executable Python benchmark scripts")
-    lines.append("│   ├── metrics_utils.py                    # Shared metrics (AUROC, AUPRC, Adaptive ECE, Bootstrap CIs)")
-    lines.append("│   ├── harmonise_st1.py                    # ST1: Primary data load & label harmonisation (PsyTAR + CADEC)")
-    lines.append("│   ├── harmonise_secondary_st1b.py         # ST1b: Secondary label harmonisation + cutoff sensitivity")
-    lines.append("│   ├── subword_fragmentation_analysis.py   # Tokenizer subword-fragmentation audit")
     lines.append("│   ├── colab_transformer_gpu_results.json  # GPU energy + power profiles (Colab T4 measured)")
     lines.append("│   ├── frozen_split_reconciled.json        # Unified 12-arm metrics, bootstrap CIs, paired ΔAUROC")
     lines.append("│   ├── st8_regime_reconciled.json          # ECC-MS model selection grid across (tau, E) regimes")
     lines.append("│   └── st6_st7_reconciled.json             # Budget extrapolation & subgroup fairness tables")
     lines.append("├── scripts/                                # Empirical pipeline scripts (ST1–ST8)")
-    lines.append("│   ├── harmonise_st1.py                    # ST1: Dataset cleaning, review_id grouped extraction")
-    lines.append("│   ├── harmonise_secondary_st1b.py         # ST1b: Secondary sentiment & ordinal thresholding")
+    lines.append("│   ├── metrics_utils.py                    # Shared metrics (AUROC, AUPRC, Adaptive ECE, Bootstrap CIs)")
     lines.append("│   ├── measure_cpu_energy.py               # Live Intel RAPL CPU energy benchmark")
     lines.append("│   ├── run_frozen_split_analysis.py        # Core runner: evaluates 12 arms, computes 2,000 paired bootstrap")
     lines.append("│   ├── calibration_mechanics_st4.py        # ST4: Temperature scaling & Isotonic regression")
     lines.append("│   ├── cross_corpus_plumbing_st5.py        # ST5: Zero-shot CADEC covariate shift evaluation")
     lines.append("│   ├── budget_and_subgroup_st6_st7.py      # ST6/ST7: Compute extrapolation & subgroup fairness audit")
     lines.append("│   ├── eccms_regime_st8.py                 # ST8: Constrained optimization & regime sweep")
-    lines.append("│   ├── render_readme.py                    # Compiles markdown report from results/*.json")
-    lines.append("│   └── run_all_cpu.py                      # Orchestrator: runs the whole CPU-side pipeline in order")
+    lines.append("│   └── render_readme.py                    # Compiles markdown report from results/*.json")
     lines.append("├── .gitignore                              # Git exclusion rules")
     lines.append("├── README.md                               # Project documentation & report")
     lines.append("└── requirements.txt                        # Python dependencies")
@@ -225,8 +232,8 @@ def generate_readme():
     lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |")
     lines.append(f"| **CPU (Linux RAPL)** | **Logistic Regression** | {cpu_idle:.3f} | {lr_load:.2f} | {lr_net_w:.2f} | **{lr_thr:,.0f}** | **{lr_gross:.4f}** | **{lr_net:.4f}** | {lr_cv:.2f}% | **measured RAPL saturated (end-to-end)** |")
     lines.append(f"| **CPU (Linux RAPL)** | **LightGBM (GBDT)** | {cpu_idle:.3f} | {gbdt_load:.2f} | {gbdt_net_w:.2f} | **{gbdt_thr:,.0f}** | **{gbdt_gross:.4f}** | **{gbdt_net:.4f}** | {gbdt_cv:.2f}% | **measured RAPL saturated (end-to-end)** |")
-    lines.append(f"| **Colab T4 GPU** | **DistilBERT** | 30.13 | 66.86 | 36.73 | **1,172.3** | **{distil_gross:.2f}** | **{distil_net:.2f}** | 0.33% | **measured saturated run** (3 seeds) |")
-    lines.append(f"| **Colab T4 GPU** | **PubMedBERT** | 30.13 | 66.73 | 36.60 | **605.3** | **{pubmed_gross:.2f}** | **{pubmed_net:.2f}** | 0.60% | **measured saturated run** (3 seeds) |\n")
+    lines.append(f"| **Colab T4 GPU** | **DistilBERT** | {gpu_idle:.2f} | {distil_load:.2f} | {distil_load - gpu_idle:.2f} | **{distil_thr:,.1f}** | **{distil_gross:.2f}** | **{distil_net:.2f}** | {distil_cv:.2f}% | **measured saturated run** (3 seeds) |")
+    lines.append(f"| **Colab T4 GPU** | **PubMedBERT** | {gpu_idle:.2f} | {pubmed_load:.2f} | {pubmed_load - gpu_idle:.2f} | **{pubmed_thr:,.1f}** | **{pubmed_gross:.2f}** | **{pubmed_net:.2f}** | {pubmed_cv:.2f}% | **measured saturated run** (3 seeds) |\n")
 
     lines.append("**GPU energy (trustworthy).** Captured in a single saturated-batch run — a fixed padded batch driven to steady state with 100 ms `nvidia-smi` power sampling and trapezoidal energy integration, so power, throughput and energy are measured *together*. Averaged over 3 seeds with cross-run CV < 1%. The GPU idle power of 30.13 W reflects a **CUDA context warm / model loaded idle state** (vs cold uninitialized GPU idle of 10.22 W).\n")
     lines.append(f"**CPU energy (measured via Intel RAPL on Linux).** Directly integrated via Linux `/sys/class/powercap/intel-rapl:*` across saturated inference runs (`provenance = measured_rapl_saturated`, {lr_repeats} repeats on {cpu_energy.get('_meta', {}).get('host', {}).get('cpu_model', 'Intel Core i5-8500 @ 3.00GHz')}). End-to-End throughput includes raw text TF-IDF vectorization (`TfidfVectorizer.transform`), yielding realistic throughputs of ~{lr_thr:,.0f} s/s for Logistic Regression ({lr_gross:.4f} J/1k gross) and ~{gbdt_thr:,.0f} s/s for LightGBM ({gbdt_gross:.4f} J/1k gross). Only top-level package domains are summed; subzones (core, uncore, dram) are excluded to avoid double-counting.\n")
@@ -254,7 +261,7 @@ def generate_readme():
     lines.append("---\n")
     lines.append("## 🧪 Primary Empirical Results (ST1–ST8)\n")
     lines.append("### 1. Classical CPU Arms (Logistic Regression & LightGBM)\n")
-    lines.append(r"*Evaluated on the PsyTAR review-level grouped test split ($N=1{,}189$–$1{,}201$), recovered from the Colab prediction `.npz` embedded texts so CPU arms train and evaluate on the identical split as the transformers. CADEC ($N=7{,}823$) is the zero-shot external target. AUROC/AUPRC are recalibration-invariant; recalibration changes only the probability calibration.*" + "\n")
+    lines.append(r"*Evaluated on the PsyTAR review-level grouped test split ($N=1{,}189$), recovered from the Colab prediction `.npz` embedded texts so CPU arms train and evaluate on the identical split as the transformers. CADEC ($N=7{,}823$) is the zero-shot external target. AUROC/AUPRC are recalibration-invariant; recalibration changes only the probability calibration.*" + "\n")
     lines.append("| Model Arm | Recalibration | AUROC | AUPRC | F1@t\\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Reliability ($\\tau=0.07$) |")
     lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
 
@@ -278,17 +285,17 @@ def generate_readme():
     lines.append("---\n")
 
     lines.append("### 2. GPU Transformer Arms (DistilBERT & PubMedBERT)\n")
-    lines.append(r"*Evaluated on the same PsyTAR review-level grouped test split and CADEC OOD target ($N=7{,}823$). Metrics are recomputed CPU-side from the raw Colab prediction arrays; energy is the measured saturated run.*" + "\n")
+    lines.append(r"*Evaluated on the same PsyTAR review-level grouped test split ($N=1{,}189$) and CADEC OOD target ($N=7{,}823$). Metrics are recomputed CPU-side from the raw Colab prediction arrays; energy is the measured saturated run.*" + "\n")
     lines.append("| Model Arm | Recalibration | AUROC | AUPRC | F1@t\\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Reliability ($\\tau=0.07$) | Gross J/1k | Throughput |")
     lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
 
     gpu_arm_keys = [
-        ("DistilBERT", "Uncalibrated", "DistilBERT + Uncalibrated", "57.04", "1,172.3 s/s"),
-        ("DistilBERT", "Temp Scaled ($T=1.35$)", "DistilBERT + TempScale", "57.04", "1,172.3 s/s"),
-        ("DistilBERT", "Isotonic", "DistilBERT + Isotonic", "57.04", "1,172.3 s/s"),
-        ("PubMedBERT", "Uncalibrated", "PubMedBERT + Uncalibrated", "110.24", "605.3 s/s"),
-        ("PubMedBERT", "Temp Scaled ($T=1.58$)", "PubMedBERT + TempScale", "110.24", "605.3 s/s"),
-        ("PubMedBERT", "Isotonic", "PubMedBERT + Isotonic", "110.24", "605.3 s/s"),
+        ("DistilBERT", "Uncalibrated", "DistilBERT + Uncalibrated", f"{distil_gross:.2f}", f"{distil_thr:,.1f} s/s"),
+        ("DistilBERT", "Temp Scaled ($T=1.33$)", "DistilBERT + TempScale", f"{distil_gross:.2f}", f"{distil_thr:,.1f} s/s"),
+        ("DistilBERT", "Isotonic", "DistilBERT + Isotonic", f"{distil_gross:.2f}", f"{distil_thr:,.1f} s/s"),
+        ("PubMedBERT", "Uncalibrated", "PubMedBERT + Uncalibrated", f"{pubmed_gross:.2f}", f"{pubmed_thr:,.1f} s/s"),
+        ("PubMedBERT", "Temp Scaled ($T=1.58$)", "PubMedBERT + TempScale", f"{pubmed_gross:.2f}", f"{pubmed_thr:,.1f} s/s"),
+        ("PubMedBERT", "Isotonic", "PubMedBERT + Isotonic", f"{pubmed_gross:.2f}", f"{pubmed_thr:,.1f} s/s"),
     ]
     for model_disp, recal_disp, full_name, gross_str, thr_str in gpu_arm_keys:
         a = catalogue.get(full_name, {})

@@ -1,7 +1,7 @@
 {
   "_meta": {
     "script": "budget_and_subgroup_st6_st7.py",
-    "generated_utc": "2026-09-01 07:41:32Z",
+    "generated_utc": "2026-09-02 06:36:31Z",
     "note": "ST6 budget extrapolation + ST7 subgroup feasibility. All energy terms are derived from measured benchmarks (results/cpu_energy_measured.json, results/colab_transformer_gpu_results.json); corpus sizes are read from the harmonised CSVs. Nothing here is hand-entered.",
     "subgroup_min_n": 200,
     "inputs_captured": true
@@ -81,21 +81,21 @@
     },
     "gpu_measured": {
       "DistilBERT": {
-        "gross_1k": 57.03556249619698,
-        "net_1k": 31.335613656246846,
-        "inf_throughput": 1172.3149822549676,
-        "inf_load_w": 66.86032873328396,
-        "train_load_w": 65.18336881419235,
-        "idle_w": 30.12666666666666,
+        "gross_1k": 56.080190139920404,
+        "net_1k": 48.08813138741479,
+        "inf_throughput": 1198.1355882424075,
+        "inf_load_w": 67.06255072506963,
+        "train_load_w": 64.2697016941392,
+        "idle_w": 9.554833333333335,
         "provenance": "saturated_run"
       },
       "PubMedBERT": {
-        "gross_1k": 110.2417587589478,
-        "net_1k": 60.47074787404452,
-        "inf_throughput": 605.3365598408875,
-        "inf_load_w": 66.73051170814735,
-        "train_load_w": 65.39128297904418,
-        "idle_w": 30.12666666666666,
+        "gross_1k": 110.8379933636508,
+        "net_1k": 94.96474994974879,
+        "inf_throughput": 601.9521415020589,
+        "inf_load_w": 66.71853784963774,
+        "train_load_w": 65.55920617500733,
+        "idle_w": 9.554833333333335,
         "provenance": "saturated_run"
       }
     },
@@ -143,9 +143,9 @@
       "Inf Passes": "189,115",
       "Train Time": "0.59 h",
       "Inf Time": "0.04 h",
-      "Total Time (h)": 0.6307967632380942,
-      "Total Energy (J)": 148293.90700795467,
-      "Total Energy (kWh)": 0.041192751946654074,
+      "Total Time (h)": 0.6298310690374251,
+      "Total Energy (J)": 146185.80457788685,
+      "Total Energy (kWh)": 0.0406071679383019,
       "Status": "PASSED",
       "provenance": "saturated_run"
     },
@@ -156,9 +156,9 @@
       "Inf Passes": "189,115",
       "Train Time": "0.97 h",
       "Inf Time": "0.09 h",
-      "Total Time (h)": 1.0608885268499624,
-      "Total Energy (J)": 250161.5871974251,
-      "Total Energy (kWh)": 0.06948932977706253,
+      "Total Time (h)": 1.0613764468808162,
+      "Total Energy (J)": 250863.21476939434,
+      "Total Energy (kWh)": 0.06968422632483176,
       "Status": "PASSED",
       "provenance": "saturated_run"
     }

@@ -67,16 +67,20 @@ This repository contains the complete experimental framework, empirical codebase
 │   ├── harmonise_st1.py                    # ST1: Primary data load & label harmonisation (PsyTAR + CADEC)
 │   ├── harmonise_secondary_st1b.py         # ST1b: Secondary label harmonisation + cutoff sensitivity
 │   ├── subword_fragmentation_analysis.py   # Tokenizer subword-fragmentation audit
-│   ├── energy_sanity_st2.py                # ST2: Energy-tracking sanity & repeatability (package power)
-│   ├── minimal_pipeline_st3.py             # ST3: Minimal end-to-end CPU pipeline
-│   ├── calibration_mechanics_st4.py        # ST4: Calibration mechanics & paired ΔECE bootstrap CIs
-│   ├── cross_corpus_plumbing_st5.py        # ST5: Cross-corpus OOD transfer (frozen full CADEC split)
-│   ├── colab_gpu_transformer_primary_adr.py# GPU transformer fine-tuning + SATURATED energy benchmark (Colab T4)
-│   ├── measure_cpu_energy.py               # Saturated CPU energy (Intel RAPL on Linux)
-│   ├── run_frozen_split_analysis.py        # ★ Core reconciliation → frozen_split_reconciled.json
-│   ├── eccms_regime_st8.py                 # ST8 regime sweep + paired-bootstrap tie analysis
-│   ├── budget_and_subgroup_st6_st7.py      # ST6/ST7 budget extrapolation (GPU energy derived from Colab JSON)
-│   ├── render_readme.py                    # ★ Automated README Renderer
+│   ├── colab_transformer_gpu_results.json  # GPU energy + power profiles (Colab T4 measured)
+│   ├── frozen_split_reconciled.json        # Unified 12-arm metrics, bootstrap CIs, paired ΔAUROC
+│   ├── st8_regime_reconciled.json          # ECC-MS model selection grid across (tau, E) regimes
+│   └── st6_st7_reconciled.json             # Budget extrapolation & subgroup fairness tables
+├── scripts/                                # Empirical pipeline scripts (ST1–ST8)
+│   ├── harmonise_st1.py                    # ST1: Dataset cleaning, review_id grouped extraction
+│   ├── harmonise_secondary_st1b.py         # ST1b: Secondary sentiment & ordinal thresholding
+│   ├── measure_cpu_energy.py               # Live Intel RAPL CPU energy benchmark
+│   ├── run_frozen_split_analysis.py        # Core runner: evaluates 12 arms, computes 2,000 paired bootstrap
+│   ├── calibration_mechanics_st4.py        # ST4: Temperature scaling & Isotonic regression
+│   ├── cross_corpus_plumbing_st5.py        # ST5: Zero-shot CADEC covariate shift evaluation
+│   ├── budget_and_subgroup_st6_st7.py      # ST6/ST7: Compute extrapolation & subgroup fairness audit
+│   ├── eccms_regime_st8.py                 # ST8: Constrained optimization & regime sweep
+│   ├── render_readme.py                    # Compiles markdown report from results/*.json
 │   └── run_all_cpu.py                      # Orchestrator: runs the whole CPU-side pipeline in order
 ├── .gitignore                              # Git exclusion rules
 ├── README.md                               # Project documentation & report
@@ -125,7 +129,7 @@ The directly comparable, trustworthy quantity is the absolute per-1,000-sentence
 | PubMedBERT ÷ LightGBM | $\approx 371.69\times$ | $\approx 248.52\times$ |
 | PubMedBERT ÷ LR | $\approx 509.76\times$ | $\approx 361.00\times$ |
 
-> **⚠ These ratios are hardware-dependent.** The GPU per-1k figures are stable across seeds (CV < 1%). CPU energy CV across saturated repeats: LR 0.69%, LightGBM 0.51%. Treat the CPU–GPU ratio as an order-of-magnitude statement (~192.3x–509.8x gross, ~128.8x–361.0x net); the precise multiplier depends on the deployment host's CPU architecture, core count, and clock speed.
+> **⚠ Configuration-Specific Benchmark Reference:** The GPU per-1k figures are stable across seeds (CV < 1%). CPU energy CV across saturated repeats: LR 0.69%, LightGBM 0.51%. These ratios reflect the disclosed bare-metal Intel i5-8500 / NVIDIA T4 GPU testbed and serve as an empirical hardware reference rather than universal model invariants.
 
 ---
 
@@ -133,33 +137,33 @@ The directly comparable, trustworthy quantity is the absolute per-1,000-sentence
 
 ### 1. Classical CPU Arms (Logistic Regression & LightGBM)
 
-*Evaluated on the PsyTAR frozen test split ($N=1{,}201$), recovered from the Colab prediction `.npz` embedded texts so the CPU arms train and evaluate on the identical split as the transformers. CADEC ($N=7{,}823$) is the zero-shot external target. AUROC/AUPRC are recalibration-invariant; recalibration changes only the probability calibration.*
+*Evaluated on the PsyTAR review-level grouped test split ($N=1{,}189$–$1{,}201$), recovered from the Colab prediction `.npz` embedded texts so CPU arms train and evaluate on the identical split as the transformers. CADEC ($N=7{,}823$) is the zero-shot external target. AUROC/AUPRC are recalibration-invariant; recalibration changes only the probability calibration.*
 
-| Model Arm | Recalibration | AUROC | AUPRC | F1@t\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Safety ($\tau=0.07$) |
+| Model Arm | Recalibration | AUROC | AUPRC | F1@t\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Reliability ($\tau=0.07$) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Logistic Regression** | Uncalibrated | 0.8786 | 0.8165 | 0.6854 | 0.0855 | [0.0670, 0.1038] | 0.1406 | 0.4415 | 0.8389 | 0.0961 | ❌ Violated |
-| **Logistic Regression** | Temp Scaled ($T=0.7163$) | 0.8786 | 0.8165 | 0.6854 | 0.0521 | [0.0306, 0.0677] | 0.1371 | 0.4225 | 0.8389 | 0.0746 | ❌ Violated |
-| **Logistic Regression** | Isotonic | 0.8763 | 0.7952 | 0.7030 | **0.0275** | [0.0153, 0.0338] | 0.1351 | 0.4710 | 0.8366 | **0.0383** | ✅ Passed |
-| **LightGBM (GBDT)** | Uncalibrated | 0.8629 | 0.7998 | 0.6874 | **0.0352** | [0.0189, 0.0473] | 0.1408 | 0.4381 | 0.7988 | **0.0470** | ✅ Passed |
-| **LightGBM (GBDT)** | Temp Scaled ($T=0.9060$) | 0.8629 | 0.7998 | 0.6874 | **0.0340** | [0.0164, 0.0467] | 0.1407 | 0.4372 | 0.7988 | 0.0579 | ✅ Passed |
-| **LightGBM (GBDT)** | Isotonic | 0.8610 | 0.7776 | 0.6960 | **0.0370** | [0.0238, 0.0570] | 0.1420 | 0.4941 | 0.7972 | 0.0551 | ✅ Passed |
+| **Logistic Regression** | Uncalibrated | 0.8786 | 0.8165 | 0.6854 | 0.0855 | [0.0670, 0.1038] | 0.1406 | 0.4415 | 0.8389 | 0.0961 | ❌ Exceeded |
+| **Logistic Regression** | Temp Scaled ($T=0.7163$) | 0.8786 | 0.8165 | 0.6854 | 0.0521 | [0.0306, 0.0677] | 0.1371 | 0.4225 | 0.8389 | 0.0746 | ❌ Exceeded |
+| **Logistic Regression** | Isotonic | 0.8763 | 0.7952 | 0.7030 | **0.0275** | [0.0153, 0.0338] | 0.1351 | 0.4710 | 0.8366 | **0.0383** | ✅ Met |
+| **LightGBM (GBDT)** | Uncalibrated | 0.8629 | 0.7998 | 0.6874 | **0.0352** | [0.0189, 0.0473] | 0.1408 | 0.4381 | 0.7988 | **0.0470** | ✅ Met |
+| **LightGBM (GBDT)** | Temp Scaled ($T=0.9060$) | 0.8629 | 0.7998 | 0.6874 | **0.0340** | [0.0164, 0.0467] | 0.1407 | 0.4372 | 0.7988 | 0.0579 | ✅ Met |
+| **LightGBM (GBDT)** | Isotonic | 0.8610 | 0.7776 | 0.6960 | **0.0370** | [0.0238, 0.0570] | 0.1420 | 0.4941 | 0.7972 | 0.0551 | ✅ Met |
 
-*ECE 95% CIs are percentile / BCa bootstraps of the adaptive-ECE statistic; conservative safety framework enforces ECE Upper CI Bound $\le \tau$.*
+*ECE 95% CIs are percentile / BCa bootstraps of the adaptive-ECE statistic; conservative reliability framework enforces ECE Upper CI Bound $\le \tau$.*
 
 ---
 
 ### 2. GPU Transformer Arms (DistilBERT & PubMedBERT)
 
-*Evaluated on the same PsyTAR frozen test split ($N=1{,}201$) and CADEC OOD target ($N=7{,}823$). Metrics are recomputed CPU-side from the raw Colab prediction arrays; energy is the measured saturated run.*
+*Evaluated on the same PsyTAR review-level grouped test split and CADEC OOD target ($N=7{,}823$). Metrics are recomputed CPU-side from the raw Colab prediction arrays; energy is the measured saturated run.*
 
-| Model Arm | Recalibration | AUROC | AUPRC | F1@t\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Safety ($\tau=0.07$) | Gross J/1k | Throughput |
+| Model Arm | Recalibration | AUROC | AUPRC | F1@t\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Reliability ($\tau=0.07$) | Gross J/1k | Throughput |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **DistilBERT** | Uncalibrated | 0.9181 | 0.8760 | 0.7704 | 0.0710 | [0.0537, 0.0888] | 0.1154 | 0.3881 | 0.9042 | 0.0654 | ✅ Passed | 57.04 | 1,172.3 s/s |
-| **DistilBERT** | Temp Scaled ($T=1.35$) | 0.9180 | 0.8761 | 0.7704 | 0.0454 | [0.0250, 0.0574] | 0.1107 | 0.3579 | 0.9042 | **0.0436** | ✅ Passed | 57.04 | 1,172.3 s/s |
-| **DistilBERT** | Isotonic | 0.9164 | 0.8594 | 0.8000 | **0.0257** | [0.0138, 0.0333] | 0.1080 | 0.4283 | 0.9018 | **0.0479** | ✅ Passed | 57.04 | 1,172.3 s/s |
-| **PubMedBERT** | Uncalibrated | **0.9276** | 0.8885 | 0.7897 | 0.0807 | [0.0665, 0.0991] | 0.1120 | 0.3955 | **0.9191** | 0.0580 | ✅ Passed | 110.24 | 605.3 s/s |
-| **PubMedBERT** | Temp Scaled ($T=1.58$) | **0.9276** | 0.8888 | 0.7897 | 0.0417 | [0.0237, 0.0527] | 0.1045 | 0.3389 | **0.9191** | **0.0284** | ✅ Passed | 110.24 | 605.3 s/s |
-| **PubMedBERT** | Isotonic | **0.9277** | 0.8780 | 0.8027 | **0.0202** | [0.0088, 0.0277] | 0.1024 | 0.3521 | **0.9181** | **0.0342** | ✅ Passed | 110.24 | 605.3 s/s |
+| **DistilBERT** | Uncalibrated | 0.9181 | 0.8760 | 0.7704 | 0.0710 | [0.0537, 0.0888] | 0.1154 | 0.3881 | 0.9042 | 0.0654 | ✅ Met | 57.04 | 1,172.3 s/s |
+| **DistilBERT** | Temp Scaled ($T=1.35$) | 0.9180 | 0.8761 | 0.7704 | 0.0454 | [0.0250, 0.0574] | 0.1107 | 0.3579 | 0.9042 | **0.0436** | ✅ Met | 57.04 | 1,172.3 s/s |
+| **DistilBERT** | Isotonic | 0.9164 | 0.8594 | 0.8000 | **0.0257** | [0.0138, 0.0333] | 0.1080 | 0.4283 | 0.9018 | **0.0479** | ✅ Met | 57.04 | 1,172.3 s/s |
+| **PubMedBERT** | Uncalibrated | **0.9276** | 0.8885 | 0.7897 | 0.0807 | [0.0665, 0.0991] | 0.1120 | 0.3955 | **0.9191** | 0.0580 | ✅ Met | 110.24 | 605.3 s/s |
+| **PubMedBERT** | Temp Scaled ($T=1.58$) | **0.9276** | 0.8888 | 0.7897 | 0.0417 | [0.0237, 0.0527] | 0.1045 | 0.3389 | **0.9191** | **0.0284** | ✅ Met | 110.24 | 605.3 s/s |
+| **PubMedBERT** | Isotonic | **0.9277** | 0.8780 | 0.8027 | **0.0202** | [0.0088, 0.0277] | 0.1024 | 0.3521 | **0.9181** | **0.0342** | ✅ Met | 110.24 | 605.3 s/s |
 
 Fitted temperature scaling on the transformer logits (from the calibration split): DistilBERT $T=1.35$ (calibration NLL $0.3333\rightarrow0.3173$), PubMedBERT $T=1.58$ (calibration NLL $0.3694\rightarrow0.3317$). Both $T>1$ (the transformers are mildly *over*confident), the mirror image of the LR arm.
 

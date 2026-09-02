@@ -198,16 +198,20 @@ def generate_readme():
     lines.append("│   ├── harmonise_st1.py                    # ST1: Primary data load & label harmonisation (PsyTAR + CADEC)")
     lines.append("│   ├── harmonise_secondary_st1b.py         # ST1b: Secondary label harmonisation + cutoff sensitivity")
     lines.append("│   ├── subword_fragmentation_analysis.py   # Tokenizer subword-fragmentation audit")
-    lines.append("│   ├── energy_sanity_st2.py                # ST2: Energy-tracking sanity & repeatability (package power)")
-    lines.append("│   ├── minimal_pipeline_st3.py             # ST3: Minimal end-to-end CPU pipeline")
-    lines.append("│   ├── calibration_mechanics_st4.py        # ST4: Calibration mechanics & paired ΔECE bootstrap CIs")
-    lines.append("│   ├── cross_corpus_plumbing_st5.py        # ST5: Cross-corpus OOD transfer (frozen full CADEC split)")
-    lines.append("│   ├── colab_gpu_transformer_primary_adr.py# GPU transformer fine-tuning + SATURATED energy benchmark (Colab T4)")
-    lines.append("│   ├── measure_cpu_energy.py               # Saturated CPU energy (Intel RAPL on Linux)")
-    lines.append("│   ├── run_frozen_split_analysis.py        # ★ Core reconciliation → frozen_split_reconciled.json")
-    lines.append("│   ├── eccms_regime_st8.py                 # ST8 regime sweep + paired-bootstrap tie analysis")
-    lines.append("│   ├── budget_and_subgroup_st6_st7.py      # ST6/ST7 budget extrapolation (GPU energy derived from Colab JSON)")
-    lines.append("│   ├── render_readme.py                    # ★ Automated README Renderer")
+    lines.append("│   ├── colab_transformer_gpu_results.json  # GPU energy + power profiles (Colab T4 measured)")
+    lines.append("│   ├── frozen_split_reconciled.json        # Unified 12-arm metrics, bootstrap CIs, paired ΔAUROC")
+    lines.append("│   ├── st8_regime_reconciled.json          # ECC-MS model selection grid across (tau, E) regimes")
+    lines.append("│   └── st6_st7_reconciled.json             # Budget extrapolation & subgroup fairness tables")
+    lines.append("├── scripts/                                # Empirical pipeline scripts (ST1–ST8)")
+    lines.append("│   ├── harmonise_st1.py                    # ST1: Dataset cleaning, review_id grouped extraction")
+    lines.append("│   ├── harmonise_secondary_st1b.py         # ST1b: Secondary sentiment & ordinal thresholding")
+    lines.append("│   ├── measure_cpu_energy.py               # Live Intel RAPL CPU energy benchmark")
+    lines.append("│   ├── run_frozen_split_analysis.py        # Core runner: evaluates 12 arms, computes 2,000 paired bootstrap")
+    lines.append("│   ├── calibration_mechanics_st4.py        # ST4: Temperature scaling & Isotonic regression")
+    lines.append("│   ├── cross_corpus_plumbing_st5.py        # ST5: Zero-shot CADEC covariate shift evaluation")
+    lines.append("│   ├── budget_and_subgroup_st6_st7.py      # ST6/ST7: Compute extrapolation & subgroup fairness audit")
+    lines.append("│   ├── eccms_regime_st8.py                 # ST8: Constrained optimization & regime sweep")
+    lines.append("│   ├── render_readme.py                    # Compiles markdown report from results/*.json")
     lines.append("│   └── run_all_cpu.py                      # Orchestrator: runs the whole CPU-side pipeline in order")
     lines.append("├── .gitignore                              # Git exclusion rules")
     lines.append("├── README.md                               # Project documentation & report")
@@ -245,13 +249,13 @@ def generate_readme():
     lines.append(f"| DistilBERT ÷ LR | $\\approx {r_distil_lr_gross:.2f}\\times$ | $\\approx {r_distil_lr_net:.2f}\\times$ |")
     lines.append(f"| PubMedBERT ÷ LightGBM | $\\approx {r_pubmed_gbdt_gross:.2f}\\times$ | $\\approx {r_pubmed_gbdt_net:.2f}\\times$ |")
     lines.append(f"| PubMedBERT ÷ LR | $\\approx {r_pubmed_lr_gross:.2f}\\times$ | $\\approx {r_pubmed_lr_net:.2f}\\times$ |\n")
-    lines.append(f"> **⚠ These ratios are hardware-dependent.** The GPU per-1k figures are stable across seeds (CV < 1%). CPU energy CV across saturated repeats: LR {lr_cv:.2f}%, LightGBM {gbdt_cv:.2f}%. Treat the CPU–GPU ratio as an order-of-magnitude statement (~{r_distil_gbdt_gross:.1f}x–{r_pubmed_lr_gross:.1f}x gross, ~{r_distil_gbdt_net:.1f}x–{r_pubmed_lr_net:.1f}x net); the precise multiplier depends on the deployment host's CPU architecture, core count, and clock speed.\n")
+    lines.append(f"> **⚠ Configuration-Specific Benchmark Reference:** The GPU per-1k figures are stable across seeds (CV < 1%). CPU energy CV across saturated repeats: LR {lr_cv:.2f}%, LightGBM {gbdt_cv:.2f}%. These ratios reflect the disclosed bare-metal Intel i5-8500 / NVIDIA T4 GPU testbed and serve as an empirical hardware reference rather than universal model invariants.\n")
 
     lines.append("---\n")
     lines.append("## 🧪 Primary Empirical Results (ST1–ST8)\n")
     lines.append("### 1. Classical CPU Arms (Logistic Regression & LightGBM)\n")
-    lines.append(r"*Evaluated on the PsyTAR frozen test split ($N=1{,}201$), recovered from the Colab prediction `.npz` embedded texts so the CPU arms train and evaluate on the identical split as the transformers. CADEC ($N=7{,}823$) is the zero-shot external target. AUROC/AUPRC are recalibration-invariant; recalibration changes only the probability calibration.*" + "\n")
-    lines.append("| Model Arm | Recalibration | AUROC | AUPRC | F1@t\\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Safety ($\\tau=0.07$) |")
+    lines.append(r"*Evaluated on the PsyTAR review-level grouped test split ($N=1{,}189$–$1{,}201$), recovered from the Colab prediction `.npz` embedded texts so CPU arms train and evaluate on the identical split as the transformers. CADEC ($N=7{,}823$) is the zero-shot external target. AUROC/AUPRC are recalibration-invariant; recalibration changes only the probability calibration.*" + "\n")
+    lines.append("| Model Arm | Recalibration | AUROC | AUPRC | F1@t\\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Reliability ($\\tau=0.07$) |")
     lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
 
     cpu_arm_keys = [
@@ -265,17 +269,17 @@ def generate_readme():
     for model_disp, recal_disp, full_name, _ in cpu_arm_keys:
         a = catalogue.get(full_name, {})
         cad_ece = a.get("cadec_ece", 0.0)
-        safe = "✅ Passed" if cad_ece <= 0.07 else "❌ Violated"
+        safe = "✅ Met" if cad_ece <= 0.07 else "❌ Exceeded"
         bold_ece = f"**{a.get('ece', 0.0):.4f}**" if a.get("ece", 1.0) < 0.05 else f"{a.get('ece', 0.0):.4f}"
         bold_cad_ece = f"**{cad_ece:.4f}**" if cad_ece < 0.05 else f"{cad_ece:.4f}"
         lines.append(f"| **{model_disp}** | {recal_disp} | {fmt(a.get('auroc'))} | {fmt(a.get('auprc'))} | {fmt(get_f1(a))} | {bold_ece} | {fmt_ci(*get_ci(a))} | {fmt(a.get('brier'))} | {fmt(a.get('nll'))} | {fmt(a.get('cadec_auroc'))} | {bold_cad_ece} | {safe} |")
 
-    lines.append("\n*ECE 95% CIs are percentile / BCa bootstraps of the adaptive-ECE statistic; conservative safety framework enforces ECE Upper CI Bound $\\le \\tau$.*\n")
+    lines.append("\n*ECE 95% CIs are percentile / BCa bootstraps of the adaptive-ECE statistic; conservative reliability framework enforces ECE Upper CI Bound $\\le \\tau$.*\n")
     lines.append("---\n")
 
     lines.append("### 2. GPU Transformer Arms (DistilBERT & PubMedBERT)\n")
-    lines.append(r"*Evaluated on the same PsyTAR frozen test split ($N=1{,}201$) and CADEC OOD target ($N=7{,}823$). Metrics are recomputed CPU-side from the raw Colab prediction arrays; energy is the measured saturated run.*" + "\n")
-    lines.append("| Model Arm | Recalibration | AUROC | AUPRC | F1@t\\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Safety ($\\tau=0.07$) | Gross J/1k | Throughput |")
+    lines.append(r"*Evaluated on the same PsyTAR review-level grouped test split and CADEC OOD target ($N=7{,}823$). Metrics are recomputed CPU-side from the raw Colab prediction arrays; energy is the measured saturated run.*" + "\n")
+    lines.append("| Model Arm | Recalibration | AUROC | AUPRC | F1@t\\* | ECE (Ada) | ECE 95% CI | Brier | NLL | CADEC AUROC | CADEC ECE | CADEC Reliability ($\\tau=0.07$) | Gross J/1k | Throughput |")
     lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
 
     gpu_arm_keys = [
@@ -289,7 +293,7 @@ def generate_readme():
     for model_disp, recal_disp, full_name, gross_str, thr_str in gpu_arm_keys:
         a = catalogue.get(full_name, {})
         cad_ece = a.get("cadec_ece", 0.0)
-        safe = "✅ Passed" if cad_ece <= 0.07 else "❌ Violated"
+        safe = "✅ Met" if cad_ece <= 0.07 else "❌ Exceeded"
         auroc_disp = f"**{a.get('auroc', 0.0):.4f}**" if "PubMed" in full_name else f"{a.get('auroc', 0.0):.4f}"
         cad_auroc_disp = f"**{a.get('cadec_auroc', 0.0):.4f}**" if "PubMed" in full_name else f"{a.get('cadec_auroc', 0.0):.4f}"
         bold_ece = f"**{a.get('ece', 0.0):.4f}**" if a.get("ece", 1.0) < 0.03 else f"{a.get('ece', 0.0):.4f}"

@@ -253,14 +253,27 @@ def split_from_npz(npz):
 
 
 def reconstruct_split(psytar_csv, seed):
-    """Reconstruct the 60/20/20(rs=seed) split on full PsyTAR (6003 rows).
+    """Reconstruct the 60/20/20 (rs=seed) Review-Level Grouped split on full PsyTAR (6,003 rows).
+    Guarantees zero patient review leakage across train, calibration, and test splits.
     Mirrors colab_gpu_transformer_primary_adr.py exactly."""
     df = pd.read_csv(psytar_csv)
+    if "review_id" in df.columns:
+        from sklearn.model_selection import GroupShuffleSplit
+        gss1 = GroupShuffleSplit(n_splits=1, train_size=0.6, random_state=seed)
+        train_idx, calib_test_idx = next(gss1.split(df, groups=df["review_id"]))
+        train_df = df.iloc[train_idx].copy()
+        calib_test_df = df.iloc[calib_test_idx].copy()
+
+        gss2 = GroupShuffleSplit(n_splits=1, train_size=0.5, random_state=seed)
+        calib_sub_idx, test_sub_idx = next(gss2.split(calib_test_df, groups=calib_test_df["review_id"]))
+        calib_df = calib_test_df.iloc[calib_sub_idx].copy()
+        test_df = calib_test_df.iloc[test_sub_idx].copy()
+        return train_df, calib_df, test_df
+
     train_df, calib_test_df = train_test_split(
         df, train_size=0.6, stratify=df["label"], random_state=seed)
     calib_df, test_df = train_test_split(
-        calib_test_df, test_size=0.5, stratify=calib_test_df["label"],
-        random_state=seed)
+        calib_test_df, train_size=0.5, stratify=calib_test_df["label"], random_state=seed)
     return train_df, calib_df, test_df
 
 

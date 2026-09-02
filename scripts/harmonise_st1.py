@@ -59,28 +59,32 @@ def harmonise_psytar(psytar_excel_path, output_csv_path):
 
     sent_idx = header_list.index('sentences') if 'sentences' in header_list else -1
     adr_idx = header_list.index('ADR') if 'ADR' in header_list else -1
+    wd_idx = header_list.index('WD') if 'WD' in header_list else -1
     id_idx = header_list.index('id') if 'id' in header_list else -1
+    drug_id_idx = header_list.index('drug_id') if 'drug_id' in header_list else -1
+    sent_num_idx = header_list.index('sentence_index') if 'sentence_index' in header_list else -1
+    cat_idx = header_list.index('category') if 'category' in header_list else -1
 
     if sent_idx == -1:
         raise ValueError("Could not find 'sentences' column in PsyTAR Excel.")
 
-    sentences = []
-    labels = []
+    records = []
 
     for row in row_generator:
         if not row:
             continue
-        row_id = row[id_idx] if id_idx != -1 and id_idx < len(row) else None
         sent_val = row[sent_idx] if sent_idx < len(row) else None
-
         if sent_val is None or str(sent_val).strip() == '':
-            continue
-        if id_idx != -1 and row_id is None:
             continue
 
         sent_text = str(sent_val).strip()
-        adr_val = row[adr_idx] if adr_idx != -1 and adr_idx < len(row) else None
+        raw_drug_id = str(row[drug_id_idx]).strip() if drug_id_idx != -1 and drug_id_idx < len(row) and row[drug_id_idx] is not None else "unknown"
+        review_id = raw_drug_id.lower()
+        drug_name = review_id.split('.')[0] if '.' in review_id else review_id
+        drug_class = str(row[cat_idx]).strip().lower() if cat_idx != -1 and cat_idx < len(row) and row[cat_idx] is not None else "unknown"
+        sent_index = int(row[sent_num_idx]) if sent_num_idx != -1 and sent_num_idx < len(row) and row[sent_num_idx] is not None else len(records)
 
+        adr_val = row[adr_idx] if adr_idx != -1 and adr_idx < len(row) else None
         is_adr = 0
         if adr_val is not None:
             try:
@@ -89,15 +93,32 @@ def harmonise_psytar(psytar_excel_path, output_csv_path):
             except (ValueError, TypeError):
                 pass
 
-        sentences.append(sent_text)
-        labels.append(is_adr)
+        wd_val = row[wd_idx] if wd_idx != -1 and wd_idx < len(row) else None
+        is_wd = 0
+        if wd_val is not None:
+            try:
+                if float(wd_val) == 1.0:
+                    is_wd = 1
+            except (ValueError, TypeError):
+                pass
+
+        records.append({
+            'review_id': review_id,
+            'drug_name': drug_name,
+            'drug_class': drug_class,
+            'sentence_index': sent_index,
+            'text': sent_text,
+            'label': is_adr,
+            'wd_label': is_wd,
+            'adr_or_wd': 1 if (is_adr == 1 or is_wd == 1) else 0,
+        })
 
     wb.close()
 
-    df_harmonised = pd.DataFrame({'text': sentences, 'label': labels})
+    df_harmonised = pd.DataFrame(records)
     os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
     df_harmonised.to_csv(output_csv_path, index=False, encoding='utf-8')
-    print(f"Saved PsyTAR harmonised dataset ({len(df_harmonised)} rows) to: "
+    print(f"Saved PsyTAR harmonised dataset ({len(df_harmonised)} rows across {df_harmonised['review_id'].nunique()} reviews) to: "
           f"{output_csv_path}")
     return df_harmonised
 

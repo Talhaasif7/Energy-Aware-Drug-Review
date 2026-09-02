@@ -43,7 +43,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize_scalar
 from scipy.special import logit, expit, softmax
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GroupShuffleSplit
 from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import (
     f1_score, brier_score_loss, log_loss,
@@ -873,15 +873,26 @@ def main():
         seed_results = []
 
         for seed in SEEDS:
-            # 3-Way Stratified Split: 60% Train, 20% Calib, 20% Test
-            train_df, calib_test_df = train_test_split(
-                df_psytar, train_size=0.6,
-                stratify=df_psytar['label'], random_state=seed)
-            calib_df, test_df = train_test_split(
-                calib_test_df, test_size=0.5,
-                stratify=calib_test_df['label'], random_state=seed)
+            # 3-Way Review-Level Grouped Split (Zero Patient Leakage)
+            if 'review_id' in df_psytar.columns:
+                gss1 = GroupShuffleSplit(n_splits=1, train_size=0.6, random_state=seed)
+                train_idx, calib_test_idx = next(gss1.split(df_psytar, groups=df_psytar['review_id']))
+                train_df = df_psytar.iloc[train_idx].copy()
+                calib_test_df = df_psytar.iloc[calib_test_idx].copy()
 
-            print(f"  Split (seed={seed}): Train={len(train_df)} "
+                gss2 = GroupShuffleSplit(n_splits=1, train_size=0.5, random_state=seed)
+                calib_sub_idx, test_sub_idx = next(gss2.split(calib_test_df, groups=calib_test_df['review_id']))
+                calib_df = calib_test_df.iloc[calib_sub_idx].copy()
+                test_df = calib_test_df.iloc[test_sub_idx].copy()
+            else:
+                train_df, calib_test_df = train_test_split(
+                    df_psytar, train_size=0.6,
+                    stratify=df_psytar['label'], random_state=seed)
+                calib_df, test_df = train_test_split(
+                    calib_test_df, test_size=0.5,
+                    stratify=calib_test_df['label'], random_state=seed)
+
+            print(f"  Grouped Split (seed={seed}): Train={len(train_df)} ({train_df.get('review_id', pd.Series()).nunique()} reviews) "
                   f"Calib={len(calib_df)} Test={len(test_df)}")
 
             res = train_and_eval_single_seed(

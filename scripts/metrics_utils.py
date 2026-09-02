@@ -366,3 +366,101 @@ class TemperatureScaler:
         scaled_logits = logits / self.T
         return expit(scaled_logits)
 
+
+# ---------------------------------------------------------------------------
+# Clinical Utility Metrics & Decision Curve Analysis (DCA)
+# ---------------------------------------------------------------------------
+
+def compute_clinical_utility_metrics(y_true, y_probs, threshold=0.5,
+                                     prevalences=(0.01, 0.05, 0.10, 0.20, 0.3612)):
+    """
+    Compute comprehensive clinical epidemiology screening metrics:
+      - Sensitivity (True Positive Rate)
+      - Specificity (True Negative Rate)
+      - Positive / Negative Likelihood Ratios (LR+, LR-)
+      - Adjusted PPV & NPV across plausible clinical screening prevalences pi.
+    """
+    y_true = np.asarray(y_true, dtype=int)
+    y_probs = np.asarray(y_probs, dtype=float)
+    y_pred = (y_probs >= threshold).astype(int)
+
+    tp = np.sum((y_true == 1) & (y_pred == 1))
+    tn = np.sum((y_true == 0) & (y_pred == 0))
+    fp = np.sum((y_true == 0) & (y_pred == 1))
+    fn = np.sum((y_true == 1) & (y_pred == 0))
+
+    sensitivity = float(tp / (tp + fn)) if (tp + fn) > 0 else 0.0
+    specificity = float(tn / (tn + fp)) if (tn + fp) > 0 else 0.0
+
+    lr_plus = float(sensitivity / (1.0 - specificity)) if (1.0 - specificity) > 0 else np.nan
+    lr_minus = float((1.0 - sensitivity) / specificity) if specificity > 0 else np.nan
+
+    prevalence_adjusted = {}
+    for pi in prevalences:
+        num_ppv = sensitivity * pi
+        den_ppv = (sensitivity * pi) + ((1.0 - specificity) * (1.0 - pi))
+        ppv_adj = float(num_ppv / den_ppv) if den_ppv > 0 else 0.0
+
+        num_npv = specificity * (1.0 - pi)
+        den_npv = ((1.0 - sensitivity) * pi) + (specificity * (1.0 - pi))
+        npv_adj = float(num_npv / den_npv) if den_npv > 0 else 0.0
+
+        prevalence_adjusted[f"{pi*100:.1f}%"] = {
+            "prevalence": pi,
+            "ppv": round(ppv_adj, 4),
+            "npv": round(npv_adj, 4),
+        }
+
+    return {
+        "threshold": float(threshold),
+        "tp": int(tp), "tn": int(tn), "fp": int(fp), "fn": int(fn),
+        "sensitivity": round(sensitivity, 4),
+        "specificity": round(specificity, 4),
+        "lr_plus": round(lr_plus, 4) if not np.isnan(lr_plus) else None,
+        "lr_minus": round(lr_minus, 4) if not np.isnan(lr_minus) else None,
+        "empirical_prevalence": round(float(np.mean(y_true)), 4),
+        "prevalence_adjusted": prevalence_adjusted,
+    }
+
+
+def compute_decision_curve_analysis(y_true, y_probs, threshold_range=None):
+    """
+    Perform Decision Curve Analysis (DCA) to calculate Net Benefit across
+    decision probability thresholds p_t:
+      Net Benefit(p_t) = (TP / N) - (FP / N) * [p_t / (1 - p_t)]
+    """
+    y_true = np.asarray(y_true, dtype=int)
+    y_probs = np.asarray(y_probs, dtype=float)
+    n = len(y_true)
+    if n == 0:
+        return {}
+
+    if threshold_range is None:
+        threshold_range = np.linspace(0.01, 0.50, 50)
+
+    prevalence = float(np.mean(y_true))
+    net_benefit_model = []
+    net_benefit_all = []
+
+    for pt in threshold_range:
+        if pt >= 1.0:
+            continue
+        weight = pt / (1.0 - pt)
+        y_pred = (y_probs >= pt).astype(int)
+        tp = np.sum((y_true == 1) & (y_pred == 1))
+        fp = np.sum((y_true == 0) & (y_pred == 1))
+
+        nb_model = (tp / n) - (fp / n) * weight
+        nb_all = prevalence - (1.0 - prevalence) * weight
+
+        net_benefit_model.append(float(nb_model))
+        net_benefit_all.append(float(nb_all))
+
+    return {
+        "thresholds": [round(float(t), 4) for t in threshold_range],
+        "net_benefit_model": [round(x, 5) for x in net_benefit_model],
+        "net_benefit_all": [round(x, 5) for x in net_benefit_all],
+        "net_benefit_none": [0.0] * len(threshold_range),
+    }
+
+

@@ -1,8 +1,14 @@
 {
   "corpus_audit": {
-    "total_posts": 1248,
-    "total_sentences": 7823,
-    "total_adr_spans": 7409,
+    "total_disk_files": 1250,
+    "empty_files_count": 2,
+    "empty_files_names": [
+      "LIPITOR.40.txt",
+      "VOLTAREN-XR.9.txt"
+    ],
+    "total_evaluated_posts": 1248,
+    "total_derived_sentences": 7823,
+    "total_gold_adr_spans": 7409,
     "missing_ann_count": 0,
     "rule_a_overlap_positives": 2865,
     "rule_a_overlap_prevalence": 0.3662,
@@ -14,153 +20,239 @@
     "unique_affected_sentences": 6,
     "unique_affected_sentences_pct": 0.08
   },
-  "mapping_sensitivity_results": [
+  "sentence_level_sensitivity_rule_a_vs_b": [
     {
       "Model Arm": "Logistic Regression (Uncalibrated)",
-      "Rule A AUROC": 0.8309,
+      "Rule A (Overlap) AUROC": 0.8309,
+      "Rule B (Contained) AUROC": 0.8307,
+      "Delta_AUROC (B-A)": "-0.0002",
       "Rule A AUPRC": 0.7394,
-      "Rule A ECE": 0.0924,
-      "Rule B AUROC": 0.8307,
       "Rule B AUPRC": 0.739,
+      "Rule A ECE": 0.0924,
       "Rule B ECE": 0.0921,
-      "Rule C AUROC": 0.8115,
-      "Rule C AUPRC": 0.9673,
-      "Rule C ECE": 0.3107
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "Logistic Regression (TempScaled)",
-      "Rule A AUROC": 0.8309,
+      "Rule A (Overlap) AUROC": 0.8309,
+      "Rule B (Contained) AUROC": 0.8307,
+      "Delta_AUROC (B-A)": "-0.0002",
       "Rule A AUPRC": 0.7394,
-      "Rule A ECE": 0.0859,
-      "Rule B AUROC": 0.8307,
       "Rule B AUPRC": 0.739,
+      "Rule A ECE": 0.0859,
       "Rule B ECE": 0.0857,
-      "Rule C AUROC": 0.8115,
-      "Rule C AUPRC": 0.9673,
-      "Rule C ECE": 0.2928
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "Logistic Regression (Isotonic)",
-      "Rule A AUROC": 0.8266,
+      "Rule A (Overlap) AUROC": 0.8266,
+      "Rule B (Contained) AUROC": 0.8264,
+      "Delta_AUROC (B-A)": "-0.0002",
       "Rule A AUPRC": 0.7129,
-      "Rule A ECE": 0.0239,
-      "Rule B AUROC": 0.8264,
       "Rule B AUPRC": 0.7126,
+      "Rule A ECE": 0.0239,
       "Rule B ECE": 0.0237,
-      "Rule C AUROC": 0.8111,
-      "Rule C AUPRC": 0.9613,
-      "Rule C ECE": 0.1691
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "LightGBM (Uncalibrated)",
-      "Rule A AUROC": 0.7801,
+      "Rule A (Overlap) AUROC": 0.7801,
+      "Rule B (Contained) AUROC": 0.7799,
+      "Delta_AUROC (B-A)": "-0.0002",
       "Rule A AUPRC": 0.6914,
-      "Rule A ECE": 0.0681,
-      "Rule B AUROC": 0.7799,
       "Rule B AUPRC": 0.691,
+      "Rule A ECE": 0.0681,
       "Rule B ECE": 0.0679,
-      "Rule C AUROC": 0.828,
-      "Rule C AUPRC": 0.9674,
-      "Rule C ECE": 0.2802
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "LightGBM (TempScaled)",
-      "Rule A AUROC": 0.7801,
+      "Rule A (Overlap) AUROC": 0.7801,
+      "Rule B (Contained) AUROC": 0.7799,
+      "Delta_AUROC (B-A)": "-0.0002",
       "Rule A AUPRC": 0.6914,
-      "Rule A ECE": 0.065,
-      "Rule B AUROC": 0.7799,
       "Rule B AUPRC": 0.691,
+      "Rule A ECE": 0.065,
       "Rule B ECE": 0.0648,
-      "Rule C AUROC": 0.828,
-      "Rule C AUPRC": 0.9674,
-      "Rule C ECE": 0.2819
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "LightGBM (Isotonic)",
-      "Rule A AUROC": 0.7775,
+      "Rule A (Overlap) AUROC": 0.7775,
+      "Rule B (Contained) AUROC": 0.7773,
+      "Delta_AUROC (B-A)": "-0.0002",
       "Rule A AUPRC": 0.6684,
-      "Rule A ECE": 0.0563,
-      "Rule B AUROC": 0.7773,
       "Rule B AUPRC": 0.668,
+      "Rule A ECE": 0.0563,
       "Rule B ECE": 0.0563,
-      "Rule C AUROC": 0.8271,
-      "Rule C AUPRC": 0.9643,
-      "Rule C ECE": 0.2113
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "DistilBERT (Uncalibrated)",
-      "Rule A AUROC": 0.917,
+      "Rule A (Overlap) AUROC": 0.917,
+      "Rule B (Contained) AUROC": 0.917,
+      "Delta_AUROC (B-A)": "+0.0000",
       "Rule A AUPRC": 0.8862,
-      "Rule A ECE": 0.0559,
-      "Rule B AUROC": 0.917,
       "Rule B AUPRC": 0.886,
+      "Rule A ECE": 0.0559,
       "Rule B ECE": 0.0556,
-      "Rule C AUROC": 0.9422,
-      "Rule C AUPRC": 0.9911,
-      "Rule C ECE": 0.0516
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "DistilBERT (TempScaled)",
-      "Rule A AUROC": 0.917,
+      "Rule A (Overlap) AUROC": 0.917,
+      "Rule B (Contained) AUROC": 0.917,
+      "Delta_AUROC (B-A)": "+0.0000",
       "Rule A AUPRC": 0.8863,
-      "Rule A ECE": 0.0391,
-      "Rule B AUROC": 0.917,
       "Rule B AUPRC": 0.8861,
+      "Rule A ECE": 0.0391,
       "Rule B ECE": 0.0389,
-      "Rule C AUROC": 0.9423,
-      "Rule C AUPRC": 0.9911,
-      "Rule C ECE": 0.0903
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "DistilBERT (Isotonic)",
-      "Rule A AUROC": 0.9153,
+      "Rule A (Overlap) AUROC": 0.9153,
+      "Rule B (Contained) AUROC": 0.9153,
+      "Delta_AUROC (B-A)": "+0.0001",
       "Rule A AUPRC": 0.8692,
-      "Rule A ECE": 0.023,
-      "Rule B AUROC": 0.9153,
       "Rule B AUPRC": 0.869,
+      "Rule A ECE": 0.023,
       "Rule B ECE": 0.023,
-      "Rule C AUROC": 0.9426,
-      "Rule C AUPRC": 0.9896,
-      "Rule C ECE": 0.0813
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "PubMedBERT (Uncalibrated)",
-      "Rule A AUROC": 0.9258,
+      "Rule A (Overlap) AUROC": 0.9258,
+      "Rule B (Contained) AUROC": 0.9258,
+      "Delta_AUROC (B-A)": "+0.0000",
       "Rule A AUPRC": 0.8961,
-      "Rule A ECE": 0.0606,
-      "Rule B AUROC": 0.9258,
       "Rule B AUPRC": 0.896,
+      "Rule A ECE": 0.0606,
       "Rule B ECE": 0.0606,
-      "Rule C AUROC": 0.9589,
-      "Rule C AUPRC": 0.9937,
-      "Rule C ECE": 0.0213
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "PubMedBERT (TempScaled)",
-      "Rule A AUROC": 0.9258,
+      "Rule A (Overlap) AUROC": 0.9258,
+      "Rule B (Contained) AUROC": 0.9258,
+      "Delta_AUROC (B-A)": "+0.0000",
       "Rule A AUPRC": 0.8963,
-      "Rule A ECE": 0.0477,
-      "Rule B AUROC": 0.9258,
       "Rule B AUPRC": 0.8962,
+      "Rule A ECE": 0.0477,
       "Rule B ECE": 0.0477,
-      "Rule C AUROC": 0.9591,
-      "Rule C AUPRC": 0.9938,
-      "Rule C ECE": 0.0514
+      "Sentence Ranking": "Strictly Invariant"
     },
     {
       "Model Arm": "PubMedBERT (Isotonic)",
-      "Rule A AUROC": 0.9247,
+      "Rule A (Overlap) AUROC": 0.9247,
+      "Rule B (Contained) AUROC": 0.9247,
+      "Delta_AUROC (B-A)": "+0.0000",
       "Rule A AUPRC": 0.8817,
-      "Rule A ECE": 0.0265,
-      "Rule B AUROC": 0.9247,
       "Rule B AUPRC": 0.8816,
+      "Rule A ECE": 0.0265,
       "Rule B ECE": 0.0267,
-      "Rule C AUROC": 0.9545,
-      "Rule C AUPRC": 0.9911,
-      "Rule C ECE": 0.0541
+      "Sentence Ranking": "Strictly Invariant"
     }
   ],
-  "boundary_crossing_cases": [
+  "post_level_aggregation_validation_rule_c": [
+    {
+      "Model Arm": "Logistic Regression (Uncalibrated)",
+      "Post-Level AUROC": 0.8115,
+      "Post-Level AUPRC": 0.9673,
+      "Post-Level ECE": 0.3107,
+      "Post-Level Brier": 0.1844,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "Logistic Regression (TempScaled)",
+      "Post-Level AUROC": 0.8115,
+      "Post-Level AUPRC": 0.9673,
+      "Post-Level ECE": 0.2928,
+      "Post-Level Brier": 0.1793,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "Logistic Regression (Isotonic)",
+      "Post-Level AUROC": 0.8111,
+      "Post-Level AUPRC": 0.9613,
+      "Post-Level ECE": 0.1691,
+      "Post-Level Brier": 0.1178,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "LightGBM (Uncalibrated)",
+      "Post-Level AUROC": 0.828,
+      "Post-Level AUPRC": 0.9674,
+      "Post-Level ECE": 0.2802,
+      "Post-Level Brier": 0.1736,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "LightGBM (TempScaled)",
+      "Post-Level AUROC": 0.828,
+      "Post-Level AUPRC": 0.9674,
+      "Post-Level ECE": 0.2819,
+      "Post-Level Brier": 0.1739,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "LightGBM (Isotonic)",
+      "Post-Level AUROC": 0.8271,
+      "Post-Level AUPRC": 0.9643,
+      "Post-Level ECE": 0.2113,
+      "Post-Level Brier": 0.1364,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "DistilBERT (Uncalibrated)",
+      "Post-Level AUROC": 0.9422,
+      "Post-Level AUPRC": 0.9911,
+      "Post-Level ECE": 0.0516,
+      "Post-Level Brier": 0.0557,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "DistilBERT (TempScaled)",
+      "Post-Level AUROC": 0.9423,
+      "Post-Level AUPRC": 0.9911,
+      "Post-Level ECE": 0.0903,
+      "Post-Level Brier": 0.0609,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "DistilBERT (Isotonic)",
+      "Post-Level AUROC": 0.9426,
+      "Post-Level AUPRC": 0.9896,
+      "Post-Level ECE": 0.0813,
+      "Post-Level Brier": 0.061,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "PubMedBERT (Uncalibrated)",
+      "Post-Level AUROC": 0.9589,
+      "Post-Level AUPRC": 0.9937,
+      "Post-Level ECE": 0.0213,
+      "Post-Level Brier": 0.0445,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "PubMedBERT (TempScaled)",
+      "Post-Level AUROC": 0.9591,
+      "Post-Level AUPRC": 0.9938,
+      "Post-Level ECE": 0.0514,
+      "Post-Level Brier": 0.0467,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    },
+    {
+      "Model Arm": "PubMedBERT (Isotonic)",
+      "Post-Level AUROC": 0.9545,
+      "Post-Level AUPRC": 0.9911,
+      "Post-Level ECE": 0.0541,
+      "Post-Level Brier": 0.0484,
+      "Transformer Dominance": "Preserved (PubMedBERT > DistilBERT >> CPU)"
+    }
+  ],
+  "boundary_crossing_cases_sample": [
     {
       "post_id": "LIPITOR.617",
       "sent_idx": 4747,

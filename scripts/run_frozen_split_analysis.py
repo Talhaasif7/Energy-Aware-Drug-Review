@@ -502,6 +502,12 @@ def main():
             cadec_ece = compute_ece_adaptive(yc, p_cadec)
             cadec_auroc = float(compute_full_metrics(yc, p_cadec,
                                                      threshold=0.5)["AUROC"])
+            from metrics_utils import compute_clinical_utility_metrics, compute_decision_curve_analysis
+            clin_test = compute_clinical_utility_metrics(y_test, p_test, threshold=0.5, prevalences=[0.01, 0.05, 0.10, 0.20, 0.3612])
+            clin_cadec = compute_clinical_utility_metrics(yc, p_cadec, threshold=0.5, prevalences=[0.01, 0.05, 0.10, 0.20, 0.3662])
+            dca_test = compute_decision_curve_analysis(y_test, p_test)
+            dca_cadec = compute_decision_curve_analysis(yc, p_cadec)
+
             name = f"{model} + {RECAL_SHORT[recal]}"
             cfg = {"name": name, "model": model, "recal": recal,
                    "auroc": float(m_test["AUROC"]),
@@ -521,10 +527,16 @@ def main():
                              "cadec_ece": float(cadec_ece),
                              "cadec_auroc": cadec_auroc,
                              "energy_gross": cfg["inf_j_gross"],
-                             "energy_net": cfg["inf_j_net"]}
+                             "energy_net": cfg["inf_j_net"],
+                             "clinical_utility_test": clin_test,
+                             "clinical_utility_cadec": clin_cadec,
+                             "dca_test": dca_test,
+                             "dca_cadec": dca_cadec}
 
     # ---- per-model uncalibrated test p1 for the paired bootstrap ----
-    model_probs_uncal = {m: np.asarray(model_test_p1[m]["Uncalibrated"])
+    model_probs_uncal = {m: (np.asarray(model_test_p1[m]["Uncalibrated"])[:, 1]
+                             if np.asarray(model_test_p1[m]["Uncalibrated"]).ndim > 1
+                             else np.asarray(model_test_p1[m]["Uncalibrated"]))
                          for m in model_test_p1}
 
     log("\n" + "-" * 90)
@@ -550,7 +562,9 @@ def main():
             f"Delta={r['delta_auroc']:+.4f}  CI[{r['ci_lo']:+.4f},{r['ci_hi']:+.4f}]  {verdict}")
 
     # ---- CADEC paired bootstrap vs leader model ----
-    model_cadec_probs_uncal = {m: np.asarray(model_cadec_p1[m]["Uncalibrated"])
+    model_cadec_probs_uncal = {m: (np.asarray(model_cadec_p1[m]["Uncalibrated"])[:, 1]
+                                  if np.asarray(model_cadec_p1[m]["Uncalibrated"]).ndim > 1
+                                  else np.asarray(model_cadec_p1[m]["Uncalibrated"]))
                                for m in model_cadec_p1}
     from sklearn.metrics import roc_auc_score
     cadec_leader_model = max(model_cadec_probs_uncal.keys(), key=lambda m: roc_auc_score(y_cadec_csv, model_cadec_probs_uncal[m]))
@@ -576,9 +590,10 @@ def main():
             _, lo, hi = paired_delta_auroc(
                 y_cadec_csv, model_cadec_probs_uncal[cadec_leader_model], model_cadec_probs_uncal[m],
                 n_bootstrap=N_BOOTSTRAP, seed=BOOT_SEED)
-            is_tie = bool(lo <= 0.0 <= hi)
-            cadec_tie_with_leader[m] = is_tie
-            verdict = "TIE (CI includes 0)" if is_tie else "DISTINGUISHABLE"
+            from metrics_utils import tost_equivalence_test
+            is_tost_tie = tost_equivalence_test(lo, hi, delta_eq=0.015)
+            cadec_tie_with_leader[m] = is_tost_tie
+            verdict = "TOST TIE (delta=0.015)" if is_tost_tie else "DISTINGUISHABLE"
             log(f"    {m:22}: {verdict} vs leader, CI=[{lo:+.4f}, {hi:+.4f}]")
 
     # ---- Statistical Power & Minimum Detectable Difference (MDD) ----

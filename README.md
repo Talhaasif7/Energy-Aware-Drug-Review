@@ -6,6 +6,17 @@
 [![CodeCarbon](https://img.shields.io/badge/Energy%20Tracking-CodeCarbon-green.svg)](https://codecarbon.io)
 [![Provenance](https://img.shields.io/badge/Results-Reconciled%20to%20single%20source%20of%20truth-brightgreen.svg)]()
 
+**Authors:**  
+Talha Asif $^{1,\dagger}$, Muhammad Ahmad Zia $^{1,\dagger,*}$, Atif Ikram $^{1,2}$, Bassam Elzaghmouri $^{3}$, Marwan Abu-Zanona $^{4}$, Osman Elwasila $^{4}$, Maryam Al-Dairi $^{4}$, Lamia Hassan Rahamatalla $^{4}$, Najla Abdulaziz Almousa $^{4}$
+
+$^{1}$ Department of Computer Science & IT, The University of Lahore, Lahore, 54600, Pakistan  
+$^{2}$ Faculty of Computer Science and Mathematics, Universiti Malaysia Terengganu, Terengganu, 21030, Malaysia  
+$^{3}$ Department of Data Science and Artificial Intelligence, Al-Ahliyya Amman University, Amman 19328, Jordan  
+$^{4}$ Department of Management Information Systems, College of Business Administration, King Faisal University, Al-Ahsa, 31982, Saudi Arabia  
+$^{\dagger}$ *Equal contribution* | $^{*}$ *Corresponding author*
+
+---
+
 This repository contains the complete experimental framework, empirical codebase, and result tables for **"Green and Trustworthy: Energy-Aware NLP for Patient Drug-Review Safety Signals"**.
 
 > **Provenance.** Every quantitative claim below reconciles to a single source of truth, `results/frozen_split_reconciled.json` (primary seed 42; review-level grouped split recovered from the Colab prediction `.npz` embedded texts; test $N=1{,}189$; CADEC $N=7{,}823$; 2,000 paired-bootstrap iterations). GPU energy is a **measured saturated-batch run** (3 seeds, CV < 1%). CPU energy is **measured live with Intel RAPL on Linux** (`provenance = measured_rapl_saturated`, 7 repeats, LR CV 0.69%, LightGBM CV 0.51%).

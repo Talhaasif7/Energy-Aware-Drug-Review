@@ -11,6 +11,27 @@ from sklearn.metrics import (
 )
 
 
+def bootstrap_indices(n, rng, groups=None):
+    """Draw rows or whole clusters, preserving repeated draws of a cluster.
+
+    Clusters are sampled uniformly, and every sentence in each sampled review
+    is retained. This estimates sentence-weighted metrics with review dependence.
+    """
+    if n < 1:
+        raise ValueError('Cannot bootstrap an empty evaluation set')
+    if groups is None:
+        return rng.randint(0, n, size=n)
+    groups = np.asarray(groups)
+    if groups.ndim != 1 or len(groups) != n:
+        raise ValueError('groups must have one identifier per evaluation row')
+    unique, inverse = np.unique(groups, return_inverse=True)
+    if len(unique) < 2:
+        raise ValueError('Cluster inference requires at least two clusters')
+    members = [np.flatnonzero(inverse == i) for i in range(len(unique))]
+    drawn = rng.randint(0, len(unique), size=len(unique))
+    return np.concatenate([members[i] for i in drawn])
+
+
 # ---------------------------------------------------------------------------
 # TOST (Two One-Sided Tests) Equivalence & Power Utilities
 # ---------------------------------------------------------------------------
@@ -89,7 +110,7 @@ def compute_ece_adaptive(y_true, y_probs, n_bins=10):
     if n_samples == 0:
         return 0.0
 
-    sorted_indices = np.argsort(y_probs)
+    sorted_indices = np.argsort(y_probs, kind='stable')
     y_true_sorted = y_true[sorted_indices]
     y_probs_sorted = y_probs[sorted_indices]
 
@@ -115,7 +136,7 @@ def compute_ece_adaptive(y_true, y_probs, n_bins=10):
 
 
 def bootstrap_ece(y_true, y_probs, n_bins=10, n_bootstrap=1000,
-                  ci=0.95, method='adaptive', use_bca=True):
+                  ci=0.95, method='adaptive', use_bca=True, groups=None, seed=42):
     """
     Compute ECE with bootstrap 95% confidence interval (BCa by default).
     Returns: (ece_point, ece_lower, ece_upper)
@@ -129,13 +150,15 @@ def bootstrap_ece(y_true, y_probs, n_bins=10, n_bootstrap=1000,
     ece_fn = compute_ece_adaptive if method == 'adaptive' else compute_ece_equal_width
     ece_point = float(ece_fn(y_true, y_probs, n_bins))
 
-    rng = np.random.RandomState(42)
+    rng = np.random.RandomState(seed)
     boot_eces = np.empty(n_bootstrap)
     for b in range(n_bootstrap):
-        idx = rng.randint(0, n, size=n)
+        idx = bootstrap_indices(n, rng, groups)
         boot_eces[b] = ece_fn(y_true[idx], y_probs[idx], n_bins)
 
-    if not use_bca:
+    # Cluster percentile intervals deliberately avoid a row-jackknife BCa
+    # acceleration. Interval width need not exceed the row-bootstrap width.
+    if not use_bca or groups is not None:
         alpha = (1 - ci) / 2
         ece_lower = float(np.percentile(boot_eces, 100 * alpha))
         ece_upper = float(np.percentile(boot_eces, 100 * (1 - alpha)))
@@ -176,7 +199,7 @@ def bootstrap_ece(y_true, y_probs, n_bins=10, n_bootstrap=1000,
 
 
 def bootstrap_delta_ece(y_true, probs_a, probs_b, n_bins=10, n_bootstrap=1000,
-                        ci=0.95, method='adaptive'):
+                        ci=0.95, method='adaptive', groups=None, seed=42):
     """
     Compute paired difference ΔECE = ECE(b) - ECE(a) with bootstrap 95% CI
     on shared resamples.
@@ -192,10 +215,10 @@ def bootstrap_delta_ece(y_true, probs_a, probs_b, n_bins=10, n_bootstrap=1000,
     ece_b_point = ece_fn(y_true, probs_b, n_bins)
     delta_point = ece_b_point - ece_a_point
 
-    rng = np.random.RandomState(42)
+    rng = np.random.RandomState(seed)
     boot_deltas = np.empty(n_bootstrap)
     for b in range(n_bootstrap):
-        idx = rng.randint(0, n, size=n)
+        idx = bootstrap_indices(n, rng, groups)
         ea = ece_fn(y_true[idx], probs_a[idx], n_bins)
         eb = ece_fn(y_true[idx], probs_b[idx], n_bins)
         boot_deltas[b] = eb - ea
@@ -237,7 +260,8 @@ def find_optimal_threshold(y_calib, p_calib, pos_label=1,
 # Full discrimination + calibration metric bundle
 # ---------------------------------------------------------------------------
 
-def compute_full_metrics(y_true, y_probs, threshold=0.5, n_bins=10):
+def compute_full_metrics(y_true, y_probs, threshold=0.5, n_bins=10,
+                         groups=None, n_bootstrap=1000):
     """
     Compute the full metric bundle for a binary classification evaluation.
 
@@ -270,7 +294,8 @@ def compute_full_metrics(y_true, y_probs, threshold=0.5, n_bins=10):
     # Calibration: adaptive (equal-mass) ECE is primary, with bootstrap 95% CI;
     # equal-width ECE is reported as a secondary comparison metric.
     ece_adaptive, ece_lo, ece_hi = bootstrap_ece(
-        y_true, y_probs, n_bins=n_bins, method='adaptive')
+        y_true, y_probs, n_bins=n_bins, method='adaptive', groups=groups,
+        n_bootstrap=n_bootstrap)
     ece_ew = compute_ece_equal_width(y_true, y_probs, n_bins=n_bins)
 
     # Proper scoring rules
@@ -295,7 +320,7 @@ def compute_full_metrics(y_true, y_probs, threshold=0.5, n_bins=10):
     }
 
 
-def bootstrap_delta_auroc(y_true, y_probs_model1, y_probs_model2, n_bootstrap=1000, seed=42):
+def bootstrap_delta_auroc(y_true, y_probs_model1, y_probs_model2, n_bootstrap=1000, seed=42, groups=None):
     """
     Bootstrap 95% Confidence Interval for paired difference in AUROC on shared test set.
     Delta_AUROC = AUROC(Model 1) - AUROC(Model 2)
@@ -310,7 +335,7 @@ def bootstrap_delta_auroc(y_true, y_probs_model1, y_probs_model2, n_bootstrap=10
 
     delta_boots = []
     for _ in range(n_bootstrap):
-        idx = rng.randint(0, n_samples, size=n_samples)
+        idx = bootstrap_indices(n_samples, rng, groups)
         y_b = y_true[idx]
         if len(np.unique(y_b)) < 2:
             continue
@@ -318,6 +343,8 @@ def bootstrap_delta_auroc(y_true, y_probs_model1, y_probs_model2, n_bootstrap=10
         a2 = roc_auc_score(y_b, y_probs_model2[idx])
         delta_boots.append(a1 - a2)
 
+    if not delta_boots:
+        raise ValueError('No bootstrap draw contained both classes')
     ci_lo = float(np.percentile(delta_boots, 2.5))
     ci_hi = float(np.percentile(delta_boots, 97.5))
     return delta_point, ci_lo, ci_hi

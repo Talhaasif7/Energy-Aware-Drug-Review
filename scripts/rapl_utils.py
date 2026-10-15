@@ -271,11 +271,11 @@ def _rapl_tdp_watts() -> float | None:
     return None
 
 
-def _spec_tdp_watts(cpu_model: str) -> float:
+def _spec_tdp_watts(cpu_model: str) -> float | None:
     """Official Intel manufacturer specification TDP for common benchmark parts."""
     if "i5-8500" in cpu_model:
         return 65.0
-    return 65.0
+    return None
 
 
 def probe_environment() -> dict:

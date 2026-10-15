@@ -69,3 +69,11 @@ data/02_secondary_sentiment_scaling/external_val_webmd/*.csv
 * (2).*
 * (3).*
 * - Copy.*
+
+# Fine-tuned weights are transferred separately, never committed to Git.
+results/revision/checkpoints/
+revision_checkpoints.zip
+revision_predictions.zip
+revision_linux_results.zip
+revision_colab_bundle.zip
+*.safetensors

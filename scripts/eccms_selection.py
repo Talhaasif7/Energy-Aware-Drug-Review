@@ -28,6 +28,8 @@ from __future__ import annotations
 
 import numpy as np
 from sklearn.metrics import roc_auc_score
+from scipy.stats import rankdata
+from metrics_utils import bootstrap_indices
 
 
 # ---------------------------------------------------------------------------
@@ -37,11 +39,13 @@ from sklearn.metrics import roc_auc_score
 def get_energy(config, use_gross=False):
     """Energy per 1k inferences for a config, preferring net unless use_gross."""
     if use_gross:
-        return config.get('inf_j_gross', float('inf'))
+        value = config.get('inf_j_gross')
+        return float('inf') if value is None else value
     net = config.get('inf_j_net')
     if net is not None:
         return net
-    return config.get('inf_j_gross', float('inf'))
+    value = config.get('inf_j_gross')
+    return float('inf') if value is None else value
 
 
 def get_auroc(config):
@@ -55,18 +59,16 @@ def get_auroc(config):
 _BOOTSTRAP_CACHE = {}
 
 def _fast_auroc(y_true, p):
-    desc_indices = np.argsort(-p)
-    y_sorted = y_true[desc_indices]
-    n_pos = np.sum(y_sorted)
-    n_neg = len(y_sorted) - n_pos
+    y_true = np.asarray(y_true)
+    n_pos = np.sum(y_true)
+    n_neg = len(y_true) - n_pos
     if n_pos == 0 or n_neg == 0:
         return 0.5
-    # Rank calculation for non-tied/lightly-tied scores
-    ranks = np.arange(len(y_sorted), 0, -1)
-    pos_rank_sum = np.sum(ranks[y_sorted == 1])
+    ranks = rankdata(p, method='average')
+    pos_rank_sum = np.sum(ranks[y_true == 1])
     return (pos_rank_sum - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg)
 
-def paired_delta_auroc(y_true, p_leader, p_other, n_bootstrap=2000, seed=42):
+def paired_delta_auroc(y_true, p_leader, p_other, n_bootstrap=2000, seed=42, groups=None):
     """
     Paired bootstrap of Delta_AUROC = AUROC(leader) - AUROC(other) on a single
     shared test set. Both models are scored on the SAME resampled indices.
@@ -77,7 +79,8 @@ def paired_delta_auroc(y_true, p_leader, p_other, n_bootstrap=2000, seed=42):
     p_leader = np.ascontiguousarray(p_leader, dtype=np.float64)
     p_other = np.ascontiguousarray(p_other, dtype=np.float64)
 
-    cache_key = (len(y_true), p_leader.tobytes(), p_other.tobytes(), n_bootstrap, seed)
+    group_key = None if groups is None else tuple(np.asarray(groups).astype(str))
+    cache_key = (y_true.tobytes(), p_leader.tobytes(), p_other.tobytes(), n_bootstrap, seed, group_key)
     if cache_key in _BOOTSTRAP_CACHE:
         return _BOOTSTRAP_CACHE[cache_key]
 
@@ -88,9 +91,9 @@ def paired_delta_auroc(y_true, p_leader, p_other, n_bootstrap=2000, seed=42):
     deltas = np.empty(n_bootstrap)
     valid_count = 0
     for b in range(n_bootstrap):
-        idx = rng.randint(0, n, size=n)
+        idx = bootstrap_indices(n, rng, groups)
         yb = y_true[idx]
-        if np.sum(yb) == 0 or np.sum(yb) == n:
+        if np.sum(yb) == 0 or np.sum(yb) == len(yb):
             continue
         a_lead = _fast_auroc(yb, p_leader[idx])
         a_oth = _fast_auroc(yb, p_other[idx])
@@ -109,7 +112,7 @@ def paired_delta_auroc(y_true, p_leader, p_other, n_bootstrap=2000, seed=42):
     return res
 
 
-def pairwise_delta_auroc_matrix(y_true, model_probs, n_bootstrap=2000, seed=42):
+def pairwise_delta_auroc_matrix(y_true, model_probs, n_bootstrap=2000, seed=42, groups=None):
     """
     Full pairwise Delta_AUROC table for a dict {model_name: p1_test}.
     Delta is AUROC(row) - AUROC(col). Returns a list of dict rows suitable for a
@@ -123,7 +126,7 @@ def pairwise_delta_auroc_matrix(y_true, model_probs, n_bootstrap=2000, seed=42):
                 continue
             d, lo, hi = paired_delta_auroc(
                 y_true, model_probs[a], model_probs[b],
-                n_bootstrap=n_bootstrap, seed=seed)
+                n_bootstrap=n_bootstrap, seed=seed, groups=groups)
             tie = (lo <= 0.0 <= hi)
             rows.append({
                 'model_a': a, 'model_b': b,

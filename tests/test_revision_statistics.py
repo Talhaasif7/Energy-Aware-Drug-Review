@@ -10,6 +10,11 @@ from revision_analysis import joint_bootstrap, auc_sorted, ece_sorted, assert_mo
 
 
 class RevisionStatisticsTests(unittest.TestCase):
+    def test_checkpoint_hash_survives_git_line_ending_conversion(self):
+        from revision_hardware import canonical_text_sha256
+        self.assertEqual(canonical_text_sha256(b'header\r\nreview\r\n'),canonical_text_sha256(b'header\nreview\n'))
+        self.assertNotEqual(canonical_text_sha256(b'review A\n'),canonical_text_sha256(b'review B\n'))
+
     def test_unknown_cpu_has_no_invented_tdp(self):
         from rapl_utils import _spec_tdp_watts
         self.assertIsNone(_spec_tdp_watts('unspecified processor'))

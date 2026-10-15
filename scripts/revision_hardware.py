@@ -5,10 +5,16 @@ an explicit missing domain, never a made-up complete-system energy value.
 """
 from __future__ import annotations
 import platform
+import hashlib
 import subprocess
 import threading
 import time
 import numpy as np
+
+
+def canonical_text_sha256(data):
+    """Text-file identity across Git CRLF/LF conversion; retain all other bytes."""
+    return hashlib.sha256(data.replace(b'\r\n',b'\n')).hexdigest()
 
 
 class BoardTracer:

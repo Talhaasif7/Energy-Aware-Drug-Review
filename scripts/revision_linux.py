@@ -19,7 +19,7 @@ import zipfile
 import numpy as np
 import pandas as pd
 from rapl_utils import RAPLReader,probe_environment
-from revision_hardware import infer_all,measure_case,runtime_metadata,calibrated_arrays
+from revision_hardware import infer_all,measure_case,runtime_metadata,calibrated_arrays,canonical_text_sha256
 from revision_colab import parts
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -82,7 +82,11 @@ def main():
         base=AutoModelForSequenceClassification.from_pretrained(checkpoint,local_files_only=True,attn_implementation='eager').eval()
         provenance=json.loads((checkpoint/'revision_provenance.json').read_text())
         if set(provenance['train_review_ids'])!=set(split[0].review_id):raise ValueError('Checkpoint training reviews differ from evaluation protocol')
-        if provenance['psytar_sha256']!=hashlib.sha256((ROOT/'data/01_primary_adr_detection/dev_psytar/psytar_harmonised.csv').read_bytes()).hexdigest():raise ValueError('Checkpoint source corpus checksum differs')
+        source_bytes=(ROOT/'data/01_primary_adr_detection/dev_psytar/psytar_harmonised.csv').read_bytes()
+        if 'psytar_canonical_sha256' in provenance:
+            if provenance['psytar_canonical_sha256']!=canonical_text_sha256(source_bytes):raise ValueError('Checkpoint source corpus content differs')
+        elif provenance['psytar_sha256']!=hashlib.sha256(source_bytes).hexdigest():
+            raise ValueError('Older checkpoint has a different byte fingerprint. Use the updated Colab bundle with cross-platform fingerprints.')
         for precision in ['fp32','int8']:
             if precision=='fp32':model=base
             else:

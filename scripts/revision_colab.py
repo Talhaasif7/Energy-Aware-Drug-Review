@@ -18,7 +18,7 @@ import zipfile
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
-from revision_hardware import infer_all,measure_case,runtime_metadata,calibrated_arrays
+from revision_hardware import infer_all,measure_case,runtime_metadata,calibrated_arrays,canonical_text_sha256
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'results/revision'
@@ -111,7 +111,7 @@ def main():
             train(model,tok,split[0],device,seed);save_predictions(path,model,tok,split,ca,device,seed,stem)
             if seed==42:
                 checkpoint.mkdir(parents=True,exist_ok=True);model.save_pretrained(checkpoint,safe_serialization=True);tok.save_pretrained(checkpoint)
-                dump(checkpoint/'revision_provenance.json',{'seed':42,'model':MODELS[stem],'hf_commit':getattr(model.config,'_commit_hash',None),'max_length_training':128,'batch_training':64,'epochs':3,'lr':2e-5,'psytar_sha256':hashlib.sha256((ROOT/'data/01_primary_adr_detection/dev_psytar/psytar_harmonised.csv').read_bytes()).hexdigest(),'train_review_ids':sorted(split[0].review_id.unique().tolist()),'environment':runtime_metadata()})
+                dump(checkpoint/'revision_provenance.json',{'seed':42,'model':MODELS[stem],'hf_commit':getattr(model.config,'_commit_hash',None),'max_length_training':128,'batch_training':64,'epochs':3,'lr':2e-5,'psytar_sha256':hashlib.sha256((ROOT/'data/01_primary_adr_detection/dev_psytar/psytar_harmonised.csv').read_bytes()).hexdigest(),'psytar_canonical_sha256':canonical_text_sha256((ROOT/'data/01_primary_adr_detection/dev_psytar/psytar_harmonised.csv').read_bytes()),'train_review_ids':sorted(split[0].review_id.unique().tolist()),'environment':runtime_metadata()})
                 if not args.skip_sweep:
                     rows=[]
                     for batch in cfg['batch_sizes']:

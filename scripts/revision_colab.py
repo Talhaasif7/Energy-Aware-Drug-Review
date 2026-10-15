@@ -124,12 +124,8 @@ def main():
             del model,tok;gc.collect();torch.cuda.empty_cache()
     make_archive(ROOT/'revision_predictions.zip',[pred,energy,OUT/'colab_run_manifest.json'])
     make_archive(ROOT/'revision_checkpoints.zip',[checks])
-    # Lightweight analysis output plus large trained checkpoints are separate.
+    # Browser downloads run in the notebook kernel, not this CLI subprocess.
     print('Download revision_predictions.zip, revision_checkpoints.zip and results/revision/colab_run_manifest.json.',flush=True)
-    try:
-        from google.colab import files
-        files.download(str(ROOT/'revision_predictions.zip'));files.download(str(ROOT/'revision_checkpoints.zip'))
-    except ImportError:pass
 
 
 if __name__=='__main__':main()

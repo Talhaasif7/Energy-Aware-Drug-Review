@@ -1,0 +1,212 @@
+{
+  "environment": {
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "python": "3.13.15",
+    "torch": "2.11.0+cu130",
+    "transformers": "4.57.6",
+    "numpy": "2.5.4",
+    "torch_threads": 1,
+    "cuda": "13.0",
+    "device": "Tesla T4"
+  },
+  "seeds_requested": [
+    42,
+    123,
+    456,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007
+  ],
+  "models_requested": [
+    "efficient_transformer",
+    "biomedical_transformer",
+    "compact_transformer"
+  ],
+  "scope": "GPU board only; host CPU and wall energy unavailable",
+  "completed": [
+    {
+      "model": "efficient_transformer",
+      "seed": 42,
+      "seconds": 1078.0935320499998,
+      "prediction_sha256": "345fb5e81b11f3542fb3c05dec1c1aad57e88b5a31f579214ed1d52135fcb1dc"
+    },
+    {
+      "model": "efficient_transformer",
+      "seed": 123,
+      "seconds": 48.15499442999999,
+      "prediction_sha256": "967c05a5e203c77b0cdf1c485e7b1345b13c37bef96e659d4f03c5673b8387ef"
+    },
+    {
+      "model": "efficient_transformer",
+      "seed": 456,
+      "seconds": 48.747659298000144,
+      "prediction_sha256": "3928ca422d04d654ca49843c3e44dfef44c5c27adbaafb578a11d67b2453e841"
+    },
+    {
+      "model": "efficient_transformer",
+      "seed": 1001,
+      "seconds": 48.02247216500018,
+      "prediction_sha256": "f33214d0b1e9ec0f9dddb22865331978cee10d36863e85ccdb0984d8875d2d64"
+    },
+    {
+      "model": "efficient_transformer",
+      "seed": 1002,
+      "seconds": 48.269897098,
+      "prediction_sha256": "7ae7e04617ca10db00bc1389e23f69c6ca126daef6e42af9eda010f55c40f067"
+    },
+    {
+      "model": "efficient_transformer",
+      "seed": 1003,
+      "seconds": 48.65872978699986,
+      "prediction_sha256": "976f4e0f283b05c2bbd1073d2e1225ceb7a6c66dd28049f7fe1a296df5b49ee8"
+    },
+    {
+      "model": "efficient_transformer",
+      "seed": 1004,
+      "seconds": 49.52676689000009,
+      "prediction_sha256": "0664c0f93f2c766ddfa91d47771d161ee24f4ad706c8959fa617c5632a390291"
+    },
+    {
+      "model": "efficient_transformer",
+      "seed": 1005,
+      "seconds": 48.26465249199987,
+      "prediction_sha256": "5a023eb62e93f949caa0b1633043a6a020cc4df2e052ca65097a4cfb4e2152f1"
+    },
+    {
+      "model": "efficient_transformer",
+      "seed": 1006,
+      "seconds": 49.01064483599998,
+      "prediction_sha256": "acdbc3d1bcc6f7c569379f52a1d25480975e88d33d1df3e639abff35bafeaf99"
+    },
+    {
+      "model": "efficient_transformer",
+      "seed": 1007,
+      "seconds": 47.87985264399981,
+      "prediction_sha256": "958d86232ebb9c69bc98b49f2675e01c51672b8d6072019219ae3c6671a7c048"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 42,
+      "seconds": 1125.3406200079999,
+      "prediction_sha256": "3f6a50993f3ebc8baf5c57c4b31aeb16da04347f9e04d475e28db1770e248079"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 123,
+      "seconds": 95.74690006699984,
+      "prediction_sha256": "e6074ee5e4986dfcf6671092c9f1570699521beeb4791f877b050478a545b658"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 456,
+      "seconds": 95.04515507799988,
+      "prediction_sha256": "cb082f98371c022e7bac88ef14459f0a1c332baef1c79fa10f1c94dff91db7f0"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 1001,
+      "seconds": 94.79050055500011,
+      "prediction_sha256": "3cb15a5d05a7ce07402350a9f536abc3a9714ca388465630da5a9420d7afc22b"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 1002,
+      "seconds": 94.97401985500028,
+      "prediction_sha256": "257ebc48c50ed7a03411676ed1d8961c68a3981a1a3e55ead0cae1e97c59b67b"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 1003,
+      "seconds": 95.65890378400036,
+      "prediction_sha256": "c012345b34596b5200ce65e7b67176d359ebcfae074477227b3b02b75495ceb7"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 1004,
+      "seconds": 97.92458681500011,
+      "prediction_sha256": "0dde9206060fdc2465f8099b6f1f708e1d45ee27bab09326ac4b344051ba8c1f"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 1005,
+      "seconds": 95.57113256499997,
+      "prediction_sha256": "5932250f227ed7b5cda4f590bdeb6aa74c1949e76ba6d65bb1753427e90797d4"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 1006,
+      "seconds": 96.95607281799994,
+      "prediction_sha256": "098a2c51281a6615c89ee319f6722e116b0ccfc7b9192d9e9cc29443a3668bc7"
+    },
+    {
+      "model": "biomedical_transformer",
+      "seed": 1007,
+      "seconds": 94.6121958079998,
+      "prediction_sha256": "559bf3552dcfb38a356fb9ff646fee972908ef09cca08141ed428219489e6f12"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 42,
+      "seconds": 1028.8905517770004,
+      "prediction_sha256": "4f88cda17212563bd02855535de46ea24cba731baf3f37eec44faf480276a678"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 123,
+      "seconds": 6.9537468139997145,
+      "prediction_sha256": "4543da00a0b45c5b148336729e346ffe7e542f275fbb09df6c8caa45ae141835"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 456,
+      "seconds": 6.941126288000305,
+      "prediction_sha256": "5206373dabd87e795980ac51f49cadbdaee58a9efb5956fd262f8548793f416a"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 1001,
+      "seconds": 7.003126949999569,
+      "prediction_sha256": "7642be527ae635b1c9057c180df1c30b3e8032198037e14abf1807f397954f17"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 1002,
+      "seconds": 7.015416352999637,
+      "prediction_sha256": "320e57f7e09ad90f85fb9e384a3d02a8dff886bf28d688cae371b0bfee2c2476"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 1003,
+      "seconds": 7.021933858000011,
+      "prediction_sha256": "1be8398f7bfd8a3a040145725c3406941fcdf139110b9a7bfa36850791809f7b"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 1004,
+      "seconds": 6.967568117000155,
+      "prediction_sha256": "e6b254283da78dbc4614791c2887af4c6d4229fd8cab562c45d83fb02bbe55ed"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 1005,
+      "seconds": 7.002063079000436,
+      "prediction_sha256": "0b1dbc21a058f432a1c34041a4dfcfbba4c9984a3fba93a509c1576083c7d009"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 1006,
+      "seconds": 7.0016886579996935,
+      "prediction_sha256": "07116bd834091a76d9e3ec1fa946fb7a16fd05f49588cb3a4d744bf892922614"
+    },
+    {
+      "model": "compact_transformer",
+      "seed": 1007,
+      "seconds": 6.9456486909994055,
+      "prediction_sha256": "7eacb1131e81b74165a807e359445cf21ff3f82562861b716a46ac15dba7975d"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "input_archive": {
+    "path": "revision_predictions.zip",
+    "sha256": "966d2b932c8198f462d3dd49a93fbfcae58d60256ac2c55089f1141605b98af3",
+    "crc_valid": true
+  },
+  "log": {
+    "path": "reports/revision/colab_run.txt",
+    "sha256": "3c89678bffd82a808159e606c89a48bf304e91e12ca7ee785bbf898a86b0bdbd",
+    "original_transfer_path": "revision_colab_run.log"
+  },
+  "validated": {
+    "prediction_files": 30,
+    "manifest_hashes_match": true,
+    "texts_and_labels_exactly_match_corpora": true,
+    "group_ids_exactly_match_grouped_splits": true,
+    "no_review_overlap_within_each_split": true,
+    "all_probability_arrays_finite_normalised": true,
+    "pickle_not_required": true,
+    "gpu_grid_cells": 45,
+    "measurement_repeats": 135,
+    "all_repeatability_pass": true
+  },
+  "environment": {
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "python": "3.13.15",
+    "torch": "2.11.0+cu130",
+    "transformers": "4.57.6",
+    "numpy": "2.5.4",
+    "torch_threads": 1,
+    "cuda": "13.0",
+    "device": "Tesla T4"
+  },
+  "seeds": [
+    42,
+    123,
+    456,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007
+  ],
+  "models": [
+    {
+      "model": "DistilBERT",
+      "primary": {
+        "seed": 42,
+        "source_auroc": 0.933192246350141,
+        "external_auroc": 0.9132647572946081
+      },
+      "mean_source_auroc": 0.9338395389799272,
+      "mean_external_auroc": 0.916174691140308,
+      "canonical_gross_board_j_1000": 75.47341306279806,
+      "canonical_throughput_sps": 859.960492721639,
+      "cells": 15,
+      "repeats": 45,
+      "all_repeatability_pass": true,
+      "maximum_cv_pct": 3.282290889563507
+    },
+    {
+      "model": "PubMedBERT",
+      "primary": {
+        "seed": 42,
+        "source_auroc": 0.9413676236044657,
+        "external_auroc": 0.9057075595561179
+      },
+      "mean_source_auroc": 0.9350121710771457,
+      "mean_external_auroc": 0.9130544180188629,
+      "canonical_gross_board_j_1000": 152.23322747947833,
+      "canonical_throughput_sps": 428.03868660386024,
+      "cells": 15,
+      "repeats": 45,
+      "all_repeatability_pass": true,
+      "maximum_cv_pct": 3.2361826479487106
+    },
+    {
+      "model": "BERT-tiny",
+      "primary": {
+        "seed": 42,
+        "source_auroc": 0.7873343761501657,
+        "external_auroc": 0.8249405653211233
+      },
+      "mean_source_auroc": 0.7923112680886126,
+      "mean_external_auroc": 0.831747766755581,
+      "canonical_gross_board_j_1000": 11.027962440944043,
+      "canonical_throughput_sps": 3465.1433413047957,
+      "cells": 15,
+      "repeats": 45,
+      "all_repeatability_pass": true,
+      "maximum_cv_pct": 1.6468137831239664
+    }
+  ],
+  "checkpoint_archive": "Saved in author Google Drive; not available locally and not inspected",
+  "remaining_external_run": "Linux CPU-package tokenizer, FP32 and INT8 measurements",
+  "complete_system_energy_measured": false,
+  "statistical_integration": {
+    "grouped_splits": 10,
+    "candidate_arms_per_split": 15,
+    "bootstrap_draws": 2000,
+    "grid_cells_per_split": 165,
+    "complete_measured_catalogue": true,
+    "numerical_artifact_check": "python scripts/check_revision_artifacts.py --analysis-only: passed",
+    "manuscript_regenerated": false
+  }
+}

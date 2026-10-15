@@ -1,4 +1,5 @@
 """Check exported numerical tables, uncertainty arrays and DOCX figure placement."""
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -6,9 +7,13 @@ from xml.etree import ElementTree as E
 from zipfile import ZipFile
 import numpy as np
 from revision_analysis import ROOT,RESULTS,REPORTS,assert_monotonic,sha
+from revision_hardware import canonical_text_sha256
 
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--analysis-only',action='store_true',help='Verify numerical artifacts without claiming the manuscript/figures have been regenerated')
+    args=parser.parse_args()
     summary=json.loads((RESULTS/'revision_analysis.json').read_text());cfg=summary['provenance']['config']
     assert cfg['bootstrap_repeats']==2000,'Publication artifacts require 2000 draws'
     for run in summary['runs']:
@@ -26,6 +31,14 @@ def main():
             assert 0<=row['flagged_reviews']<=row['review_count']
         for item in run['input_predictions']:assert sha(ROOT/item['path'])==item['sha256']
         print(f'Seed {run["seed"]}: grid, clusters, draws, workload and artifact hashes verified.')
+    for item in summary['provenance'].get('energy_inputs',[]):
+        path=ROOT/item['path']
+        same_bytes=sha(path)==item['sha256']
+        same_text='canonical_text_sha256' in item and canonical_text_sha256(path.read_bytes())==item['canonical_text_sha256']
+        assert same_bytes or same_text,f'Energy artifact changed: {item["path"]}'
+    if args.analysis_only:
+        print('Numerical artifact checks passed. Manuscript and figure checks were not requested.')
+        return
     ns={'w':'http://schemas.openxmlformats.org/wordprocessingml/2006/main','a':'http://schemas.openxmlformats.org/drawingml/2006/main','r':'http://schemas.openxmlformats.org/officeDocument/2006/relationships'}
     with ZipFile(ROOT/'AIH Paper - Revised.docx') as z:
         body=E.fromstring(z.read('word/document.xml')).find('w:body',ns)

@@ -71,8 +71,8 @@ def save_predictions(path,model,tokenizer,split,cadec,device,seed,stem):
     payload={'logits_calib':np.column_stack([np.zeros(len(pc)),odds]),'seed':seed,
         'model_name':stem,'calib_probs_uncal':pc}
     for name,df in zip(['train','calib','test'],split):
-        payload[f'{name}_texts']=df.text.astype(str).to_numpy();payload[f'y_{name}']=df.label.to_numpy();payload[f'{name}_groups']=df.review_id.astype(str).to_numpy()
-    payload['cadec_texts']=cadec.text.astype(str).to_numpy();payload['y_cadec']=cadec.label.to_numpy()
+        payload[f'{name}_texts']=np.asarray(df.text.astype(str).tolist(),dtype=str);payload[f'y_{name}']=df.label.to_numpy();payload[f'{name}_groups']=np.asarray(df.review_id.astype(str).tolist(),dtype=str)
+    payload['cadec_texts']=np.asarray(cadec.text.astype(str).tolist(),dtype=str);payload['y_cadec']=cadec.label.to_numpy()
     for method,arrs in methods.items():
         for domain,p in zip(['calib','test','cadec'],arrs):payload[f'probs_{domain}_{method}']=np.column_stack([1-p,p])
     np.savez_compressed(path,**payload)

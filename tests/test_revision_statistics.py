@@ -10,6 +10,25 @@ from revision_analysis import joint_bootstrap, auc_sorted, ece_sorted, assert_mo
 
 
 class RevisionStatisticsTests(unittest.TestCase):
+    def test_colab_and_linux_exports_load_without_pickle(self):
+        import tempfile
+        import pandas as pd
+        from unittest.mock import patch
+        from revision_colab import save_predictions as gpu_save
+        from revision_linux import save_predictions as cpu_save
+        df=pd.DataFrame({'review_id':['a','b','c','d','e','f'],'text':['text '+str(i) for i in range(6)],'label':[0,0,1,0,1,1]})
+        def fake_infer(model,tokenizer,texts,*args,**kwargs):return np.linspace(.1,.9,len(texts))
+        root=Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory(prefix='revision-export-test-',dir=root/'tests') as folder:
+            self.assertTrue(Path(folder).resolve().is_relative_to(root))
+            with patch('revision_colab.infer_all',side_effect=fake_infer):gpu_save(Path(folder)/'gpu.npz',None,None,[df,df,df],df,'cpu',42,'efficient_transformer')
+            with patch('revision_linux.infer_all',side_effect=fake_infer):cpu_save(Path(folder)/'cpu.npz',None,None,[df,df,df],df)
+            for file in Path(folder).glob('*.npz'):
+                with np.load(file,allow_pickle=False) as saved:
+                    for key in saved.files:self.assertNotEqual(saved[key].dtype.kind,'O',key)
+                    np.testing.assert_array_equal(saved['test_texts'],df.text.to_numpy())
+                    self.assertEqual(saved['probs_cadec_iso'].shape,(6,2))
+
     def test_checkpoint_hash_survives_git_line_ending_conversion(self):
         from revision_hardware import canonical_text_sha256
         self.assertEqual(canonical_text_sha256(b'header\r\nreview\r\n'),canonical_text_sha256(b'header\nreview\n'))

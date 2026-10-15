@@ -40,9 +40,9 @@ def idle_power(rapl,seconds):
 def save_predictions(path,model,tok,split,cadec):
     cal,test=split[1:];pc=infer_all(model,tok,cal.text.tolist(),'cpu');pt=infer_all(model,tok,test.text.tolist(),'cpu');po=infer_all(model,tok,cadec.text.tolist(),'cpu')
     methods=calibrated_arrays(cal.label.to_numpy(),pc,pt,po);odds=np.log(np.clip(pc,1e-7,1-1e-7)/np.clip(1-pc,1e-7,1))
-    payload={'logits_calib':np.column_stack([np.zeros(len(pc)),odds]),'seed':42,'cadec_texts':cadec.text.astype(str).to_numpy(),'y_cadec':cadec.label.to_numpy()}
+    payload={'logits_calib':np.column_stack([np.zeros(len(pc)),odds]),'seed':42,'cadec_texts':np.asarray(cadec.text.astype(str).tolist(),dtype=str),'y_cadec':cadec.label.to_numpy()}
     for name,df in zip(['train','calib','test'],split):
-        payload[f'{name}_texts']=df.text.astype(str).to_numpy();payload[f'y_{name}']=df.label.to_numpy();payload[f'{name}_groups']=df.review_id.astype(str).to_numpy()
+        payload[f'{name}_texts']=np.asarray(df.text.astype(str).tolist(),dtype=str);payload[f'y_{name}']=df.label.to_numpy();payload[f'{name}_groups']=np.asarray(df.review_id.astype(str).tolist(),dtype=str)
     for method,arrays in methods.items():
         for domain,p in zip(['calib','test','cadec'],arrays):payload[f'probs_{domain}_{method}']=np.column_stack([1-p,p])
     path.parent.mkdir(parents=True,exist_ok=True);np.savez_compressed(path,**payload)

@@ -251,7 +251,11 @@ def harmonise_cadec(cadec_folder_path, output_csv_path):
 
                 sentences_records.append({
                     'text': sentence_text,
-                    'label': has_adr
+                    'label': has_adr,
+                    'post_id': os.path.splitext(os.path.basename(txt_path))[0],
+                    'drug_name': os.path.basename(txt_path).split('.')[0].lower(),
+                    'char_start': s_start_global,
+                    'char_end': s_end_global,
                 })
 
     df_harmonised = pd.DataFrame(sentences_records)
@@ -380,15 +384,15 @@ def main():
     reconfigure_stdout()
     setup_nltk()
 
-    base_dir = r"e:\AI Green"
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     psytar_excel = os.path.join(
-        base_dir, r"data\01_primary_adr_detection\dev_psytar\PsyTAR_dataset.xlsx")
+        base_dir, 'data', '01_primary_adr_detection', 'dev_psytar', 'PsyTAR_dataset.xlsx')
     psytar_out = os.path.join(
-        base_dir, r"data\01_primary_adr_detection\dev_psytar\psytar_harmonised.csv")
+        base_dir, 'data', '01_primary_adr_detection', 'dev_psytar', 'psytar_harmonised.csv')
     cadec_folder = os.path.join(
-        base_dir, r"data\01_primary_adr_detection\external_val_cadec\cadec")
+        base_dir, 'data', '01_primary_adr_detection', 'external_val_cadec', 'cadec')
     cadec_out = os.path.join(
-        base_dir, r"data\01_primary_adr_detection\external_val_cadec\cadec_harmonised.csv")
+        base_dir, 'data', '01_primary_adr_detection', 'external_val_cadec', 'cadec_harmonised.csv')
 
     df_psytar = harmonise_psytar(psytar_excel, psytar_out)
     df_cadec, cadec_alignment_notes = harmonise_cadec(cadec_folder, cadec_out)

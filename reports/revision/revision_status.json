@@ -1,0 +1,12 @@
+{
+  "statistical_reanalysis": "completed",
+  "grouped_splits_evaluated": 3,
+  "grid_cells_per_split": 165,
+  "cluster_bootstrap_repeats": 2000,
+  "hardware_extensions": "pending external Colab and Linux execution",
+  "complete_system_energy": "not available: no GPU-equipped instrumented host / wall meter",
+  "independent_clinical_delta_validation": "not available; unsupported claim withdrawn",
+  "submission_ready": false,
+  "manuscript": "AIH Paper - Revised.docx",
+  "response": "reports/revision/REVIEW_RESPONSE.md"
+}

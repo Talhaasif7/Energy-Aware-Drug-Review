@@ -29,6 +29,7 @@ import lightgbm as lgb
 
 from metrics_utils import compute_ece_adaptive, compute_clinical_utility_metrics, compute_decision_curve_analysis, TemperatureScaler
 from harmonise_st1 import harmonise_cadec
+from revision_hardware import canonical_text_sha256
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / 'results' / 'revision'
@@ -269,7 +270,7 @@ def run_seed(seed,config,psytar,cadec,prediction_dirs):
             raise FileNotFoundError(f'Missing {stem}_seed{seed}_predictions.npz')
         # Explicit --predictions directories take precedence over submitted
         # artifacts; chosen paths and hashes are recorded in every output.
-        path=matches[-1];arms.update(transformer_predictions(path,model,parts,cadec));inputs.append({'path':str(path.relative_to(ROOT)),'sha256':sha(path)})
+        path=matches[-1];arms.update(transformer_predictions(path,model,parts,cadec));inputs.append({'path':path.relative_to(ROOT).as_posix(),'sha256':sha(path)})
     names=list(arms);energy=load_energy();domain_outputs={};draw_arrays={};ci_comparison=[];bin_rows=[]
     for domain,df,g in [('test',parts[2],'review_id'),('cadec',cadec,'post_id')]:
         print(f'[seed {seed}] {domain}: {len(df)} rows, {df[g].nunique()} clusters, {config["bootstrap_repeats"]} resamples',flush=True)
@@ -339,10 +340,15 @@ def main():
             picks=[row['selected'] or 'Infeasible' for run in selected_runs for row in run['grid'] if row['tau']==tau and row['energy_budget']==E]
             for arm in sorted(set(picks)):frequencies.append({'tau':tau,'energy_budget':E,'arm':arm,'count':picks.count(arm),'splits':len(picks),'frequency':picks.count(arm)/len(picks),'candidate_count':len(cohort),'cohort_seeds':[r['seed'] for r in selected_runs]})
     pd.DataFrame(frequencies).to_csv(RESULTS/'selection_frequencies.csv',index=False)
+    energy_paths=[ROOT/'results/frozen_split_reconciled.json']
+    energy_paths.extend(sorted((RESULTS/'gpu_energy').glob('*_surface.json')))
+    energy_paths.extend(sorted((RESULTS/'linux_energy').glob('*.json')))
     summary={'provenance':{'generated_utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'script':'revision_analysis.py','config':config,'seeds':seeds,
             'ece_interval':'95% percentile, 2000 whole-cluster draws by default','resampling_unit_source':'review_id','resampling_unit_external':'post_id',
             'primary_selection':'source audit split only; external corpus nonbinding diagnostic','selection_performance_is_apparent':'selection and source discrimination use the same development audit split, not a new independent test',
-            'energy_scope':'CPU package including TF-IDF; GPU board forward-only from submitted benchmark; not complete-system energy',
+            'energy_scope':'CPU package including TF-IDF; revision GPU board during raw-text pipeline timing when supplied, otherwise submitted forward-only benchmark; host energy and whole-system energy are not measured',
+            'energy_inputs':[{'path':p.relative_to(ROOT).as_posix(),'sha256':sha(p),'canonical_text_sha256':canonical_text_sha256(p.read_bytes())} for p in energy_paths],
+            'energy_operating_point':{'batch_size':64,'max_length':128,'revision_energy_checkpoint_seed':42,'shared_across_grouped_splits':True},
             'psytar_sha256':sha(PSYTAR),'cadec_sha256':sha(CADEC),'cadec_group_metadata_sha256':sha(RESULTS/'cadec_with_groups.csv'),
             'analysis_code_sha256':sha(Path(__file__)),'metrics_code_sha256':sha(ROOT/'scripts/metrics_utils.py'),
             'classical_config_sha256':sha(ROOT/'configs/default_config.json'),

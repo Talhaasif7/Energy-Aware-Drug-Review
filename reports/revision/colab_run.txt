@@ -1,0 +1,231 @@
+[train] efficient_transformer, grouped seed 42
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792072505.062343    1344 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792072507.465463    1344 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[board energy] efficient_transformer: batch=8, length=64
+[board energy] efficient_transformer: batch=8, length=128
+[board energy] efficient_transformer: batch=8, length=256
+[board energy] efficient_transformer: batch=16, length=64
+[board energy] efficient_transformer: batch=16, length=128
+[board energy] efficient_transformer: batch=16, length=256
+[board energy] efficient_transformer: batch=32, length=64
+[board energy] efficient_transformer: batch=32, length=128
+[board energy] efficient_transformer: batch=32, length=256
+[board energy] efficient_transformer: batch=64, length=64
+[board energy] efficient_transformer: batch=64, length=128
+[board energy] efficient_transformer: batch=64, length=256
+[board energy] efficient_transformer: batch=128, length=64
+[board energy] efficient_transformer: batch=128, length=128
+[board energy] efficient_transformer: batch=128, length=256
+[train] efficient_transformer, grouped seed 123
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] efficient_transformer, grouped seed 456
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] efficient_transformer, grouped seed 1001
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] efficient_transformer, grouped seed 1002
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] efficient_transformer, grouped seed 1003
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] efficient_transformer, grouped seed 1004
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] efficient_transformer, grouped seed 1005
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] efficient_transformer, grouped seed 1006
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] efficient_transformer, grouped seed 1007
+Some weights of DistilBertForSequenceClassification were not initialized from the model checkpoint at distilbert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight', 'pre_classifier.bias', 'pre_classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] biomedical_transformer, grouped seed 42
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[board energy] biomedical_transformer: batch=8, length=64
+[board energy] biomedical_transformer: batch=8, length=128
+[board energy] biomedical_transformer: batch=8, length=256
+[board energy] biomedical_transformer: batch=16, length=64
+[board energy] biomedical_transformer: batch=16, length=128
+[board energy] biomedical_transformer: batch=16, length=256
+[board energy] biomedical_transformer: batch=32, length=64
+[board energy] biomedical_transformer: batch=32, length=128
+[board energy] biomedical_transformer: batch=32, length=256
+[board energy] biomedical_transformer: batch=64, length=64
+[board energy] biomedical_transformer: batch=64, length=128
+[board energy] biomedical_transformer: batch=64, length=256
+[board energy] biomedical_transformer: batch=128, length=64
+[board energy] biomedical_transformer: batch=128, length=128
+[board energy] biomedical_transformer: batch=128, length=256
+[train] biomedical_transformer, grouped seed 123
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] biomedical_transformer, grouped seed 456
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] biomedical_transformer, grouped seed 1001
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] biomedical_transformer, grouped seed 1002
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] biomedical_transformer, grouped seed 1003
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] biomedical_transformer, grouped seed 1004
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] biomedical_transformer, grouped seed 1005
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] biomedical_transformer, grouped seed 1006
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] biomedical_transformer, grouped seed 1007
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] compact_transformer, grouped seed 42
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[board energy] compact_transformer: batch=8, length=64
+[board energy] compact_transformer: batch=8, length=128
+[board energy] compact_transformer: batch=8, length=256
+[board energy] compact_transformer: batch=16, length=64
+[board energy] compact_transformer: batch=16, length=128
+[board energy] compact_transformer: batch=16, length=256
+[board energy] compact_transformer: batch=32, length=64
+[board energy] compact_transformer: batch=32, length=128
+[board energy] compact_transformer: batch=32, length=256
+[board energy] compact_transformer: batch=64, length=64
+[board energy] compact_transformer: batch=64, length=128
+[board energy] compact_transformer: batch=64, length=256
+[board energy] compact_transformer: batch=128, length=64
+[board energy] compact_transformer: batch=128, length=128
+[board energy] compact_transformer: batch=128, length=256
+[train] compact_transformer, grouped seed 123
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] compact_transformer, grouped seed 456
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] compact_transformer, grouped seed 1001
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] compact_transformer, grouped seed 1002
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] compact_transformer, grouped seed 1003
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] compact_transformer, grouped seed 1004
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] compact_transformer, grouped seed 1005
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] compact_transformer, grouped seed 1006
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+[train] compact_transformer, grouped seed 1007
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at prajjwal1/bert-tiny and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+  epoch 1/3 completed
+  epoch 2/3 completed
+  epoch 3/3 completed
+Download revision_predictions.zip, revision_checkpoints.zip and results/revision/colab_run_manifest.json.

@@ -4,13 +4,21 @@ The submitted `AIH Paper.docx` and original `results/*.json` / prediction arrays
 
 Manuscript DOCX files and the generated reviewer-response letter are author-local materials. The professor's code handoff does not need them; author-side DOCX regeneration requires the supplied original `AIH Paper.docx`.
 
+## Returned Colab artifacts — 15 October 2026
+
+The author has returned `revision_predictions.zip` and `revision_colab_run.log`. The checkpoint ZIP is saved separately in the author's Google Drive. All 30 prediction files match the run-manifest hashes and the corpus texts, labels and grouped partitions. All three encoders completed the 15-cell GPU-board grid, with three repeats per cell; every cell passed the configured repeatability check. No new Colab run is needed for these completed experiments.
+
+The current numerical supplements now cover all ten grouped splits, 15 arms per split and 2,000 cluster-bootstrap draws. Numerical artifact checks pass for all ten splits. See [COLAB_RESULTS_REVIEW.md](reports/revision/COLAB_RESULTS_REVIEW.md). The existing revised DOCX and reviewer-response body are earlier working drafts; they still require regeneration from the returned hardware results after Linux integration.
+
+**Next external step:** share the checkpoint ZIP from Drive with the professor and follow [PROFESSOR_LINUX_STEPS.md](PROFESSOR_LINUX_STEPS.md). Return `revision_linux_results.zip` and `revision_linux_run.log` for final integration. The manuscript remains a working draft while the CPU extension and its integration are pending.
+
 ## Already completed locally
 
 - Exact CADEC post identities recovered; all 7,823 texts and labels verified unchanged, 1,248 posts, 2,865 positives.
 - 2,000 whole-review/post percentile bootstrap draws, exact tied-score AUROC, 10-bin ECE plus 5/10/15/20-bin sensitivity.
 - Complete 11 × 15 constraint grid per split; monotonicity checks; ten δ values; complete selection on seeds 42/123/456.
 - Review/post workload at calibration-target sensitivities 85%, 90%, 95%, plus separate retrospective matched-sensitivity diagnostics; all 66 original-arm pairs.
-- New measured-data figures with correct captions, formal selection equations, positioning comparison and scoped claims.
+- Earlier working-draft figures with correct captions, formal selection equations, positioning comparison and scoped claims; regenerate manuscript figures after the returned hardware results are integrated.
 - Primary source-only selection; CADEC-assisted historical gate separately labelled. No fabricated clinical δ justification or whole-system energy.
 
 Cluster intervals need not all be wider than row intervals. The original plan's universal-width acceptance rule is invalid. A δ fitted to these same outcomes would not be independent clinical justification. The original heuristic power/MDD claim is withdrawn. The original GPU board readings exclude host tokenization and cannot be added to another machine's RAPL readings and called a measured complete system.
@@ -20,7 +28,7 @@ Cluster intervals need not all be wider than row intervals. The original plan's 
 1. Open `AIH_Revision_Colab.ipynb` in Colab and select a **T4 GPU** runtime.
 2. Run the cells and upload **`revision_colab_bundle.zip`** when asked (about 0.44 MB). It contains the scripts and both CSVs; no private GitHub login is needed.
 3. Defaults train DistilBERT, PubMedBERT and compact BERT-tiny over **ten grouped splits** (42/123/456/1001–1007). Primary seed 42 saves weights and measures the full **5 batch sizes × 3 lengths** board-energy grid. Outputs are incremental; actual run time depends on the runtime and is not promised by the old plan.
-4. Download **`revision_predictions.zip`** and **`revision_checkpoints.zip`** before disconnecting. The first contains lightweight prediction/energy results; the second contains trained weights and may be large.
+4. Run the final download cell to save **`revision_predictions.zip`**, **`revision_checkpoints.zip`**, and **`revision_colab_run.log`** before disconnecting. The first ZIP contains lightweight prediction/energy results; the second contains trained weights and may be large. If the browser blocks downloads, use Colab's Files pane to download these files from `/content/aih_revision/`.
 5. If quota is tight, set notebook `extra=["--seeds","42"]` for the first run. In the same retained session, resume with `extra=["--seeds","123","456","1001","1002","1003","1004","1005","1006","1007","--skip-sweep"]`. Existing files are reused. A new Colab runtime loses local files; restore prior outputs/checkpoints or rerun as needed. Do not overwrite completed outputs accidentally.
 
 The compact model is **BERT-tiny (`prajjwal1/bert-tiny`)**, not TinyBERT. Tokenization is included in the new elapsed-time scope, but only GPU-board energy is measured. Host and wall energy remain unavailable and are not estimated.

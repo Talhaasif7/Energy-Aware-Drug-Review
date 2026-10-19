@@ -1,10 +1,12 @@
-# Linux CPU experiment after the completed Colab run
+# Linux CPU experiment: completed run and reproduction
 
-The Colab run has returned all 30 prediction files (three encoders, ten grouped splits) and all 45 GPU-board energy settings. The next external experiment is the Linux CPU run. No GPU or wall-power meter is required for this scoped CPU-package experiment.
+The returned Colab and Linux component experiments have been validated and integrated. **No repeat run is currently requested.** The final CPU extension uses DistilBERT and BERT-tiny in FP32/INT8, plus tokenizer-only measurements for all three encoder families. Original PubMedBERT GPU configurations remain in the paper; the separately returned PubMedBERT CPU experiment is outside the planned revision catalogue and is excluded from the paper and selection. Raw transfer files are preserved locally. See [LINUX_RESULTS_REVIEW.md](reports/revision/LINUX_RESULTS_REVIEW.md).
+
+The commands below are for reproduction if needed. No GPU or wall-power meter is assumed; the measurement domain is CPU package only.
 
 ## Files to obtain
 
-1. The full repository on the follow-up branch: https://github.com/Talhaasif7/Energy-Aware-Drug-Review/tree/aih-colab-results-linux-handoff-20261015
+1. The full repository on the follow-up branch: https://github.com/Talhaasif7/Energy-Aware-Drug-Review/tree/aih-linux-results-paper-revision-20261019
 2. `revision_checkpoints.zip`, shared separately by the author from Google Drive. This contains the trained seed-42 checkpoints; it is not a normal GitHub file.
 
 The script is **`scripts/revision_linux.py`**. Keep the full repository because the script imports helper modules, configuration and corpus files.
@@ -14,7 +16,7 @@ The script is **`scripts/revision_linux.py`**. Keep the full repository because 
 For a fresh checkout:
 
 ```bash
-git clone --branch aih-colab-results-linux-handoff-20261015 https://github.com/Talhaasif7/Energy-Aware-Drug-Review.git
+git clone --branch aih-linux-results-paper-revision-20261019 https://github.com/Talhaasif7/Energy-Aware-Drug-Review.git
 cd Energy-Aware-Drug-Review
 ```
 
@@ -22,7 +24,7 @@ For an existing checkout, open a terminal in its repository root and select the 
 
 ```bash
 git fetch origin
-git switch aih-colab-results-linux-handoff-20261015
+git switch aih-linux-results-paper-revision-20261019
 git pull --ff-only
 ```
 

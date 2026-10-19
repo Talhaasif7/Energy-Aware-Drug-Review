@@ -1,0 +1,437 @@
+{
+  "environment": {
+    "host": {
+      "os": "Linux",
+      "os_release": "7.0.0-38-generic",
+      "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+      "python": "3.14.4",
+      "machine": "x86_64",
+      "cpu_model": "Intel(R) Core(TM) i5-8500 CPU @ 3.00GHz",
+      "physical_cores": 6,
+      "logical_cpus": 6,
+      "socket_count": 1,
+      "spec_tdp_watts": 65.0,
+      "observed_pl1_limit_watts": 65.0,
+      "tdp_watts": 65.0,
+      "is_wsl": false,
+      "is_container": false,
+      "rapl_available": true,
+      "rapl_domains": 1,
+      "rapl_domain_names": [
+        "package-0"
+      ],
+      "rapl_reason": "1 readable package domain(s): ['package-0']",
+      "energy_measurement_class": "measured_rapl"
+    },
+    "checkpoint_directory": "/home/ahmad-zia/Desktop/Research/Talha/Revision/Energy-Aware-Drug-Review/results/revision/checkpoints",
+    "wall_meter_available": false,
+    "GPU_available": false,
+    "benchmark_device": "cpu",
+    "runtime": {
+      "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+      "python": "3.14.4",
+      "torch": "2.14.1+cu130",
+      "transformers": "4.57.6",
+      "numpy": "2.5.4",
+      "torch_threads": 6,
+      "cuda": "13.0",
+      "device": "CPU"
+    }
+  },
+  "cells": [
+    {
+      "model": "efficient_transformer",
+      "status": "measured",
+      "scope": "CPU RAPL package; tokenizer and forward pass included; RAM/whole-system excluded",
+      "operation": "tokenization",
+      "batch_size": 64,
+      "max_length": 128,
+      "gross_j_1000": 1.7502067427884616,
+      "throughput_sps": 12479.80598581626,
+      "load_w": 21.84224058506742,
+      "cv_pct": 1.3121572049616927,
+      "repeatability_pass": true,
+      "summary": "coupled median-energy repeat",
+      "repeats": [
+        {
+          "repeat": 0,
+          "elapsed_s": 20.000310924999894,
+          "sentences": 249600,
+          "throughput_sps": 12479.80598581626,
+          "energy_j": 436.851603,
+          "gross_j_1000": 1.7502067427884616,
+          "average_power_w": 21.84224058506742,
+          "counter_before_uj": [
+            12090944755
+          ],
+          "counter_after_uj": [
+            12527796358
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 1,
+          "elapsed_s": 20.004747442999815,
+          "sentences": 247488,
+          "throughput_sps": 12371.463359143909,
+          "energy_j": 447.168594,
+          "gross_j_1000": 1.8068293977889835,
+          "average_power_w": 22.353123690970463,
+          "counter_before_uj": [
+            12549961219
+          ],
+          "counter_after_uj": [
+            12997129813
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 2,
+          "elapsed_s": 20.00468062999994,
+          "sentences": 249408,
+          "throughput_sps": 12467.482216435703,
+          "energy_j": 437.176371,
+          "gross_j_1000": 1.7528562475943035,
+          "average_power_w": 21.853704094850194,
+          "counter_before_uj": [
+            13018611203
+          ],
+          "counter_after_uj": [
+            13455787574
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 3,
+          "elapsed_s": 20.004649840999946,
+          "sentences": 249664,
+          "throughput_sps": 12480.29842983347,
+          "energy_j": 434.050952,
+          "gross_j_1000": 1.7385404063060754,
+          "average_power_w": 21.697503103023756,
+          "counter_before_uj": [
+            13476919295
+          ],
+          "counter_after_uj": [
+            13910970247
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 4,
+          "elapsed_s": 20.001459719999957,
+          "sentences": 249344,
+          "throughput_sps": 12466.290135348208,
+          "energy_j": 436.143232,
+          "gross_j_1000": 1.7491627310061602,
+          "average_power_w": 21.805570098660827,
+          "counter_before_uj": [
+            13935064118
+          ],
+          "counter_after_uj": [
+            14371207350
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 5,
+          "elapsed_s": 20.0039397380001,
+          "sentences": 249600,
+          "throughput_sps": 12477.54208766447,
+          "energy_j": 434.987167,
+          "gross_j_1000": 1.7427370472756412,
+          "average_power_w": 21.745074855113916,
+          "counter_before_uj": [
+            14391101098
+          ],
+          "counter_after_uj": [
+            14826088265
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 6,
+          "elapsed_s": 20.000901610000028,
+          "sentences": 248896,
+          "throughput_sps": 12444.239007483406,
+          "energy_j": 438.945532,
+          "gross_j_1000": 1.7635700533556184,
+          "average_power_w": 21.946287250397578,
+          "counter_before_uj": [
+            14854370358
+          ],
+          "counter_after_uj": [
+            15293315890
+          ],
+          "board_trace": null
+        }
+      ],
+      "complete_system_energy_j": null,
+      "host_energy_measured": true,
+      "wall_meter_available": false
+    },
+    {
+      "model": "compact_transformer",
+      "status": "measured",
+      "scope": "CPU RAPL package; tokenizer and forward pass included; RAM/whole-system excluded",
+      "operation": "tokenization",
+      "batch_size": 64,
+      "max_length": 128,
+      "gross_j_1000": 2.3315084677061124,
+      "throughput_sps": 9002.891577846733,
+      "load_w": 20.9903179475897,
+      "cv_pct": 1.4259539440163431,
+      "repeatability_pass": true,
+      "summary": "coupled median-energy repeat",
+      "repeats": [
+        {
+          "repeat": 0,
+          "elapsed_s": 20.000003374000244,
+          "sentences": 179968,
+          "throughput_sps": 8998.398481970067,
+          "energy_j": 432.796926,
+          "gross_j_1000": 2.404854896426031,
+          "average_power_w": 21.63984264935828,
+          "counter_before_uj": [
+            91805019312
+          ],
+          "counter_after_uj": [
+            92237816238
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 1,
+          "elapsed_s": 20.000661519999994,
+          "sentences": 180096,
+          "throughput_sps": 9004.502167086324,
+          "energy_j": 424.558666,
+          "gross_j_1000": 2.357401974502488,
+          "average_power_w": 21.22723118810123,
+          "counter_before_uj": [
+            92258470971
+          ],
+          "counter_after_uj": [
+            92683029637
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 2,
+          "elapsed_s": 20.00166430599984,
+          "sentences": 180544,
+          "throughput_sps": 9026.448861350142,
+          "energy_j": 421.854023,
+          "gross_j_1000": 2.336571821827366,
+          "average_power_w": 21.090946060596455,
+          "counter_before_uj": [
+            92707865511
+          ],
+          "counter_after_uj": [
+            93129719534
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 3,
+          "elapsed_s": 20.004239576000145,
+          "sentences": 180096,
+          "throughput_sps": 9002.891577846733,
+          "energy_j": 419.895349,
+          "gross_j_1000": 2.3315084677061124,
+          "average_power_w": 20.9903179475897,
+          "counter_before_uj": [
+            93150844174
+          ],
+          "counter_after_uj": [
+            93570739523
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 4,
+          "elapsed_s": 20.002501043000393,
+          "sentences": 180416,
+          "throughput_sps": 9019.672070615097,
+          "energy_j": 418.314908,
+          "gross_j_1000": 2.318613138524299,
+          "average_power_w": 20.913130168108836,
+          "counter_before_uj": [
+            93592543666
+          ],
+          "counter_after_uj": [
+            94010858574
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 5,
+          "elapsed_s": 20.004497613999774,
+          "sentences": 180032,
+          "throughput_sps": 8999.57616901151,
+          "energy_j": 418.140897,
+          "gross_j_1000": 2.322592078075009,
+          "average_power_w": 20.902344316178773,
+          "counter_before_uj": [
+            94031925964
+          ],
+          "counter_after_uj": [
+            94450066861
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 6,
+          "elapsed_s": 20.004444440000043,
+          "sentences": 180800,
+          "throughput_sps": 9037.991559439659,
+          "energy_j": 416.487276,
+          "gross_j_1000": 2.3035800663716817,
+          "average_power_w": 20.819737196360705,
+          "counter_before_uj": [
+            94470440894
+          ],
+          "counter_after_uj": [
+            94886928170
+          ],
+          "board_trace": null
+        }
+      ],
+      "complete_system_energy_j": null,
+      "host_energy_measured": true,
+      "wall_meter_available": false
+    },
+    {
+      "model": "biomedical_transformer",
+      "status": "measured",
+      "scope": "CPU RAPL package; tokenizer and forward pass included; RAM/whole-system excluded",
+      "operation": "tokenization",
+      "batch_size": 64,
+      "max_length": 128,
+      "gross_j_1000": 2.419383365125673,
+      "throughput_sps": 8909.407921360054,
+      "load_w": 21.555273318057417,
+      "cv_pct": 10.813859019335904,
+      "repeatability_pass": false,
+      "summary": "coupled median-energy repeat",
+      "repeats": [
+        {
+          "repeat": 0,
+          "elapsed_s": 20.00171477100048,
+          "sentences": 179264,
+          "throughput_sps": 8962.431574112146,
+          "energy_j": 434.031786,
+          "gross_j_1000": 2.4211876673509463,
+          "average_power_w": 21.699728796717057,
+          "counter_before_uj": [
+            117447033075
+          ],
+          "counter_after_uj": [
+            117881064861
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 1,
+          "elapsed_s": 20.003721050000422,
+          "sentences": 180224,
+          "throughput_sps": 9009.523755581275,
+          "energy_j": 425.852242,
+          "gross_j_1000": 2.362905284534801,
+          "average_power_w": 21.288651293204822,
+          "counter_before_uj": [
+            117902197986
+          ],
+          "counter_after_uj": [
+            118328050228
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 2,
+          "elapsed_s": 20.005818745000397,
+          "sentences": 178240,
+          "throughput_sps": 8909.407921360054,
+          "energy_j": 431.230891,
+          "gross_j_1000": 2.419383365125673,
+          "average_power_w": 21.555273318057417,
+          "counter_before_uj": [
+            118350534973
+          ],
+          "counter_after_uj": [
+            118781765864
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 3,
+          "elapsed_s": 20.0001598989993,
+          "sentences": 179392,
+          "throughput_sps": 8969.52828907012,
+          "energy_j": 422.403642,
+          "gross_j_1000": 2.354640351855155,
+          "average_power_w": 21.120013246550833,
+          "counter_before_uj": [
+            118801136603
+          ],
+          "counter_after_uj": [
+            119223540245
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 4,
+          "elapsed_s": 20.007047523999972,
+          "sentences": 165568,
+          "throughput_sps": 8275.48391642438,
+          "energy_j": 513.249846,
+          "gross_j_1000": 3.099933839872439,
+          "average_power_w": 25.653452633844044,
+          "counter_before_uj": [
+            119260460439
+          ],
+          "counter_after_uj": [
+            119773710285
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 5,
+          "elapsed_s": 20.003316044999337,
+          "sentences": 176256,
+          "throughput_sps": 8811.339060158605,
+          "energy_j": 438.324134,
+          "gross_j_1000": 2.486860782044299,
+          "average_power_w": 21.912573546003507,
+          "counter_before_uj": [
+            119877550473
+          ],
+          "counter_after_uj": [
+            120315874607
+          ],
+          "board_trace": null
+        },
+        {
+          "repeat": 6,
+          "elapsed_s": 20.000091793000138,
+          "sentences": 179136,
+          "throughput_sps": 8956.758891611491,
+          "energy_j": 419.437769,
+          "gross_j_1000": 2.3414487819310468,
+          "average_power_w": 20.971792196813798,
+          "counter_before_uj": [
+            120338611304
+          ],
+          "counter_after_uj": [
+            120758049073
+          ],
+          "board_trace": null
+        }
+      ],
+      "complete_system_energy_j": null,
+      "host_energy_measured": true,
+      "wall_meter_available": false
+    }
+  ],
+  "scope": "CPU package tokenization; separate Linux host; not composed into a measured Colab system"
+}

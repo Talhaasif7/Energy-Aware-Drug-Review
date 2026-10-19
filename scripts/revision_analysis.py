@@ -39,7 +39,8 @@ CADEC = ROOT / 'data/01_primary_adr_detection/external_val_cadec/cadec_harmonise
 METHODS = [('Uncalibrated', 'uncal'), ('TempScale', 'temp'), ('Isotonic', 'iso')]
 MODEL_FILES = {'DistilBERT': 'efficient_transformer', 'PubMedBERT': 'biomedical_transformer', 'BERT-tiny': 'compact_transformer'}
 MODEL_FILES.update({'DistilBERT CPU FP32':'distilbert_cpu_fp32','DistilBERT CPU INT8':'distilbert_cpu_int8',
-                    'BERT-tiny CPU FP32':'bert_tiny_cpu_fp32','BERT-tiny CPU INT8':'bert_tiny_cpu_int8'})
+                    'BERT-tiny CPU FP32':'bert_tiny_cpu_fp32','BERT-tiny CPU INT8':'bert_tiny_cpu_int8',
+                    'PubMedBERT CPU FP32':'pubmedbert_cpu_fp32','PubMedBERT CPU INT8':'pubmedbert_cpu_int8'})
 
 
 def clean(value):
@@ -253,6 +254,8 @@ def load_energy():
     for name,stem in MODEL_FILES.items():
         folder='linux_energy' if ' CPU ' in name else 'gpu_energy'
         path=RESULTS/folder/(f'{stem}.json' if folder=='linux_energy' else f'{stem}_surface.json')
+        if folder=='linux_energy' and not path.exists():
+            path=ROOT/'results/revision_pubmed_cpu/linux_energy'/f'{stem}.json'
         if path.exists():
             data=json.loads(path.read_text());cells=data.get('cells',[])
             canonical=next((c for c in cells if c.get('batch_size')==64 and c.get('max_length')==128 and c.get('status')=='measured'),None)
@@ -260,10 +263,11 @@ def load_energy():
     return values
 
 
-def run_seed(seed,config,psytar,cadec,prediction_dirs):
+def run_seed(seed,config,psytar,cadec,prediction_dirs,include_extra_pubmed_cpu=False):
     parts=grouped_split(psytar,seed)
     arms=classical_predictions(parts,cadec);inputs=[]
     for model,stem in MODEL_FILES.items():
+        if model.startswith('PubMedBERT CPU ') and not include_extra_pubmed_cpu:continue
         matches=[folder/f'{stem}_seed{seed}_predictions.npz' for folder in prediction_dirs if (folder/f'{stem}_seed{seed}_predictions.npz').exists()]
         if not matches:
             if model not in ['DistilBERT','PubMedBERT']:continue
@@ -321,13 +325,14 @@ def run_seed(seed,config,psytar,cadec,prediction_dirs):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--seeds',nargs='+',type=int,default=None);ap.add_argument('--bootstrap',type=int);ap.add_argument('--predictions',nargs='*',default=[])
+    ap.add_argument('--include-extra-pubmed-cpu',action='store_true',help='Optional exploratory catalogue; excluded from the planned revision and final paper')
     args=ap.parse_args();config=json.loads((ROOT/'configs/revision_config.json').read_text())
     if args.bootstrap is not None:config['bootstrap_repeats']=args.bootstrap
     if config['bootstrap_repeats']<100:raise ValueError('Use at least 100 resamples; publication default is 2000')
     RESULTS.mkdir(parents=True,exist_ok=True);REPORTS.mkdir(parents=True,exist_ok=True)
     psytar=pd.read_csv(PSYTAR);cadec=cadec_metadata();seeds=args.seeds or config['existing_split_seeds']
     dirs=[ROOT/'results']+[Path(p).resolve() for p in args.predictions]
-    runs=[run_seed(s,config,psytar,cadec,dirs) for s in seeds]
+    runs=[run_seed(s,config,psytar,cadec,dirs,args.include_extra_pubmed_cpu) for s in seeds]
     for key in ['grid','delta_sensitivity','workload','workload_pairs','ci_comparison','bin_sensitivity']:
         rows=[{'seed':r['seed'],**row} for r in runs for row in r[key]];pd.DataFrame(rows).to_csv(RESULTS/f'{key}.csv',index=False)
     frequencies=[]
@@ -340,20 +345,48 @@ def main():
             picks=[row['selected'] or 'Infeasible' for run in selected_runs for row in run['grid'] if row['tau']==tau and row['energy_budget']==E]
             for arm in sorted(set(picks)):frequencies.append({'tau':tau,'energy_budget':E,'arm':arm,'count':picks.count(arm),'splits':len(picks),'frequency':picks.count(arm)/len(picks),'candidate_count':len(cohort),'cohort_seeds':[r['seed'] for r in selected_runs]})
     pd.DataFrame(frequencies).to_csv(RESULTS/'selection_frequencies.csv',index=False)
+    # Repeated-split frequencies use the same common catalogue on every split,
+    # including the primary split that also has additional CPU configurations.
+    common_names=set.intersection(*(set(a['name'] for a in run['catalogue']) for run in runs))
+    common_grids=[]
+    for run in runs:
+        catalogue=[a for a in run['catalogue'] if a['name'] in common_names]
+        source=pair_lookup(run['domains']['test']['paired_auroc']);external=pair_lookup(run['domains']['cadec']['paired_auroc'])
+        common_grids.extend({'seed':run['seed'],**row} for row in grid(catalogue,config,source,external))
+    common_frequencies=[]
+    for tau,E in itertools.product(config['tau_grid'],config['energy_grid_j_per_1000']):
+        picks=[row['selected'] or 'Infeasible' for row in common_grids if row['tau']==tau and row['energy_budget']==E]
+        for arm in sorted(set(picks)):
+            common_frequencies.append({'tau':tau,'energy_budget':E,'arm':arm,'count':picks.count(arm),'splits':len(picks),'frequency':picks.count(arm)/len(picks),'candidate_count':len(common_names)})
+    pd.DataFrame(common_grids).to_csv(RESULTS/'common_catalogue_grid.csv',index=False)
+    pd.DataFrame(common_frequencies).to_csv(RESULTS/'common_selection_frequencies.csv',index=False)
+    primary=next((r for r in runs if r['seed']==42),None);cpu_grid=[]
+    if primary:
+        cpu_catalogue=[a for a in primary['catalogue'] if ' CPU ' in a['model'] or a['model'] in ('Logistic Regression','LightGBM')]
+        extra_budgets={500,1000,2000,3000,4000}|({6000,10000} if args.include_extra_pubmed_cpu else set())
+        cpu_config=dict(config,energy_grid_j_per_1000=sorted(set(config['energy_grid_j_per_1000'])|extra_budgets))
+        cpu_grid=grid(cpu_catalogue,cpu_config,pair_lookup(primary['domains']['test']['paired_auroc']),pair_lookup(primary['domains']['cadec']['paired_auroc']))
+        pd.DataFrame(cpu_grid).to_csv(RESULTS/'cpu_primary_grid.csv',index=False)
     energy_paths=[ROOT/'results/frozen_split_reconciled.json']
     energy_paths.extend(sorted((RESULTS/'gpu_energy').glob('*_surface.json')))
     energy_paths.extend(sorted((RESULTS/'linux_energy').glob('*.json')))
-    summary={'provenance':{'generated_utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'script':'revision_analysis.py','config':config,'seeds':seeds,
+    if args.include_extra_pubmed_cpu:energy_paths.extend(sorted((ROOT/'results/revision_pubmed_cpu/linux_energy').glob('*.json')))
+    linux_audit=RESULTS/'linux_artifact_audit.json'
+    available_hardware_complete=linux_audit.exists() and json.loads(linux_audit.read_text()).get('validation_passed',False) and len(list((RESULTS/'gpu_energy').glob('*_surface.json')))==3
+    summary={'provenance':{'generated_utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'script':'revision_analysis.py','config':config,'seeds':seeds,'include_extra_pubmed_cpu':args.include_extra_pubmed_cpu,
             'ece_interval':'95% percentile, 2000 whole-cluster draws by default','resampling_unit_source':'review_id','resampling_unit_external':'post_id',
             'primary_selection':'source audit split only; external corpus nonbinding diagnostic','selection_performance_is_apparent':'selection and source discrimination use the same development audit split, not a new independent test',
-            'energy_scope':'CPU package including TF-IDF; revision GPU board during raw-text pipeline timing when supplied, otherwise submitted forward-only benchmark; host energy and whole-system energy are not measured',
+            'energy_scope':'CPU package including raw-text processing; GPU board during raw-text pipeline timing when supplied, otherwise submitted forward-only benchmark; Colab host-package energy and all wall/whole-system energy are unmeasured',
             'energy_inputs':[{'path':p.relative_to(ROOT).as_posix(),'sha256':sha(p),'canonical_text_sha256':canonical_text_sha256(p.read_bytes())} for p in energy_paths],
             'energy_operating_point':{'batch_size':64,'max_length':128,'revision_energy_checkpoint_seed':42,'shared_across_grouped_splits':True},
             'psytar_sha256':sha(PSYTAR),'cadec_sha256':sha(CADEC),'cadec_group_metadata_sha256':sha(RESULTS/'cadec_with_groups.csv'),
             'analysis_code_sha256':sha(Path(__file__)),'metrics_code_sha256':sha(ROOT/'scripts/metrics_utils.py'),
             'classical_config_sha256':sha(ROOT/'configs/default_config.json'),
             'library_versions':{'numpy':np.__version__,'pandas':pd.__version__,'lightgbm':lgb.__version__},
-            'ci_widths_need_not_be_ordered':True,'hardware_experiments_pending':True},'runs':runs,'selection_frequencies':frequencies}
+            'ci_widths_need_not_be_ordered':True,'hardware_experiments_pending':not available_hardware_complete,
+            'linux_artifact_audit_sha256':sha(linux_audit) if linux_audit.exists() else None},'runs':runs,'selection_frequencies':frequencies,
+            'common_catalogue':{'arm_names':sorted(common_names),'grid':common_grids,'selection_frequencies':common_frequencies},
+            'cpu_primary_grid':cpu_grid}
     write_json(RESULTS/'revision_analysis.json',summary)
     print(f'Completed {len(runs)} grouped splits. Output: {RESULTS}',flush=True)
 

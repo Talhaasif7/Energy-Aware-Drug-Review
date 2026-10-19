@@ -62,6 +62,14 @@ class RevisionStatisticsTests(unittest.TestCase):
         np.testing.assert_allclose(out['auc'][:,0],out['auc'][:,1],equal_nan=True)
         np.testing.assert_allclose(out['ece'][:,0],out['ece'][:,1])
 
+    def test_catalogue_restriction_preserves_retained_cluster_draws(self):
+        y=np.array([0,1,1,0,0,1,0,1]);p=np.array([.1,.9,.7,.3,.2,.8,.4,.6]);q=1-p
+        groups=np.repeat(np.arange(4),2)
+        narrow=joint_bootstrap(y,np.column_stack([p,q]),groups,[5,10],100,7)
+        wider=joint_bootstrap(y,np.column_stack([p,q,p*.8+.1]),groups,[5,10],100,7)
+        np.testing.assert_allclose(narrow['auc'],wider['auc'][:,:2],equal_nan=True)
+        np.testing.assert_allclose(narrow['ece'],wider['ece'][:,:2])
+
     def test_sorted_ece_matches_primary(self):
         y=np.array([0,1,0,1,1,0,1,0,1,0,1]);p=np.array([.2,.2,.4,.5,.6,.6,.7,.8,.9,.9,.9])
         order=np.argsort(p,kind='stable')

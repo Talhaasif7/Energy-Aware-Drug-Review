@@ -13,16 +13,18 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap,BoundaryNorm
+from matplotlib.colors import ListedColormap,BoundaryNorm,LogNorm
 from matplotlib.patches import Patch,FancyBboxPatch
 from docx import Document
 from docx.shared import Inches,Pt
 from docx.text.paragraph import Paragraph
 from docx.enum.style import WD_STYLE_TYPE
-from revision_analysis import ROOT,RESULTS,REPORTS,pair_lookup
+from revision_analysis import ROOT,RESULTS,REPORTS,pair_lookup,MODEL_FILES
 
 FIG=REPORTS/'figures'
-COLORS={'Logistic Regression':'#2463aa','LightGBM':'#19876d','DistilBERT':'#e48c22','PubMedBERT':'#9455a5'}
+CORE_MODELS=['Logistic Regression','LightGBM','DistilBERT','PubMedBERT','BERT-tiny']
+COLORS=dict(zip(CORE_MODELS,['#2463aa','#19876d','#e48c22','#9455a5','#c34c58']))
+COLORS.update({'DistilBERT CPU FP32':'#cf8b47','DistilBERT CPU INT8':'#996019','PubMedBERT CPU FP32':'#bb8cc6','PubMedBERT CPU INT8':'#683b84','BERT-tiny CPU FP32':'#e6959b','BERT-tiny CPU INT8':'#8f2733'})
 plt.rcParams.update({'font.size':11,'axes.labelsize':11,'axes.titlesize':12,'xtick.labelsize':10,'ytick.labelsize':10})
 
 
@@ -68,9 +70,9 @@ def make_figures(summary,primary):
         'Post identifiers reconstructed from original files are checked against every submitted text and label. 7,409 span segments belong to 6,318 annotated ADR entities.')
     diagram(FIG/'figure3_energy.png','Measured energy domains and their limits',[
         ('Original Linux measurements',['Intel RAPL package-0 on i5-8500','Raw text → TF-IDF vectorisation → prediction','7 repeats; coupled median power, throughput and J/1,000']),
-        ('Original Colab measurements',['NVIDIA T4 board power only','Pre-tokenised resident padded batches → forward pass','Host tokenisation, CPU/RAM and whole-system power are excluded']),
-        ('Requested extensions',['Colab: raw-text timing, batch × length surface, compact encoder','Linux: same-checkpoint FP32/INT8 and tokenizer package energy','Hardware runs pending; no wall-power meter is available'])],
-        'Different hosts and measured domains cannot be summed and described as a measured complete system. Original energy figures remain explicitly scope-limited.')
+        ('Revision Colab measurements',['NVIDIA T4 board power only','Raw-text pipeline timing; 3 encoders × 15 batch/length settings','3 repeats; host CPU/RAM and wall energy unmeasured']),
+        ('Returned Linux extension',['Three encoders in FP32 and dynamic INT8; seed-42 checkpoints','Raw-text pipeline package energy; 7 repeats per configuration','Tokenizer component repeats retained, including flagged original'])],
+        'Separate-host package and board counters cannot be summed into a measured complete system. The wall-power instrumentation request remains unmet.')
     diagram(FIG/'figure4_selection.png','Formal selection policy',[
         ('Steps 1–2',['Feasible set F: U95(ECE_source) ≤ tau and measured scoped J/1,000 ≤ E','Return no selection if F is empty','Leader: highest source AUROC among feasible arms']),
         ('Steps 3–4',['Retain arms with paired source 95% AUROC interval contained in [−delta,+delta]','Choose minimum energy; resolve equal costs by higher AUROC, then lower ECE upper bound','Report CADEC calibration/equivalence separately; delta, tau and E are illustrative'])],
@@ -83,15 +85,15 @@ def make_figures(summary,primary):
             method=arm['name'].split(' + ')[1];marker={'Uncalibrated':'o','TempScale':'^','Isotonic':'s'}[method]
             ax.scatter(energy,primary['domains'][domain]['metrics'][arm['name']]['auroc'],c=COLORS.get(model,'#555555'),marker=marker,s=60)
         ax.set(xscale='log',xlabel='Scoped gross energy (J / 1,000)',ylabel='AUROC',title='PsyTAR development audit' if domain=='test' else 'CADEC external diagnostic');ax.grid(alpha=.2)
-    handles=[Patch(color=c,label=m) for m,c in COLORS.items()];fig.legend(handles=handles,loc='lower center',ncol=4,fontsize=9)
-    fig.suptitle('Discrimination versus measured-domain energy (primary grouped split)');fig.tight_layout(rect=[0,.07,1,1]);save_figure(fig,FIG/'figure5_pareto.png');plt.close(fig)
-    models=[m for m in COLORS if f'{m} + Uncalibrated' in primary['domains']['test']['metrics']]
+    handles=[Patch(color=c,label=m) for m,c in COLORS.items() if f'{m} + Uncalibrated' in primary['domains']['test']['metrics']];fig.legend(handles=handles,loc='lower center',ncol=3,fontsize=7)
+    fig.suptitle('Discrimination versus measured-domain energy (primary grouped split)');fig.tight_layout(rect=[0,.17,1,1]);save_figure(fig,FIG/'figure5_pareto.png');plt.close(fig)
+    models=[m for m in CORE_MODELS if f'{m} + Uncalibrated' in primary['domains']['test']['metrics']]
     fig,axes=plt.subplots(1,2,figsize=(8.3,4.8))
     for ax,domain in zip(axes,['test','cadec']):
         for j,method in enumerate(['Uncalibrated','TempScale','Isotonic']):
             vals=[[r['domains'][domain]['metrics'][f'{m} + {method}']['ece'] for r in summary['runs'] if f'{m} + {method}' in r['domains'][domain]['metrics']] for m in models]
             ax.bar(np.arange(len(models))+(j-1)*.24,[np.mean(v) for v in vals],.24,yerr=[np.std(v) for v in vals],label=method,capsize=3,color=['#9caabe','#39a8db','#2355a1'][j])
-        ax.axhline(.07,color='#bd3232',ls='--',label='Illustrative tau = 0.07');ax.set_xticks(range(len(models)),['LR','LGBM','Distil','PubMed']);ax.set(ylabel='Adaptive ECE (mean ± split SD)',title='PsyTAR audit' if domain=='test' else 'CADEC');ax.legend(fontsize=9.5)
+        ax.axhline(.07,color='#bd3232',ls='--',label='Illustrative tau = 0.07');ax.set_xticks(range(len(models)),[{'Logistic Regression':'LR','LightGBM':'LGBM','DistilBERT':'Distil','PubMedBERT':'PubMed','BERT-tiny':'Tiny'}[m] for m in models]);ax.set(ylabel='Adaptive ECE (mean ± split SD)',title='PsyTAR audit' if domain=='test' else 'CADEC');ax.legend(fontsize=8)
     fig.tight_layout();save_figure(fig,FIG/'figure6_calibration.png');plt.close(fig)
     panels=[]
     for domain in ['test','cadec']:
@@ -120,6 +122,21 @@ def make_figures(summary,primary):
         ax.scatter([abs(r['delta_auroc_b_minus_a']) for r in rows],[abs(r['relative_flagged_review_change_pct']) for r in rows],s=14,alpha=.5)
         ax.axvline(.015,ls='--',color='#bd3232');ax.axhline(2,ls=':',color='#bd3232');ax.set(xlabel='Absolute AUROC difference',ylabel='Absolute relative flagged-review change (%)',title=domain)
     fig.suptitle('Retrospective workload at ≥90% sentence sensitivity');fig.tight_layout();save_figure(fig,FIG/'supplement_workload.png');plt.close(fig)
+    surface_rows=[]
+    for model in ['DistilBERT','PubMedBERT','BERT-tiny']:
+        cells=json.loads((RESULTS/'gpu_energy'/f'{MODEL_FILES[model]}_surface.json').read_text())['cells']
+        for cell in cells:
+            surface_rows.append({'model':model,'checkpoint_seed':42,'batch_size':cell['batch_size'],'max_length':cell['max_length'],'gross_board_j_1000':cell['gross_j_1000'],'throughput_sps':cell['throughput_sps'],'average_board_w':cell['load_w'],'cv_pct':cell['cv_pct'],'repeatability_pass':cell['repeatability_pass'],'repeats':len(cell['repeats']),'scope':cell['scope'],'complete_system_energy_measured':False})
+    frame=pd.DataFrame(surface_rows);frame.to_csv(RESULTS/'gpu_operating_grid.csv',index=False)
+    fig,axes=plt.subplots(1,3,figsize=(12,4),layout='constrained',sharey=True);norm=LogNorm(vmin=frame.gross_board_j_1000.min(),vmax=frame.gross_board_j_1000.max())
+    for ax,model in zip(axes,['DistilBERT','PubMedBERT','BERT-tiny']):
+        surface=frame[frame.model==model].pivot(index='max_length',columns='batch_size',values='gross_board_j_1000').sort_index().sort_index(axis=1)
+        im=ax.imshow(surface.to_numpy(),norm=norm,cmap='viridis',aspect='auto');ax.set_xticks(range(len(surface.columns)),surface.columns);ax.set_yticks(range(len(surface.index)),surface.index);ax.set(title=model,xlabel='Batch size')
+        for i in range(len(surface.index)):
+            for j in range(len(surface.columns)):
+                value=surface.iloc[i,j];ax.text(j,i,f'{value:.1f}',ha='center',va='center',fontsize=9,color='black' if norm(value)>.65 else 'white')
+    axes[0].set_ylabel('Maximum inference length');fig.colorbar(im,ax=axes,label='GPU-board J / 1,000 (log scale)',shrink=.8)
+    fig.suptitle('Tesla T4 board energy during raw-text pipeline timing\nPrimary checkpoints; three repeats per setting; host and wall energy unmeasured',fontsize=11);save_figure(fig,FIG/'supplement_gpu_energy_surface.png');plt.close(fig)
 
 
 def replace_table(doc,old,headers,rows):
@@ -143,6 +160,118 @@ def picture(doc,element,path):
         # Caption notes and the Step-4 paragraph originally contained drawings.
         paragraph=doc.add_paragraph();element.addnext(paragraph._p);p=paragraph
     p.add_run().add_picture(str(path),width=Inches(6.3))
+
+
+def cpu_families(primary):
+    return [m for m in ['DistilBERT','PubMedBERT','BERT-tiny'] if m+' CPU FP32 + Uncalibrated' in primary['domains']['test']['metrics']]
+
+
+def hardware_rows(primary):
+    old=json.loads((ROOT/'results/frozen_split_reconciled.json').read_text())['energy_by_model'];rows=[]
+    for model in ['Logistic Regression','LightGBM']:
+        d=old[model];rows.append([model,'CPU package',f"{d['load_w']:.2f}",f"{d['throughput_sps']:.2f}",f"{d['inf_j_gross']:.3f}",f"{d['inf_j_net']:.3f}",f"{d['energy_cv_pct']:.2f}",7])
+    for model in ['DistilBERT','PubMedBERT','BERT-tiny']:
+        path=RESULTS/'gpu_energy'/f'{MODEL_FILES[model]}_surface.json'
+        cells=json.loads(path.read_text())['cells'];d=next(c for c in cells if (c['batch_size'],c['max_length'])==(64,128))
+        rows.append([model+' GPU FP16','GPU board',f"{d['load_w']:.2f}",f"{d['throughput_sps']:.2f}",f"{d['gross_j_1000']:.3f}",'Unmeasured',f"{d['cv_pct']:.2f}",len(d['repeats'])])
+    audit=json.loads((RESULTS/'linux_artifact_audit.json').read_text())
+    for model in cpu_families(primary):
+        for precision in ['FP32','INT8']:
+            stem=MODEL_FILES[model+' CPU '+precision];r=next(r for r in audit['cpu_predictions'] if r['model']==stem)
+            d=json.loads((ROOT/r['energy_path']).read_text())['cells'][0]
+            rows.append([model+' CPU '+precision,'CPU package',f"{d['load_w']:.2f}",f"{d['throughput_sps']:.2f}",f"{d['gross_j_1000']:.3f}",f"{d['net_j_1000']:.3f}",f"{d['cv_pct']:.2f}",len(d['repeats'])])
+    return rows
+
+
+def quantization_evidence(primary):
+    audit=json.loads((RESULTS/'linux_artifact_audit.json').read_text());records={r['model']:r for r in audit['cpu_predictions']}
+    lookups={domain:pair_lookup(primary['domains'][domain]['paired_auroc']) for domain in ['test','cadec']};rows=[]
+    for model in cpu_families(primary):
+        fp_name=model+' CPU FP32 + Uncalibrated';q_name=model+' CPU INT8 + Uncalibrated'
+        fp=records[MODEL_FILES[model+' CPU FP32']];q=records[MODEL_FILES[model+' CPU INT8']]
+        with np.load(ROOT/fp['prediction_path'],allow_pickle=False) as a,np.load(ROOT/q['prediction_path'],allow_pickle=False) as b:
+            maximum=max(float(np.max(np.abs(a[f'probs_{d}_uncal'][:,1]-b[f'probs_{d}_uncal'][:,1]))) for d in ['calib','test','cadec'])
+        row={'model':model,'fp32_package_j_1000':fp['gross_j_1000'],'int8_package_j_1000':q['gross_j_1000'],'energy_reduction_pct':100*(1-q['gross_j_1000']/fp['gross_j_1000']),'maximum_uncalibrated_probability_change':maximum}
+        for domain in ['test','cadec']:
+            fm=primary['domains'][domain]['metrics'][fp_name];qm=primary['domains'][domain]['metrics'][q_name];lo,hi=lookups[domain][q_name,fp_name]
+            row.update({f'{domain}_delta_auroc':qm['auroc']-fm['auroc'],f'{domain}_delta_ci_lo':lo,f'{domain}_delta_ci_hi':hi,f'{domain}_fp32_ece':fm['ece'],f'{domain}_int8_ece':qm['ece']})
+        rows.append(row)
+    pd.DataFrame(rows).to_csv(RESULTS/'cpu_quantization_comparison.csv',index=False)
+    fig,axes=plt.subplots(1,2,figsize=(10,4.5))
+    x=np.arange(len(rows))
+    for offset,key,label,color in [(-.18,'fp32_package_j_1000','FP32','#557eaa'),(.18,'int8_package_j_1000','Dynamic INT8','#dda34d')]:
+        bars=axes[0].bar(x+offset,[r[key] for r in rows],width=.36,label=label,color=color)
+        axes[0].bar_label(bars,labels=[f'{r[key]:.0f}' for r in rows],fontsize=8,padding=3)
+    axes[0].set_xticks(x,[r['model'] for r in rows]);axes[0].set(yscale='log',ylabel='CPU-package J / 1,000 (log)',title='Same-checkpoint measured package energy');axes[0].legend(fontsize=8)
+    axes[0].set_ylim(top=max(r['fp32_package_j_1000'] for r in rows)*1.7)
+    for offset,domain,label,color in [(-.12,'test','Source audit','#2463aa'),(.12,'cadec','External CADEC','#ad493b')]:
+        y=x+offset;delta=np.array([r[f'{domain}_delta_auroc'] for r in rows]);low=np.array([r[f'{domain}_delta_ci_lo'] for r in rows]);high=np.array([r[f'{domain}_delta_ci_hi'] for r in rows])
+        axes[1].errorbar(delta,y,xerr=np.vstack([delta-low,high-delta]),fmt='o',capsize=3,label=label,color=color)
+    axes[1].axvline(0,color='#777777',lw=1);axes[1].set_yticks(x,[r['model'] for r in rows]);axes[1].set(xlabel='INT8 minus FP32 AUROC; paired 95% cluster interval',title='Uncalibrated discrimination change');axes[1].legend(fontsize=8)
+    fig.suptitle('Primary seed 42 only; component energy and predictive effects require joint interpretation',fontsize=10);fig.tight_layout();save_figure(fig,FIG/'supplement_cpu_quantization.png');plt.close(fig)
+    return rows
+
+
+def integrated_text(summary,primary):
+    seed_count=len(summary['runs']);count=len(primary['catalogue']);common=summary['common_catalogue'];config=summary['provenance']['config']
+    frequencies=[r for r in common['selection_frequencies'] if r['tau']==.07 and r['energy_budget']==120]
+    freq='; '.join(f"{r['arm']}: {r['count']}/{r['splits']}" for r in frequencies)
+    strict=[r['feasible'] for r in primary['grid'] if r['tau']==.03]
+    audit=json.loads((RESULTS/'linux_artifact_audit.json').read_text());by_stem={r['model']:r for r in audit['cpu_predictions']}
+    reductions=[]
+    for m in cpu_families(primary):
+        fp=by_stem[MODEL_FILES[m+' CPU FP32']]['gross_j_1000'];q=by_stem[MODEL_FILES[m+' CPU INT8']]['gross_j_1000']
+        reductions.append(f'{m}: {100*(1-q/fp):.1f}%')
+    source=primary['domains']['test']['metrics'];external=primary['domains']['cadec']['metrics']
+    pair=pair_lookup(primary['domains']['test']['paired_auroc'])[('PubMedBERT + Uncalibrated','DistilBERT + Uncalibrated')]
+    high=[n for n in common['arm_names'] if np.mean([r['domains']['cadec']['metrics'][n]['ece'] for r in summary['runs']])>.07]
+    ppv=[source[n]['clinical_utility']['prevalence_adjusted']['1.0%']['ppv'] for n in common['arm_names']]
+    return {
+      0:'Original research article — revision draft with returned CPU/GPU experiments integrated',
+      3:f'Energy- and calibration-constrained model selection (ECC-MS) is an auditable policy over a finite catalogue of adverse-drug-reaction classifiers. Five classifier families contribute 15 model–recalibration configurations evaluated over {seed_count} review-disjoint PsyTAR splits, with CADEC reserved for external diagnostics. Twelve additional CPU FP32/INT8 configurations are evaluated on the primary split. Source feasibility requires a cluster-bootstrap calibration upper bound and a scoped energy budget; paired source AUROC interval containment within an illustrative tolerance precedes minimum-energy selection. Adaptive ECE uses 10 bins and 2,000 whole-review/post bootstrap draws, with bin-count and equivalence-margin sensitivity. A complete 165-cell constraint grid is evaluated for each split. New measurements cover three GPU encoders over 15 batch/length settings and same-checkpoint CPU FP32/INT8 comparisons. These component measurements show configuration-dependent costs; they do not measure complete-system energy. Workload at sensitivity-targeted thresholds is measured directly, and no clinical guarantee is inferred from an AUROC tolerance. The policy can report no feasible arm and does not guarantee target-corpus calibration under distribution shift.',
+      10:'The revision evaluates five classifier families on two English corpora. The common catalogue has fifteen recalibration configurations over ten grouped splits. Four CPU execution variants add twelve recalibration configurations on primary seed 42 only. Review identifiers establish review-disjoint partitions, not verified patient identities. Primary source selection, repeated-split core selection and the primary CPU extension have separate candidate catalogues and denominators.',
+      42:'Table 1 describes logistic regression, LightGBM, DistilBERT, PubMedBERT and compact BERT-tiny (prajjwal1/bert-tiny). The three encoders are trained for three epochs with AdamW, learning rate 2e-5, batch 64 and maximum length 128 on each of ten grouped training splits. GPU inference uses FP16. Saved seed-42 DistilBERT and BERT-tiny checkpoints are evaluated on CPU in FP32 and dynamic INT8 without retraining; INT8 replaces Linear modules and uses the available FBGEMM backend on the measured host. Recalibrators are refitted on the reserved calibration probabilities of each execution variant. The planned CPU extension covers DistilBERT and BERT-tiny; PubMedBERT remains a GPU baseline.',
+      44:'Table 1. Classifier families, execution variants and training configuration; CPU extensions use the primary checkpoint only.',
+      55:'The returned measurements cover disclosed CPU-package and GPU-board domains. Figure 3 separates those domains; no wall-power or complete-system measurement is available.',
+      57:'New accelerator measurements use an NVIDIA Tesla T4 and FP16. Raw text is tokenised and converted to probabilities within the elapsed-time workload. Board power is sampled with actual timestamps and integrated over each window. Five batches (8,16,32,64,128) and three maximum inference lengths (64,128,256) yield fifteen settings per encoder, each with three repeats after warm-up. The representative table uses batch 64 and maximum length 128. Host CPU and RAM energy are outside the measured board domain. Longer inference lengths are sensitivity settings; the checkpoints were trained at length 128.',
+      58:'The returned Linux extension uses a bare-metal Intel i5-8500, six CPU threads and readable package-0 RAPL counters. DistilBERT and BERT-tiny are evaluated in FP32 and dynamic INT8 at batch 64 and maximum length 128, with 60-second warm-up, seven windows of at least 20 seconds and 15-second cooldown. Gross energy, throughput and load power are taken from the same median-energy repeat; net package energy subtracts the mean pre/post idle power. Tokenizer-only diagnostics are retained separately. The initial PubMedBERT tokenizer CV was 10.81%, above the configured 10% threshold; its separately returned follow-up CV was 0.38%. Both raw runs remain available. Neither Linux package measurements nor Colab board measurements include whole-system consumption, and values from different hosts are not added into a measured system total.',
+      60:'Figure 3. Measured CPU-package and GPU-board scopes, returned extensions and the remaining whole-system instrumentation gap.',
+      65:f'All thresholds are illustrative experimental values, not elicited pharmacovigilance deployment requirements. The main grid crosses {len(config["tau_grid"])} calibration limits and {len(config["energy_grid_j_per_1000"])} energy budgets (0.1–300 J/1,000), with ten equivalence margins. Repeated selection uses the same fifteen-arm catalogue across all {seed_count} grouped splits. Primary seed 42 additionally evaluates {count} arms. A separate CPU-only grid includes 18 package-measured arms and extends illustrative budgets to 4,000 J/1,000 because the larger CPU encoders exceed the main grid. This is a sensitivity extension, not a claimed deployment specification. An external-assisted sensitivity uses CADEC intervals to alter a decision and therefore forfeits independent CADEC evaluation of that assisted choice.',
+      69:'4.1 Measured Power, Throughput, Energy and CPU Quantisation',
+      70:'Table 2 combines the original package-measured classical operating points with the returned GPU raw-text timing and CPU encoder operating points. The operating point is batch 64 and length 128 for encoders; classical throughput includes TF-IDF processing. Gross GPU board energy is 75.473, 152.233 and 11.028 J/1,000 for DistilBERT, PubMedBERT and BERT-tiny. Dynamic INT8 reduces CPU-package energy relative to each FP32 checkpoint ('+'; '.join(reductions)+'). Quantisation also changes discrimination and individual probabilities; its predictive effects and paired source/external intervals are reported in Supplementary Table S2. Similar AUROC does not imply interchangeable individual risks. CPU measurements use one primary checkpoint; GPU energy is not independently remeasured for every split. Calibration-transform energy is not separately resolved.',
+      72:'Table 2. Measured component energy and throughput at the canonical operating point; counter domains are explicitly different.',
+      74:'CV is the sample coefficient of variation across repeated measurement windows. CPU values cover package energy and raw-text processing; GPU values cover board energy during raw-text pipeline timing. Net GPU energy and all whole-system values are unmeasured. Costs are held fixed across grouped-split model-selection analyses and do not represent independent hardware repeats across all seeds.',
+      76:f'Table 3 reports source and external metrics for the {count} primary configurations. The common five-family catalogue contributes fifteen configurations; four CPU precision variants contribute twelve more. All predictive values are recomputed from the returned artifacts. Model and calibration rankings are empirical results for these corpora and execution settings, not architecture-wide claims.',
+      78:f'Table 3. Discrimination and calibration for all {count} primary-split configurations; ECE intervals resample complete reviews/posts.',
+      81:'Figure 5. AUROC against measured-domain energy for primary configurations; CPU package and GPU board costs are not whole-system equivalents.',
+      82:'4.3 Stability Across Grouped Splits',
+      83:f'Table 4 reports descriptive means and population standard deviations over {seed_count} grouped splits for the common fifteen-arm catalogue. These reflect both partition and training variation, not isolated optimiser variation on one fixed split. CPU precision variants have only the primary checkpoint and are excluded from these multi-split summaries. External mean ECE exceeds the illustrative 0.07 point limit for {len(high)} of the fifteen common arms; feasibility still uses each split’s source upper confidence bound.',
+      84:'Repeated-split differences in external calibration vary by architecture and recalibration method. No universal capacity–stability relationship or general superiority under shift is inferred from these two English corpora.',
+      85:f'Table 4. Mean ± population SD across {seed_count} grouped splits for the common fifteen configurations.',
+      87:'Seeds are 42, 123, 456 and 1001–1007. CPU FP32/INT8 configurations are primary-seed diagnostics and have no ten-split standard deviation.',
+      89:'Figure 6. Adaptive ECE across ten grouped splits for the five common classifier families; bars show descriptive mean ± split SD.',
+      91:'Table 5 recalculates sensitivity, specificity, likelihood ratios and prevalence-adjusted predictive values at threshold 0.5 for all fifteen common configurations. These operating characteristics are distinct from the calibration-frozen thresholds targeting 85%, 90% and 95% sentence sensitivity used in the workload supplement. Achieved evaluation sensitivity can be lower than a calibration target.',
+      92:f'Under an illustrative 1% ADR-sentence prevalence, adjusted PPV for these fifteen configurations ranges from {min(ppv):.3f} to {max(ppv):.3f}. This calculation assumes sensitivity and specificity are preserved under a prevalence change; it is not an observed deployment result and does not guarantee transport under other distribution shifts. Review workload is measured directly, rather than inferred from an AUROC difference.',
+      93:'Table 5. Source operating characteristics at threshold 0.5 and illustrative prevalence-adjusted PPV for the common fifteen configurations.',
+      97:'Figure 7. Decision curves for isotonic arms of the five common classifier families on the source audit and external corpus.',
+      99:f'Table 6 and Figure 8 use every evaluated cell in the 165-cell primary grid with {count} available arms. Repeated-split frequencies separately apply the same fifteen-arm catalogue on all {seed_count} splits. At illustrative tau=0.07 and E=120 J/1,000, the common-catalogue choices are {freq}. Different catalogue cohorts are not pooled into one frequency denominator. The CPU-only expanded-budget grid is supplied separately.',
+      100:f'At tau=0.03, the number of primary feasible configurations ranges from {min(strict)} to {max(strict)} over the evaluated main energy budgets. These are outcomes of the present source intervals and operating costs. The calibration threshold, interval method, binning and sample size all affect feasibility; the observed result is not an intrinsic property of ADR screening.',
+      101:'As the energy budget increases at fixed calibration tolerance, feasible counts cannot decrease. The selected arm can nevertheless change because a newly affordable arm alters the source AUROC leader and its equivalence set. The regime map is generated from the measured inputs, with evaluated infeasible cells distinguished from missing measurements.',
+      102:f'The primary PubMedBERT-minus-DistilBERT uncalibrated source AUROC interval is [{pair[0]:+.4f}, {pair[1]:+.4f}]. Its relation to zero and containment within a chosen margin answer separate statistical questions. A margin of 0.015 is illustrative; it is not a clinical threshold or a guarantee about workload. Decisions in Table 6 use the actual calibration variants and scoped costs, not a blanket tie assigned to all variants.',
+      104:'Table 6. Representative cells from the full primary source-only constraint grid.',
+      108:'Figure 8. Primary source-only ECC-MS grid generated from all measured inputs; numbers are feasible counts, colours are selected arms.',
+      113:'The harmonisation audit distinguishes six sentences touched by crossing segments from exactly two sentence-label changes under segment containment (2,865 versus 2,863 positives). This is a limited annotation-rule diagnostic. Revised uncertainty intervals and every selection cell have not been recomputed under alternative annotation schemes, so full selection invariance is not asserted.',
+      114:'Sentence prediction and post-level max-pooling define different estimands and prevalences. Historical post-level figures in the submission are archived rather than treated as results from the returned checkpoints. The revised workload analysis directly counts distinct flagged reviews/posts; it does not substitute post-level classification metrics for sentence-level calibration.',
+      120:'The revised tables show recalibration-specific source and external ECE estimates and cluster uncertainty. Isotonic regression can fit a more flexible monotone probability map than a single temperature, while also introducing score ties. The observed values do not establish that one method universally repairs distribution shift or that lower average ECE guarantees a safer operating threshold.',
+      121:'Recalibration is fitted using source calibration reviews only. Changes in prevalence, annotation and review style can alter its behaviour after transfer. Method choice therefore requires target-representative validation; mechanistic explanations about a model’s confidence shape are not inferred solely from a few aggregate ECE values.',
+      124:'Quantisation, compact architecture, recalibration and operating point affect different dimensions of the evaluated system. The returned CPU energy reductions are accompanied by configuration-specific AUROC and calibration changes. These measured trade-offs support joint evaluation, without implying negligible clinical impact or a universal architecture ranking.',
+      127:'Prevalence-adjusted predictive values and directly measured review workloads are complementary. The former assumes fixed sensitivity and specificity under prior shift; the latter counts the review/post burden at an explicitly declared threshold policy. Neither establishes prospective analyst time, verified adverse events or clinical safety.',
+      129:'Energy remains limited to package-0 RAPL on the Linux CPU host and board power on the Colab T4. Host tokenisation is included in elapsed pipeline timing, but Colab host CPU/RAM energy is unmeasured; CPU package counters exclude the rest of the system. There is no GPU-equipped instrumented Linux host or wall-power meter. The complete-system measurement requested by Reviewer 2 therefore remains unmet. The four CPU precision variants use only seed 42; their results do not establish split-robust quantisation effects. Checkpoint weight files were not returned locally: matching corpus arrays, prediction hashes and close GPU-FP16/CPU-FP32 probabilities provide compatibility evidence, not a cryptographic proof of identical weights. The supplied repository runner reproduces the planned CPU extension.',
+      130:'The label-mapping audit covers one sentence splitter and a narrow overlap-versus-containment distinction. Its two label disagreements are not a broad stress test of annotation choices, languages or therapeutic areas. A different splitter, span convention or label taxonomy can produce larger changes and requires a fresh evaluation.',
+      135:'ECC-MS specifies source-calibration uncertainty, scoped energy and practical AUROC tolerance as explicit finite-catalogue selection inputs. The revision provides mathematical definitions, review/post resampling, complete constraint grids, directly measured workload and ten grouped-split evaluations of a common fifteen-arm catalogue. Twelve primary CPU calibration configurations and GPU batch/length surfaces extend the measured trade-offs. External calibration is diagnosed separately, with no shift guarantee.',
+      136:'Within the evaluated English corpora, choices depend on the declared tolerances, execution setting, measured domain and candidate catalogue. Some constraint combinations admit no arm. Calibration changes and INT8 energy savings require predictive and operational evaluation together; no result establishes clinical equivalence or transfer to untested settings.',
+      137:'Future work should elicit operational tolerances independently, evaluate additional therapeutic areas, languages and platforms, measure prospective analyst workload and subgroup calibration, and obtain complete-system energy with suitable instrumentation. The present component measurements and illustrative margins do not replace those requirements.'
+    }
 
 
 def write_manuscript(summary,primary):
@@ -210,15 +339,30 @@ def write_manuscript(summary,primary):
       136:'Within the two evaluated English corpora and original model catalogue, some illustrative constraints admit no arm, recalibration choices alter probability reliability, and energy-sensitive choices depend on the tolerance and available resources. These findings motivate target-specific validation; they are not claims about all pharmacovigilance datasets, clinical safety or universal superiority of isotonic regression.',
       137:'Future work should elicit operational tolerances independently with pharmacovigilance analysts, add a second untouched target, assess prospective review workload and subgroup calibration, expand therapeutic and linguistic coverage, and measure whole-system energy with appropriate instrumentation. Pending compact/quantized and operating-point benchmark outputs must be integrated before this working draft is treated as a completed hardware revision.'
     }
+    text.update(integrated_text(summary,primary))
+    text[48]+=' For budget screening, the three recalibration variants inherit the measured base-model raw-text-to-uncalibrated-probability pipeline cost as a proxy. Their calibrated-pipeline totals were not separately measured, so budget feasibility is conditional on this disclosed component-cost proxy.'
+    text[51]+=' The bootstrap is conditional on the fitted classifier and recalibrators: it resamples evaluation clusters without refitting them. The separate grouped-split analyses describe partition/training variation.'
+    text[62]+=' In the present measurements, Jscope(a) is the base-model pipeline component-cost proxy assigned to each recalibration variant; calibration-transform and unmeasured host/system energy are not silently set to zero.'
+    text[81]+=' Circles denote uncalibrated arms, triangles temperature scaling and squares isotonic recalibration.'
+    text[42]=text[42].replace('and uses the available FBGEMM backend on the measured host','using a supported CPU quantisation backend; the original log does not separately record the selected backend')
     source_metrics=primary['domains']['test']['metrics'];external_metrics=primary['domains']['cadec']['metrics']
-    iso_external='; '.join(f"{m}: {external_metrics[m+' + Isotonic']['ece']:.4f}" for m in COLORS)
-    text[77]=f"Recalibration alters probability reliability differently across arms. The largest source isotonic ECE point estimate is {max(source_metrics[m+' + Isotonic']['ece'] for m in COLORS):.4f}. External isotonic estimates are {iso_external}. These estimates and their uncertainty depend on the stated rank-bin and tie convention; all are regenerated in this revision. Lower ECE does not imply a universal discrimination or clinical-utility improvement. Figure 5 relates the observed AUROC values to scoped energy."
-    near=[r for run in summary['runs'] for r in run['workload_pairs'] if r['target_sensitivity']==.9 and r.get('threshold_policy')=='retrospective_matched_sensitivity' and abs(r['delta_auroc_b_minus_a'])<=.015]
+    present_models=[m for m in COLORS if m+' + Isotonic' in source_metrics]
+    iso_external='; '.join(f"{m}: {external_metrics[m+' + Isotonic']['ece']:.4f}" for m in present_models)
+    text[77]=f"Recalibration alters probability reliability differently across arms. The largest source isotonic ECE point estimate is {max(source_metrics[m+' + Isotonic']['ece'] for m in present_models):.4f}. External isotonic estimates are {iso_external}. These estimates and their uncertainty depend on the stated rank-bin and tie convention; all are regenerated in this revision. Lower ECE does not imply a universal discrimination or clinical-utility improvement. Figure 5 relates the observed AUROC values to scoped energy."
+    common_names=set(summary['common_catalogue']['arm_names'])
+    near=[r for run in summary['runs'] for r in run['workload_pairs'] if r['arm_a'] in common_names and r['arm_b'] in common_names and r['target_sensitivity']==.9 and r.get('threshold_policy')=='retrospective_matched_sensitivity' and abs(r['delta_auroc_b_minus_a'])<=.015]
     violations=[r for r in near if abs(r['relative_flagged_review_change_pct'])>2]
     if violations:
         text[109]+=f" Across the grouped splits' source/external matched-sensitivity diagnostics, {len(violations)} of {len(near)} arm-pair/split comparisons within 0.015 AUROC differ by more than 2% in relative flagged-review volume (maximum {max(abs(r['relative_flagged_review_change_pct']) for r in near):.2f}%). This is retrospective evidence against a general workload guarantee, not an independent choice of a replacement margin."
     for i,value in text.items():Paragraph(blocks[i],doc._body).text=value
-    # Table 2 retains the original measured values with corrected scope notes.
+    replace_table(doc,blocks[45],['Family','Execution','Representation / fitting','Recalibration','Configurations'],[
+        ['Logistic Regression','CPU','TF-IDF unigrams/bigrams, max 2,500; LR max_iter=1,000','Uncalibrated / temperature / isotonic',3],
+        ['LightGBM','CPU','Same TF-IDF; 100 trees, learning rate 0.05, 31 leaves','Same three',3],
+        ['DistilBERT','T4 FP16','3 epochs; AdamW 2e-5; batch 64; length 128','Same three',3],
+        ['PubMedBERT','T4 FP16','Same training schedule','Same three',3],
+        ['BERT-tiny','T4 FP16','prajjwal1/bert-tiny; same schedule','Same three',3],
+        ['DistilBERT / BERT-tiny','CPU FP32 and dynamic INT8','Saved primary checkpoints; no retraining; four execution variants','Same three fitted separately per variant',12]])
+    replace_table(doc,blocks[73],['Configuration','Counter domain','Load (W)','Sentences/s','Gross J/1,000','Net J/1,000','CV (%)','Repeats'],hardware_rows(primary))
     names=[a['name'] for a in primary['catalogue']]
     rows=[]
     for name in names:
@@ -226,12 +370,18 @@ def write_manuscript(summary,primary):
         rows.append([model,method,f"{a['auroc']:.4f}",f"{a['auprc']:.4f}",f"{a['ece']:.4f} [{a['ece_ci'][0]:.4f}, {a['ece_ci'][1]:.4f}]",f"{a['brier']:.4f}",f"{b['auroc']:.4f}",f"{b['ece']:.4f}"])
     replace_table(doc,blocks[79],['Model','Recalibration','AUROC','AUPRC','ECE [cluster 95% CI]','Brier','CADEC AUROC','CADEC ECE'],rows)
     rows=[]
-    for name in names:
+    for name in [n for n in names if n in summary['common_catalogue']['arm_names']]:
         values=[]
         for domain,key in [('test','auroc'),('test','ece'),('cadec','auroc'),('cadec','ece')]:
             x=[r['domains'][domain]['metrics'][name][key] for r in summary['runs'] if name in r['domains'][domain]['metrics']];values.append(f'{np.mean(x):.4f} ± {np.std(x):.4f}')
         rows.append([*name.split(' + '),*values])
     replace_table(doc,blocks[86],['Model','Recalibration','AUROC (source)','ECE (source)','AUROC (CADEC)','ECE (CADEC)'],rows)
+    clinical_rows=[]
+    for name in [n for n in names if n in summary['common_catalogue']['arm_names']]:
+        d=primary['domains']['test']['metrics'][name]['clinical_utility'];prev=d['prevalence_adjusted']
+        native=next(v for v in prev.values() if abs(v['prevalence']-.3612)<1e-6)
+        clinical_rows.append([name,d['sensitivity'],d['specificity'],d['lr_plus'],d['lr_minus'],prev['1.0%']['ppv'],prev['10.0%']['ppv'],native['ppv']])
+    replace_table(doc,blocks[94],['Configuration','Sensitivity','Specificity','LR+','LR−','PPV 1%','PPV 10%','PPV 36.12%'],clinical_rows)
     cells=[(.03,.5),(.03,60),(.03,120),(.05,60),(.07,10),(.07,60),(.10,.5),(.10,60),(.05,120),(.07,120),(.10,120),(.10,150),(.10,200)]
     rows=[]
     for t,e in cells:
@@ -252,7 +402,7 @@ def write_manuscript(summary,primary):
     ]:doc.add_paragraph(citation)
     heading=doc.add_paragraph('Revision supplement: comparison and evidence status')
     for run in heading.runs:run.bold=True;run.font.size=Pt(12)
-    doc.add_paragraph('The added positioning comparison and reviewer responses are supplied in reports/revision. Machine-readable supplements provide the complete τ/E grid, δ sensitivity, row-versus-cluster interval widths, bin sensitivity, repeated-split selection frequencies, and both workload threshold policies. Hardware extensions are pending; no new hardware result is implied by a prepared script.')
+    doc.add_paragraph('The returned hardware results are integrated. Machine-readable supplements provide the full main grid, a CPU-only expanded-budget grid, common-catalogue frequencies, δ and bin sensitivity, row-versus-cluster intervals, workload, raw traces and artifact audits. Component measurement scope and single-checkpoint CPU coverage remain explicitly disclosed. Complete-system energy remains unmeasured.')
     doc.add_paragraph('Supplementary Table S1. Positioning against established model-selection approaches.')
     placeholder=doc.add_table(rows=1,cols=1)
     replace_table(doc,placeholder._tbl,['Approach','Established criterion','ECC-MS scope'],[
@@ -262,6 +412,18 @@ def write_manuscript(summary,primary):
         ['Energy-aware search [68]','Energy-informed search/training resource allocation','Final inference-arm selection, rather than a new search scheduler'],
         ['Calibration-aware [33,40]','Probability calibration and behaviour under shift','Recalibrated arms evaluated with cluster uncertainty; external diagnostics'],
         ['Encoder / LLM context [69,70]','Task-specific multidimensional evaluation','Evaluation context, not direct ADR baseline performance evidence']])
+    doc.add_paragraph('Supplementary Table S2. Same-checkpoint INT8 versus FP32 on primary seed 42. Differences are INT8 minus FP32; intervals use paired review/post resampling. Maximum probability changes are uncalibrated changes over the three evaluated partitions, not clinical risk estimates.')
+    quant=quantization_evidence(primary);placeholder=doc.add_table(rows=1,cols=1)
+    rows=[]
+    for r in quant:
+        intervals=[f"{r[d+'_delta_auroc']:+.4f} [{r[d+'_delta_ci_lo']:+.4f}, {r[d+'_delta_ci_hi']:+.4f}]" for d in ['test','cadec']]
+        rows.append([r['model'],f"{r['fp32_package_j_1000']:.1f} / {r['int8_package_j_1000']:.1f}",f"{r['energy_reduction_pct']:.1f}%",*intervals,f"{r['test_fp32_ece']:.4f} / {r['test_int8_ece']:.4f}",f"{r['cadec_fp32_ece']:.4f} / {r['cadec_int8_ece']:.4f}",f"{r['maximum_uncalibrated_probability_change']:.3f}"])
+    replace_table(doc,placeholder._tbl,['Family','Package J/1,000 FP32 / INT8','Saving','Source ΔAUROC [95% CI]','External ΔAUROC [95% CI]','Source ECE FP32 / INT8','External ECE FP32 / INT8','Max |Δp|'],rows)
+    doc.add_paragraph('Supplementary Table S3. Tokenizer-only package measurements; the failing original PubMedBERT run and its passing follow-up are both retained.')
+    tok=json.loads((RESULTS/'linux_artifact_audit.json').read_text())['tokenizer_measurements'];placeholder=doc.add_table(rows=1,cols=1)
+    replace_table(doc,placeholder._tbl,['Tokenizer','Run','Package J/1,000','CV (%)','CV ≤10%'],[[r['model'],'Follow-up' if r.get('run')=='follow-up' else 'Original',f"{r['gross_j_1000']:.3f}",f"{r['cv_pct']:.2f}",r['repeatability_pass']] for r in tok])
+    for name,caption in [('supplement_gpu_energy_surface.png','Supplementary Figure S1. Complete measured GPU-board batch/length surface; host and wall energy unmeasured.'),('supplement_cpu_quantization.png','Supplementary Figure S2. CPU-package energy and paired AUROC effects of dynamic INT8 on the primary checkpoints.'),('supplement_workload.png','Supplementary Figure S3. Retrospective review workload at matched sensitivity of at least 90%; an AUROC tolerance does not guarantee a workload bound.')]:
+        doc.add_picture(str(FIG/name),width=Inches(6.3));doc.add_paragraph(caption)
     path=ROOT/'AIH Paper - Revised.docx';doc.save(path);return path
 
 
@@ -296,7 +458,7 @@ Equal-cost ties use higher source AUROC, lower calibration upper bound, then nam
 ''',encoding='utf-8')
     response=f'''# AIH Round 1 — response draft and evidence ledger
 
-Status: statistical reanalysis and manuscript corrections completed for {len(summary['runs'])} available grouped splits; new hardware/compact-model runs remain pending. This is not a claim that all requested experiments have been completed. Original submission files and result artifacts are preserved.
+Status: returned GPU and Linux component measurements are validated and integrated. Statistical reanalysis covers {len(summary['runs'])} grouped splits with a common fifteen-arm catalogue and {len(primary['catalogue'])} primary configurations including CPU precision variants. Complete-system energy remains unmeasured, and no independent clinical margin validation is claimed. The manuscript is a revision draft for author review. Original submission artifacts are preserved.
 
 ## Reviewer 1
 
@@ -304,7 +466,7 @@ Status: statistical reanalysis and manuscript corrections completed for {len(sum
 
 2. **Formalisation.** Revised Section 3.8 defines the candidate arms, feasible set, calibration upper-bound constraint, scoped energy constraint, AUROC leader, paired interval-inclusion criterion and final energy minimisation, including tie-breaking and the empty-set outcome.
 
-3. **Constraint origin and sensitivity.** τ and E are explicitly illustrative, not elicited pharmacovigilance requirements. The full grid contains {len(config['tau_grid'])} × {len(config['energy_grid_j_per_1000'])} = {len(primary['grid'])} evaluated cells per split; both feasibility monotonicity properties pass. See grid.csv and Figure 8.
+3. **Constraint origin and sensitivity.** τ and E are explicitly illustrative, not elicited pharmacovigilance requirements. The main grid contains {len(config['tau_grid'])} × {len(config['energy_grid_j_per_1000'])} = {len(primary['grid'])} evaluated cells per split; both feasibility monotonicity properties pass. A separate primary CPU-only grid extends illustrative budgets to 4,000 J/1,000 because the larger CPU encoders exceed the main budgets. See grid.csv, cpu_primary_grid.csv and Figure 8.
 
 4. **Equivalence margin and workload.** Expanded δ to 0.005–0.050 in steps of 0.005. With no independent expert elicitation available, δ=0.015 is retained only as an illustrative reference. The assertion that it guarantees <2% workload change is withdrawn. workload.csv and workload_pairs.csv report flagged reviews/posts at 85%,90%,95% calibration-target sensitivities, achieved evaluation sensitivity, and separate retrospective matched-sensitivity diagnostics. A data-derived mapping is not relabelled as an independent clinical margin.
 
@@ -318,19 +480,23 @@ Status: statistical reanalysis and manuscript corrections completed for {len(sum
 
 1. **Figures and regime-map feasibility.** Figures 7/8 are regenerated from measured prediction/selection artifacts and placed beside the correct captions. All grid cells are evaluated. Feasible counts are asserted non-decreasing in either constraint; missing cells are not painted as infeasible.
 
-2. **Clustering, bins, repeated selection and workload.** Use whole-review/post percentile bootstrap with 2,000 shared draws; primary ECE uses 10 bins with 5/10/15/20 sensitivity. Report row-percentile controls and cluster-percentile intervals rather than imposing an invalid requirement that every clustered interval be wider. Complete selection is repeated across the three existing grouped splits. Ten-split encoder scripts are prepared, but additional split results are pending. Matched-sensitivity workload is explicitly retrospective; frozen calibration thresholds do not guarantee 90% sensitivity after transfer.
+2. **Clustering, bins, repeated selection and workload.** Use whole-review/post percentile bootstrap with 2,000 shared draws; primary ECE uses 10 bins with 5/10/15/20 sensitivity. Row-percentile controls use the same interval method. Complete selection is repeated on the same fifteen configurations across all ten grouped splits, including primary seed 42; common_selection_frequencies.csv has an explicit denominator of ten. The larger primary CPU catalogue is evaluated separately, rather than pooled into those frequencies. Workload is directly counted at calibration-target sensitivities 85%, 90% and 95%, with achieved evaluation sensitivities and a separate retrospective matched-sensitivity diagnostic. The unsupported general claim that 0.015 AUROC implies less than 2% additional workload is withdrawn; no independent expert assessment is invented.
 
-3. **Energy scope and new baselines — PARTIALLY ADDRESSED; HARDWARE RESULTS PENDING.** Corrected the original claim of common raw-text-to-probability energy scope. Original GPU values measure board forward-pass energy and omit host tokenisation; CPU values cover package energy including TF-IDF. The available Linux host is CPU-only and lacks a wall-power meter, and Colab does not expose measured host-package energy. Therefore actual complete-system energy has not been measured. Prepared Colab batch×length sweeps and compact BERT-tiny training, plus Linux same-checkpoint FP32/INT8 accuracy/package-energy and tokenizer benchmarks. Returned outputs must be integrated before asserting completion. Separate-host component figures will not be presented as a measured whole system. The complete-system portion of this request remains unmet with current instrumentation.
+3. **Energy scope and new baselines — PARTIALLY ADDRESSED; COMPLETE-SYSTEM MEASUREMENT UNMET.** The new T4 run measures board energy during raw-text-to-probability pipeline timing for DistilBERT, PubMedBERT and compact BERT-tiny, across five batch sizes and three maximum lengths, with three repeats per setting. Host tokenisation time is included in elapsed time, but host CPU/RAM energy is unmeasured. Returned Linux runs evaluate seed-42 DistilBERT and BERT-tiny in FP32 and dynamic INT8 at batch 64/length 128, with seven raw package-energy repeats and paired accuracy/calibration comparisons. All four included pipeline measurements pass repeatability. The initial PubMedBERT tokenizer CV failure (10.81%) is retained alongside its passing follow-up (0.38%). See Table 2, Supplementary Tables S2/S3, Figures S1/S2 and LINUX_RESULTS_REVIEW.md. The CPU-only Linux host has no wall meter; separate-host tokenizer and board readings are not added into a fictitious complete-system result. Actual complete-system energy therefore remains unmeasured. CPU quantisation has one trained split, and the planned reproduction runner is supplied.
 
 4. **Encoder–LLM context.** Added multidimensional evaluation and task-specific encoder/generative comparison context, clearly distinguished from direct ADR baseline evidence. No numerically incomparable cross-task performance claims are made.
 
 ## Required before final resubmission
 
-Run the Colab notebook, then Linux benchmarks using those saved checkpoints; return both result ZIPs and rerun the analysis with explicit artifact directories. Integrate the compact/quantized baselines and energy surfaces. State the remaining whole-system instrumentation limitation explicitly. The revised DOCX is labelled a working draft while these measurements are pending. No independent expert margin assessment is claimed.
+The returned runs have been integrated; the author should review the revised manuscript and response, decide whether to resubmit with the explicitly unmet whole-system measurement request or obtain appropriate instrumentation. No further execution of the completed Colab/Linux component experiments is required by the current analysis. No independent expert margin assessment is claimed.
 '''
     (REPORTS/'REVIEW_RESPONSE.md').write_text(response,encoding='utf-8')
     status={'statistical_reanalysis':'completed','grouped_splits_evaluated':len(summary['runs']),'grid_cells_per_split':len(primary['grid']),
-            'cluster_bootstrap_repeats':config['bootstrap_repeats'],'hardware_extensions':'pending external Colab and Linux execution',
+            'cluster_bootstrap_repeats':config['bootstrap_repeats'],'hardware_extensions':'returned Colab and Linux component experiments validated and integrated',
+            'common_candidate_arms':len(summary['common_catalogue']['arm_names']),'primary_candidate_arms':len(primary['catalogue']),
+            'gpu_energy_settings':45,'cpu_pipeline_configurations':4,'cpu_pipeline_repeats':28,'cpu_tokenizer_repeats':28,
+            'extra_pubmed_cpu':'excluded from paper and selection per author scope; original PubMedBERT GPU retained',
+            'manuscript_results_status':'regenerated with returned GPU and CPU results','review_response_status':'regenerated with returned GPU and CPU results',
             'complete_system_energy':'not available: no GPU-equipped instrumented host / wall meter','independent_clinical_delta_validation':'not available; unsupported claim withdrawn',
             'submission_ready':False,'manuscript':'AIH Paper - Revised.docx','response':'reports/revision/REVIEW_RESPONSE.md'}
     (REPORTS/'revision_status.json').write_text(json.dumps(status,indent=2),encoding='utf-8')
@@ -339,7 +505,7 @@ Run the Colab notebook, then Linux benchmarks using those saved checkpoints; ret
 def main():
     summary=json.loads((RESULTS/'revision_analysis.json').read_text());primary=next(r for r in summary['runs'] if r['seed']==42)
     make_figures(summary,primary);path=write_manuscript(summary,primary);reports(summary,primary)
-    print(f'Revised working draft: {path}. Statistical supplements: {RESULTS}. Hardware runs remain pending.')
+    print(f'Revised draft: {path}. Returned component experiments integrated; complete-system energy remains unmeasured.')
 
 
 if __name__=='__main__':main()

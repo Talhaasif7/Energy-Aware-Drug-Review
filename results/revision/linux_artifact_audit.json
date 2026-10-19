@@ -1,0 +1,131 @@
+{
+  "validation_passed": true,
+  "archives": [
+    {
+      "path": "revision_linux_results.zip",
+      "sha256": "4ee03b86dc0c223ddb754fe5f32897d7072b68dcad6eeb5389dcaef2375c4bb9",
+      "crc_valid": true
+    },
+    {
+      "path": "revision_linux_pubmed_results.zip",
+      "sha256": "e5a1420770460601da42f7ba66102a1965cb194e97b65d5bcb532e0c7a1edba3",
+      "crc_valid": true
+    }
+  ],
+  "cpu_predictions": [
+    {
+      "model": "distilbert_cpu_fp32",
+      "prediction_path": "results/revision/cpu_encoder_predictions/distilbert_cpu_fp32_seed42_predictions.npz",
+      "prediction_sha256": "4db00bc4855e67354d5b548f844b0a63519a57ba5c87b15e897ea05655c83f42",
+      "energy_path": "results/revision/linux_energy/distilbert_cpu_fp32.json",
+      "test_auroc": 0.9331968470126366,
+      "cadec_auroc": 0.9132583861504702,
+      "maximum_uncalibrated_probability_difference_from_gpu_fp16": 0.0019110143184661865,
+      "gross_j_1000": 2945.311634765625,
+      "net_j_1000": 2877.5534021587887,
+      "throughput_sps": 22.686903815980415,
+      "cv_pct": 1.3146641274297746,
+      "repeatability_pass": true
+    },
+    {
+      "model": "distilbert_cpu_int8",
+      "prediction_path": "results/revision/cpu_encoder_predictions/distilbert_cpu_int8_seed42_predictions.npz",
+      "prediction_sha256": "02771bbd90056e674ceb6261b5e11f4b741fd3f2b999f24dda7aa5fc9e6b0666",
+      "energy_path": "results/revision/linux_energy/distilbert_cpu_int8.json",
+      "test_auroc": 0.9259078640657589,
+      "cadec_auroc": 0.9068749221206828,
+      "maximum_uncalibrated_probability_difference_from_gpu_fp16": 0.7810239642858505,
+      "gross_j_1000": 1721.75848828125,
+      "net_j_1000": 1680.4305920944812,
+      "throughput_sps": 35.25008636567192,
+      "cv_pct": 0.9182850525499932,
+      "repeatability_pass": true
+    },
+    {
+      "model": "bert_tiny_cpu_fp32",
+      "prediction_path": "results/revision/cpu_encoder_predictions/bert_tiny_cpu_fp32_seed42_predictions.npz",
+      "prediction_sha256": "6edf7981c0dc581322408aa8b74bbfea360161e9c758868a35a91a475e726359",
+      "energy_path": "results/revision/linux_energy/bert_tiny_cpu_fp32.json",
+      "test_auroc": 0.7873190406085144,
+      "cadec_auroc": 0.8249233526720439,
+      "maximum_uncalibrated_probability_difference_from_gpu_fp16": 0.0005511045455932617,
+      "gross_j_1000": 68.4743157494469,
+      "net_j_1000": 66.09670566501096,
+      "throughput_sps": 722.7853011745257,
+      "cv_pct": 0.4187675619293976,
+      "repeatability_pass": true
+    },
+    {
+      "model": "bert_tiny_cpu_int8",
+      "prediction_path": "results/revision/cpu_encoder_predictions/bert_tiny_cpu_int8_seed42_predictions.npz",
+      "prediction_sha256": "6af438d7af9b714837c606abf20ef67b1ec10f5c7f1681536ec0cb22515c9425",
+      "energy_path": "results/revision/linux_energy/bert_tiny_cpu_int8.json",
+      "test_auroc": 0.7859618451723714,
+      "cadec_auroc": 0.8251502850823003,
+      "maximum_uncalibrated_probability_difference_from_gpu_fp16": 0.058352649211883545,
+      "gross_j_1000": 57.11756612404943,
+      "net_j_1000": 55.471165792267,
+      "throughput_sps": 841.226211395934,
+      "cv_pct": 0.6000884519438907,
+      "repeatability_pass": true
+    }
+  ],
+  "excluded_extra_cpu_predictions": [
+    {
+      "model": "pubmedbert_cpu_fp32",
+      "prediction_sha256": "ab2ed6dc7b91ba296dcb2266a5dadf32f607867f511e61d2f8261d5fb10402cf"
+    },
+    {
+      "model": "pubmedbert_cpu_int8",
+      "prediction_sha256": "5a393853a5e6a257ab2e7960d6ce071a884ec93f8da0c46a536c473a53989921"
+    }
+  ],
+  "exclusion_reason": "Author scope: original PubMedBERT GPU baseline retained; extra PubMedBERT CPU experiment excluded from the paper and model-selection analysis",
+  "tokenizer_measurements": [
+    {
+      "model": "efficient_transformer",
+      "run": "original",
+      "source": "results/revision/linux_energy/tokenization.json",
+      "gross_j_1000": 1.7502067427884616,
+      "throughput_sps": 12479.80598581626,
+      "cv_pct": 1.3121572049616927,
+      "repeatability_pass": true
+    },
+    {
+      "model": "compact_transformer",
+      "run": "original",
+      "source": "results/revision/linux_energy/tokenization.json",
+      "gross_j_1000": 2.3315084677061124,
+      "throughput_sps": 9002.891577846733,
+      "cv_pct": 1.4259539440163431,
+      "repeatability_pass": true
+    },
+    {
+      "model": "biomedical_transformer",
+      "run": "original",
+      "source": "results/revision/linux_energy/tokenization.json",
+      "gross_j_1000": 2.419383365125673,
+      "throughput_sps": 8909.407921360054,
+      "cv_pct": 10.813859019335904,
+      "repeatability_pass": false
+    },
+    {
+      "model": "biomedical_transformer",
+      "run": "follow-up",
+      "source": "results/revision/linux_energy/tokenization_pubmed_followup.json",
+      "gross_j_1000": 2.290863839285714,
+      "throughput_sps": 9048.45915941098,
+      "cv_pct": 0.3764114066025054,
+      "repeatability_pass": true
+    }
+  ],
+  "primary_seed": 42,
+  "models": 4,
+  "received_models": 6,
+  "pipeline_repeats": 28,
+  "tokenizer_repeats": 28,
+  "raw_repeats_validated": 70,
+  "counter_wraps_not_independently_verified": 0,
+  "measurement_scope": "RAPL package-0; no RAM or whole-system measurement",
+  "weight_identity": "Checkpoint files not supplied locally; included FP32 probabilities agree with saved GPU FP16 outputs within .01, which is compatibility evidence, not a cryptographic weight-identity proof"
+}

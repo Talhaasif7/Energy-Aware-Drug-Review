@@ -1,0 +1,42 @@
+{
+  "host": {
+    "os": "Linux",
+    "os_release": "7.0.0-38-generic",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "machine": "x86_64",
+    "cpu_model": "Intel(R) Core(TM) i5-8500 CPU @ 3.00GHz",
+    "physical_cores": 6,
+    "logical_cpus": 6,
+    "socket_count": 1,
+    "spec_tdp_watts": 65.0,
+    "observed_pl1_limit_watts": 65.0,
+    "tdp_watts": 65.0,
+    "is_wsl": false,
+    "is_container": false,
+    "rapl_available": true,
+    "rapl_domains": 1,
+    "rapl_domain_names": [
+      "package-0"
+    ],
+    "rapl_reason": "1 readable package domain(s): ['package-0']",
+    "energy_measurement_class": "measured_rapl"
+  },
+  "checkpoint_directory": "/home/ahmad-zia/Desktop/Research/Talha/Revision/Energy-Aware-Drug-Review/results/revision/checkpoints",
+  "wall_meter_available": false
+}
+[tokenizer] biomedical_transformer: measured RAPL package only
+[accuracy] pubmedbert_cpu_fp32: grouped seed 42, no retraining
+[RAPL] pubmedbert_cpu_fp32: batch=64, length=128, repeats=7
+/home/ahmad-zia/Desktop/Research/Talha/Revision/Energy-Aware-Drug-Review/scripts/revision_linux_pubmed.py:97: DeprecationWarning: torch.ao.quantization is deprecated and will be removed in 2.10. 
+For migrations of users: 
+1. Eager mode quantization (torch.ao.quantization.quantize, torch.ao.quantization.quantize_dynamic), please migrate to use torchao eager mode quantize_ API instead 
+2. FX graph mode quantization (torch.ao.quantization.quantize_fx.prepare_fx,torch.ao.quantization.quantize_fx.convert_fx, please migrate to use torchao pt2e quantization API instead (prepare_pt2e, convert_pt2e) 
+3. pt2e quantization has been migrated to torchao (https://github.com/pytorch/ao/tree/main/torchao/quantization/pt2e) 
+see https://github.com/pytorch/ao/issues/2259 for more details
+  model=torch.ao.quantization.quantize_dynamic(copy.deepcopy(base),{torch.nn.Linear},dtype=torch.qint8,inplace=False).eval()
+/home/ahmad-zia/Desktop/Research/Talha/Revision/Energy-Aware-Drug-Review/.venv-revision/lib/python3.14/site-packages/torch/ao/nn/quantized/modules/utils.py:72: UserWarning: torch.quantize_per_tensor, torch.quantize_per_channel and other quantized tensor creation functions that produce tensors with dtype torch.quint8, torch.qint8, and torch.qint32 are deprecated and will be removed in a future PyTorch release. Please see https://github.com/pytorch/pytorch/issues/184982 for more information. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/quantized/Quantizer.cpp:111.)
+  qweight = torch.quantize_per_tensor(
+[accuracy] pubmedbert_cpu_int8: grouped seed 42, no retraining
+[RAPL] pubmedbert_cpu_int8: batch=64, length=128, repeats=7
+Send back /home/ahmad-zia/Desktop/Research/Talha/Revision/Energy-Aware-Drug-Review/revision_linux_pubmed_results.zip. No model weights are included.

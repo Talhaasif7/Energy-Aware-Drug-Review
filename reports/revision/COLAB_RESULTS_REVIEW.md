@@ -1,3 +1,5 @@
+> Update, 19 October 2026: the planned Linux results are now validated and integrated. The current paper has 27 primary configurations and the original fifteen-arm common catalogue across ten splits. Original PubMedBERT GPU configurations remain; its extra CPU run is excluded. The revised manuscript and response have been regenerated. See [Linux audit](LINUX_RESULTS_REVIEW.md) and [current status](revision_status.json). The original Colab audit below records the earlier handoff stage.
+
 # Returned Colab results: validation and next step
 
 The returned prediction ZIP and console log have been inspected. All 30 predictions (three models across ten grouped splits) are present; their SHA-256 values match the run manifest. Exact texts, labels and review-group identities match the local corpora. The three train/calibration/audit group sets are disjoint within every split. Every probability array can be loaded without pickle and has finite, normalized values. The ZIP passes its CRC check.

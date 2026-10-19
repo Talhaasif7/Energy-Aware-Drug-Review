@@ -1,29 +1,37 @@
 # AIH Round 1: completed revision and external runs
 
-The submitted `AIH Paper.docx` and original `results/*.json` / prediction arrays are preserved. Read `AIH Paper - Revised.docx` and `reports/revision/REVIEW_RESPONSE.md` for the current working revision. Hardware extensions are still pending; this is not a submission-ready claim that every requested experiment has been completed.
+The submitted `AIH Paper.docx` and original result artifacts are preserved. Returned Colab/Linux component measurements are validated and integrated into the analysis, manuscript draft and reviewer response. Complete-system energy remains unmeasured, so this is not a claim that every reviewer request has been fully met. Author review is necessary before resubmission.
 
 Manuscript DOCX files and the generated reviewer-response letter are author-local materials. The professor's code handoff does not need them; author-side DOCX regeneration requires the supplied original `AIH Paper.docx`.
+
+## Current status: 19 October 2026
+
+The planned returned runs are complete. No new Colab/Linux component measurement is currently needed. The final paper retains the original PubMedBERT GPU baseline and excludes its extra CPU FP32/INT8 experiment at the author's scope instruction. Raw supplied transfer files remain local. The paper uses 15 common configurations over ten grouped splits, plus 12 CPU calibration configurations on primary seed 42 (27 primary configurations in total). CPU quantisation covers DistilBERT and BERT-tiny.
+
+See [LINUX_RESULTS_REVIEW.md](reports/revision/LINUX_RESULTS_REVIEW.md), [revision_status.json](reports/revision/revision_status.json) and the numerical CSVs. Common-catalogue frequencies include all ten splits; the primary CPU-only grid uses a separate catalogue and budgets through 4,000 J/1,000. The initial PubMedBERT tokenizer CV failure and its passing follow-up are both retained. The author-local revised DOCX and response are regenerated from the returned results.
+
+The remaining hardware limitation is actual complete-system energy: the available CPU-only Linux host and Colab runtime have no wall-power meter or measured Colab host-package energy. The unsupported clinical workload guarantee is withdrawn; no independent expert margin validation is invented. Remaining work is author review and a resubmission decision about the disclosed instrumentation limitation.
 
 ## Returned Colab artifacts — 15 October 2026
 
 The author has returned `revision_predictions.zip` and `revision_colab_run.log`. The checkpoint ZIP is saved separately in the author's Google Drive. All 30 prediction files match the run-manifest hashes and the corpus texts, labels and grouped partitions. All three encoders completed the 15-cell GPU-board grid, with three repeats per cell; every cell passed the configured repeatability check. No new Colab run is needed for these completed experiments.
 
-The current numerical supplements now cover all ten grouped splits, 15 arms per split and 2,000 cluster-bootstrap draws. Numerical artifact checks pass for all ten splits. See [COLAB_RESULTS_REVIEW.md](reports/revision/COLAB_RESULTS_REVIEW.md). The existing revised DOCX and reviewer-response body are earlier working drafts; they still require regeneration from the returned hardware results after Linux integration.
+The common-catalogue numerical supplements cover fifteen arms across all ten grouped splits and 2,000 cluster-bootstrap draws; the primary CPU extension brings seed 42 to 27 arms. Numerical artifact checks pass for all ten splits. See [COLAB_RESULTS_REVIEW.md](reports/revision/COLAB_RESULTS_REVIEW.md). The revised DOCX and reviewer response have now been regenerated after Linux integration; see the current status above.
 
-**Next external step:** share the checkpoint ZIP from Drive with the professor and follow [PROFESSOR_LINUX_STEPS.md](PROFESSOR_LINUX_STEPS.md). Return `revision_linux_results.zip` and `revision_linux_run.log` for final integration. The manuscript remains a working draft while the CPU extension and its integration are pending.
+The Linux results have since been returned and integrated. [PROFESSOR_LINUX_STEPS.md](PROFESSOR_LINUX_STEPS.md) now serves as reproduction documentation; no repeat run is requested.
 
 ## Already completed locally
 
 - Exact CADEC post identities recovered; all 7,823 texts and labels verified unchanged, 1,248 posts, 2,865 positives.
 - 2,000 whole-review/post percentile bootstrap draws, exact tied-score AUROC, 10-bin ECE plus 5/10/15/20-bin sensitivity.
-- Complete 11 × 15 constraint grid per split; monotonicity checks; ten δ values; complete selection on seeds 42/123/456.
-- Review/post workload at calibration-target sensitivities 85%, 90%, 95%, plus separate retrospective matched-sensitivity diagnostics; all 66 original-arm pairs.
-- Earlier working-draft figures with correct captions, formal selection equations, positioning comparison and scoped claims; regenerate manuscript figures after the returned hardware results are integrated.
+- Complete 11 × 15 constraint grid per split; monotonicity checks; ten δ values; complete selection on all ten common-catalogue grouped splits, with a separate 27-arm primary catalogue.
+- Review/post workload at calibration-target sensitivities 85%, 90%, 95%, plus separate retrospective matched-sensitivity diagnostics; all arm pairs within each declared catalogue; common-catalogue summaries do not pool the extra primary CPU arms.
+- Figures and manuscript tables regenerated with returned hardware results, correct captions, formal equations and scoped claims.
 - Primary source-only selection; CADEC-assisted historical gate separately labelled. No fabricated clinical δ justification or whole-system energy.
 
 Cluster intervals need not all be wider than row intervals. The original plan's universal-width acceptance rule is invalid. A δ fitted to these same outcomes would not be independent clinical justification. The original heuristic power/MDD claim is withdrawn. The original GPU board readings exclude host tokenization and cannot be added to another machine's RAPL readings and called a measured complete system.
 
-## Step 1 — Aap ka Colab run
+## Reproduction step 1 — Aap ka Colab run (completed)
 
 1. Open `AIH_Revision_Colab.ipynb` in Colab and select a **T4 GPU** runtime.
 2. Run the cells and upload **`revision_colab_bundle.zip`** when asked (about 0.44 MB). It contains the scripts and both CSVs; no private GitHub login is needed.
@@ -33,7 +41,7 @@ Cluster intervals need not all be wider than row intervals. The original plan's 
 
 The compact model is **BERT-tiny (`prajjwal1/bert-tiny`)**, not TinyBERT. Tokenization is included in the new elapsed-time scope, but only GPU-board energy is measured. Host and wall energy remain unavailable and are not estimated.
 
-## Step 2 — Professor ka Linux CPU run
+## Reproduction step 2 — Professor ka Linux CPU run (completed)
 
 Give the professor the code on the revision branch (or a copy of this workspace) **and** `revision_checkpoints.zip`. Extract the ZIP at the repository root: it must create `results/revision/checkpoints/efficient_transformer_seed42/`, `biomedical_transformer_seed42/`, and `compact_transformer_seed42/`. These large weights must be transferred separately; **do not commit them as normal GitHub files**.
 
@@ -59,7 +67,7 @@ python -u scripts/revision_linux.py --batch-sizes 8 16 32 64 128 --lengths 64 12
 
 The full CPU grid is much longer than the canonical run; the original plan's short time estimates are not guaranteed. Return **`revision_linux_results.zip`**. Keep the console log too. Raw per-repeat counts, RAPL readings and energy provenance are retained; CV failures are reported, not hidden.
 
-## Step 3 — Return and integrate
+## Reproduction step 3 — Return and integrate (completed)
 
 Send back these three files:
 
@@ -75,7 +83,7 @@ python scripts/revision_workload.py
 python scripts/render_revision.py
 ```
 
-Explicit prediction directories supersede submitted predictions; chosen file paths and SHA-256 checksums are recorded. FP32/INT8 checkpoint comparisons exist only for the primary split, so selection frequencies are **not pooled across unequal candidate catalogues**. Unknown/missing energy is not treated as measured. Additional baseline results and energy scopes still need author review before the working-draft/pending labels and response letter are finalised.
+Explicit prediction directories supersede submitted predictions; chosen file paths and SHA-256 checksums are recorded. FP32/INT8 checkpoint comparisons exist only for the primary split, so selection frequencies are **not pooled across unequal candidate catalogues**. Unknown/missing energy is not treated as measured. Returned baseline results and measured scopes are integrated; author review remains necessary before resubmission.
 
 ## Remaining limitation that code cannot remove
 

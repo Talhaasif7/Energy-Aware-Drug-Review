@@ -1,0 +1,5 @@
+model,run,source,gross_j_1000,throughput_sps,cv_pct,repeatability_pass
+efficient_transformer,original,results/revision/linux_energy/tokenization.json,1.7502067427884616,12479.80598581626,1.3121572049616927,True
+compact_transformer,original,results/revision/linux_energy/tokenization.json,2.3315084677061124,9002.891577846733,1.4259539440163431,True
+biomedical_transformer,original,results/revision/linux_energy/tokenization.json,2.419383365125673,8909.407921360054,10.813859019335904,False
+biomedical_transformer,follow-up,results/revision/linux_energy/tokenization_pubmed_followup.json,2.290863839285714,9048.45915941098,0.3764114066025054,True
